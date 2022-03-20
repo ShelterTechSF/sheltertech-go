@@ -1,0 +1,22 @@
+version: "3.5"
+
+services:
+  sheltertech-go:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: askdarcel_development
+      DB_USER: postgres
+      DB_PASS:
+    networks:
+      - askdarcel
+    ports:
+      - "3001:3001"
+
+networks:
+  # Used to connect to askdarcel in a different docker-compose instance
+  askdarcel:
+    name: askdarcel
