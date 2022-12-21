@@ -13,8 +13,8 @@ type Manager struct {
 }
 
 func New(dbHost, dbPort, dbName, dbUser, dbPass string) *Manager {
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbName)
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbName, dbPass)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
