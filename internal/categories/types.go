@@ -6,3 +6,7 @@ type Category struct {
 	TopLevel bool   `json:"top_level"`
 	Featured bool   `json:"featured"`
 }
+
+type Categories struct {
+	Categories []*Category `json:"categories"`
+}

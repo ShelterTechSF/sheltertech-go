@@ -57,7 +57,10 @@ func (m *Manager) GetSubCategoriesByID(w http.ResponseWriter, r *http.Request) {
 
 func (m *Manager) GetByFeatured(w http.ResponseWriter, _ *http.Request) {
 	dbCategories := m.DbClient.GetCategoriesByFeatured()
-	writeJson(w, fromDBTypeArray(dbCategories))
+	response := Categories{
+		Categories: fromDBTypeArray(dbCategories),
+	}
+	writeJson(w, response)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
