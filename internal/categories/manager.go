@@ -68,12 +68,12 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(output)
 	if err != nil {
 		panic(err)
 	}
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 }
 
 func fromDBType(dbCategory *db.Category) *Category {
