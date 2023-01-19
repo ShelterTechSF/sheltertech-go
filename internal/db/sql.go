@@ -30,3 +30,13 @@ SELECT id, name, top_level, featured
 FROM public.categories
 WHERE id in (SELECT child_id from public.category_relationships WHERE parent_id = $1)
 `
+
+const submitChangeRequest = `
+INSERT INTO public.change_requests (type, object_id, status, action, resource_id, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, now(), now())`
+
+const serviceByIDSql = `
+SELECT id, resource_id
+FROM public.services
+WHERE id = $1
+`
