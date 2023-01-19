@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -13,8 +14,14 @@ type Manager struct {
 }
 
 func New(dbHost, dbPort, dbName, dbUser, dbPass string) *Manager {
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbName, dbPass)
+	var psqlInfo string
+	if dbPass == "" {
+		psqlInfo = fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
+			dbHost, dbPort, dbUser, dbName)
+	} else {
+		psqlInfo = fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+			dbHost, dbPort, dbUser, dbName, dbPass)
+	}
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -89,12 +96,54 @@ func scanCategories(rows *sql.Rows) []*Category {
 func scanCategory(row *sql.Row) *Category {
 	var category Category
 	err := row.Scan(&category.Id, &category.Name, &category.TopLevel, &category.Featured)
-	switch err {
-	case sql.ErrNoRows:
-		fmt.Println("No rows were returned!")
-		return nil
-	default:
-		panic(err)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
 	}
 	return &category
+}
+
+func scanService(row *sql.Row) *Service {
+	var service Service
+	err := row.Scan(&service.Id, &service.ResourceId)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &service
+}
+
+func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(submitChangeRequest, changeRequest.Type, changeRequest.ObjectId, changeRequest.Status, changeRequest.Action, changeRequest.ResourceId)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
+func (m *Manager) GetServiceById(serviceId int) *Service {
+	row := m.DB.QueryRow(serviceByIDSql, serviceId)
+	return scanService(row)
 }

@@ -10,3 +10,9 @@ fmt:
 
 run:
 	docker-compose build && docker-compose up
+
+test:
+	go test ./... -v
+
+integration-test:
+	go test -tags=integration ./... -v

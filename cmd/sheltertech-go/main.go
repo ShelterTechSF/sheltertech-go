@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
+	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 
 	"github.com/go-chi/chi/v5"
@@ -22,6 +23,7 @@ func main() {
 
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)
+	changeRequestManager := changerequest.New(dbManager)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -29,5 +31,8 @@ func main() {
 	r.Get("/api/categories/{id}", categoriesManager.GetByID)
 	r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
+
+	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
+
 	http.ListenAndServe(":3001", r)
 }
