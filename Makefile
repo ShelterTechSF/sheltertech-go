@@ -11,8 +11,14 @@ fmt:
 run:
 	docker-compose build && docker-compose up
 
+ci-run:
+	docker-compose -f docker-compose.ci.yml build && docker-compose -f docker-compose.ci.yml up -d
+
+build:
+	go build -v ./...
+
 test:
-	go test ./... -v
+	go test -v ./...
 
 integration-test:
-	go test -tags=integration ./... -v
+	go test -v -tags=integration ./...

@@ -1,0 +1,39 @@
+version: "3.5"
+
+services:
+  sheltertech-go:
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: askdarcel_development
+      DB_USER: postgres
+    networks:
+      - askdarcel-ci
+    ports:
+      - "3001:3001"
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - askdarcel-ci
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  askdarcel-ci:
+    name: askdarcel-ci
