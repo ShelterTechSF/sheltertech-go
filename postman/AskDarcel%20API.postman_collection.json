@@ -1,0 +1,3067 @@
+{
+	"info": {
+		"_postman_id": "fca7c8d9-8e45-4f57-a7b4-cd66fcc57bf7",
+		"name": "AskDarcel API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "680011"
+	},
+	"item": [
+		{
+			"name": "Get all resources",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Status code is 200\"] = responseCode.code === 200;  "
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/resources?category_id=all",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "all"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all resources by category id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1500ms\"] = responseTime < 1500;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var schema = {",
+							"    \"type\": \"object\",",
+							"    \"properties\": {",
+							"        \"resources\": {",
+							"            \"type\": \"array\",",
+							"            \"items\": pm.globals.get('schemas').resource,",
+							"        },",
+							"    },",
+							"    \"required\": [",
+							"        \"resources\",",
+							"    ],",
+							"};",
+							"",
+							"var response = pm.response.json();",
+							"if (tv4.error) {",
+							"    console.log(\"Validation failed: \", tv4.error);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/resources?category_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get resource by id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Status code is 200\"] = responseCode.code === 200;  "
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/resources/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get service by id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 200ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/services/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by categories",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});",
+							"",
+							"pm.test(\"Services have at least one of the requested categories\", function () {",
+							"  var requestedCategories = pm.request.url.query.get('category_id').split(',').map(id_str => Number(id_str));",
+							"  response.services.forEach((service) => {",
+							"      pm.expect(service.categories.some(category => requestedCategories.includes(category.id))).to.be.true;",
+							"  });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?category_id=1,2&site_id=2",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "1,2",
+							"description": "Comma-separated list of ids of categories (retrieve numeric ids from /categories)"
+						},
+						{
+							"key": "site_id",
+							"value": "2",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						}
+					]
+				},
+				"description": "This retrieves all of the services with _any_ of the categories specified in the `category_id` comma-separated list.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by eligibilities",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});",
+							"",
+							"pm.test(\"Services have at least one of the requested eligibilities\", function () {",
+							"  var requestedEligibilities = pm.request.url.query.get('eligibility_id').split(',').map(id_str => Number(id_str));",
+							"  response.services.forEach((service) => {",
+							"      pm.expect(service.eligibilities.some(eligibility => requestedEligibilities.includes(eligibility.id))).to.be.true;",
+							"  });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?eligibility_id=1&site_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "eligibility_id",
+							"value": "1",
+							"description": "Comma-separated list of ids of eligibilities (retrieve numeric ids from /eligibilities)"
+						},
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						}
+					]
+				},
+				"description": "This retrieves all of the services with _any_ of the eligibilities specified in the `eligibility_id` comma-separated list.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by site",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services by site returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?site_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						}
+					]
+				},
+				"description": "This retrieves all of the services associated with the requested site.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get category by id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 200ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/services/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get subcategories",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 200ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/services/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get featured services by category id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 200ms\"] = responseTime < 200;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/services/featured?category_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"featured"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get service count",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/services/count",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"count"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by site using algolia endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services by site returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?site_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						}
+					]
+				},
+				"description": "This retrieves all of the services associated with the requested site.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by eligibility using algolia endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});",
+							"",
+							"pm.test(\"Services have at least one of the requested eligibilities\", function () {",
+							"  var requestedEligibilities = pm.request.url.query.get('eligibility_id').split(',').map(id_str => Number(id_str));",
+							"  response.services.forEach((service) => {",
+							"      pm.expect(service.eligibilities.some(eligibility => requestedEligibilities.includes(eligibility.id))).to.be.true;",
+							"  });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?eligibility_id=1&site_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "eligibility_id",
+							"value": "1",
+							"description": "A single eligibility id"
+						},
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						}
+					]
+				},
+				"description": "This retrieves all of the services with _any_ of the eligibilities specified in the `eligibility_id` comma-separated list.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by multiple categories using algolia endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services returned with proper schema\", function() {",
+							"  pm.expect(response.services.length).to.be.greaterThan(0);",
+							"  pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});",
+							"",
+							"pm.test(\"Services have at least one of the requested categories\", function () {",
+							"  var requestedCategories = pm.request.url.query.get('category_id').split(',').map(id_str => Number(id_str));",
+							"  response.services.forEach((service) => {",
+							"    pm.expect(",
+							"      service.categories.some(",
+							"        category => requestedCategories.includes(category.id))).to.be.true;",
+							"  });",
+							"});",
+							"",
+							"pm.test(\"Services are ranked by number of matching categories\", function () {",
+							"  var requestedCategories = pm.request.url.query.get('category_id').split(',').map(id_str => Number(id_str));",
+							"  pm.expect(response.services.length > 0);",
+							"  var numMatchingCategories = (service) => {",
+							"    return service.categories.filter(category => requestedCategories.includes(category.id)).length;",
+							"  };",
+							"  var maxMatchingCategories = numMatchingCategories(response.services[0]);",
+							"  response.services.forEach((service) => {",
+							"    var matching = numMatchingCategories(service);",
+							"    pm.expect(matching).to.be.lte(maxMatchingCategories);",
+							"    // From here on out, the number of matching categories <= this one.",
+							"    maxMatchingCategories = Math.min(matching, maxMatchingCategories);",
+							"  });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?category_id=1,184,101&site_id=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "1,184,101",
+							"description": "Comma-separated list of ids of categories (retrieve numeric ids from /categories)"
+						},
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						}
+					]
+				},
+				"description": "This retrieves all of the services with _any_ of the categories specified in the `category_id` comma-separated list.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services matching all queried categories using algolia endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services have ALL of the requested categories\", function () {",
+							"  var requestedCategories = pm.request.url.query.get('category_id').split(',').map(id_str => Number(id_str));",
+							"  // Tests cannot guarantee all of these category ids will exist.",
+							"  // Ensure the number matching in each service is the same across the board.",
+							"  var matchingCategories = 0;",
+							"  response.services.forEach((service) => {",
+							"    var matchingCount = service.categories.filter(c => requestedCategories.includes(c.id)).length;",
+							"    if (matchingCategories !== 0) {",
+							"        pm.expect(matchingCount).to.equal(matchingCategories);",
+							"    } else {",
+							"        matchingCategories = matchingCount;",
+							"    }",
+							"  });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?category_id=116,184&site_id=1&match_all_tags=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "116,184",
+							"description": "Comma-separated list of ids of categories (retrieve numeric ids from /categories)"
+						},
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						},
+						{
+							"key": "match_all_tags",
+							"value": "1",
+							"description": "Indicates returned services need to match all of the input tags "
+						}
+					]
+				},
+				"description": "This retrieves all of the services with _ALL_ of the categories specified in the `category_id` comma-separated list.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by category and geolocation using algolia endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});",
+							"",
+							"pm.test(\"Services have at least one of the requested categories\", function () {",
+							"    var requestedCategories = pm.request.url.query.get('category_id').split(',').map(id_str => Number(id_str));",
+							"    response.services.forEach((service) => {",
+							"        pm.expect(",
+							"            service.categories.some(",
+							"                category => requestedCategories.includes(category.id))).to.be.true;",
+							"    });",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?category_id=1&site_id=1&lat=37.7843279&long=-122.4482159",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "1",
+							"description": "Comma-separated list of ids of categories (retrieve numeric ids from /categories)"
+						},
+						{
+							"key": "site_id",
+							"value": "1",
+							"description": "Site code id (1 for SFSG, 2 for SFFamilies) (defaults to SFSG)"
+						},
+						{
+							"key": "lat",
+							"value": "37.7843279",
+							"description": "Latitude"
+						},
+						{
+							"key": "long",
+							"value": "-122.4482159",
+							"description": "Longitude"
+						}
+					]
+				},
+				"description": "This retrieves all of the services with _any_ of the categories specified in the `category_id` comma-separated list.\n\nAdditionally, it allows the user to pass in `lat` (latitude) and `long` (longitude) to rank results by geolocation using Algolia. (The geolocation query is invalid unless both `lat` and `long` are specified.) \n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get services by free text and geolocation using algolia endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 5000ms\"] = responseTime < 5000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var response = pm.response.json();",
+							"",
+							"pm.test(\"Services returned with proper schema\", function() {",
+							"    pm.expect(response.services.length).to.be.greaterThan(0);",
+							"    pm.expect(response.services[0]).to.include.all.keys('name','long_description','schedule','resource');",
+							"});",
+							"",
+							"// It's kind of hard to test free text matching without mocking out",
+							"// Algolia synonyms that might also match."
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/services?site_id=1&lat=37.7843279&long=-122.4482159&text=students%20classes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services"
+					],
+					"query": [
+						{
+							"key": "site_id",
+							"value": "1"
+						},
+						{
+							"key": "lat",
+							"value": "37.7843279",
+							"description": "Latitude"
+						},
+						{
+							"key": "long",
+							"value": "-122.4482159",
+							"description": "Longitude"
+						},
+						{
+							"key": "text",
+							"value": "students%20classes",
+							"description": "url encoded free text"
+						}
+					]
+				},
+				"description": "This retrieves all of the services matching the given filters (e.g. by site id) as well as matching `text` parameter, according to the Algolia index.\n\nReturns a JSON object containing an array of `service`s, i.e.\n```\n{ \"services\": [ /* services here */ ] }\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get all categories",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 200ms\"] = responseTime < 200;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var schema = {",
+							"    \"type\": \"object\",",
+							"    \"properties\": {",
+							"        \"categories\": {",
+							"            \"type\": \"array\",",
+							"            \"items\": pm.globals.get('schemas').category,",
+							"        },",
+							"    },",
+							"    \"required\": [",
+							"        \"categories\",",
+							"    ],",
+							"};",
+							"",
+							"var response = pm.response.json();",
+							"tests['Schema is valid'] = tv4.validate(response, schema);",
+							"if (tv4.error) {",
+							"    console.log(\"Validation failed: \", tv4.error);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/categories",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"categories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get featured categories",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 200ms\"] = responseTime < 200;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var schema = {",
+							"    \"type\": \"object\",",
+							"    \"properties\": {",
+							"        \"categories\": {",
+							"            \"type\": \"array\",",
+							"            \"items\": pm.globals.get('schemas').category,",
+							"        },",
+							"    },",
+							"    \"required\": [",
+							"        \"categories\",",
+							"    ],",
+							"};",
+							"",
+							"var response = pm.response.json();",
+							"tests['Schema is valid'] = tv4.validate(response, schema);",
+							"if (tv4.error) {",
+							"    console.log(\"Validation failed: \", tv4.error);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/categories",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"categories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all eligibilities",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"pm.test(\"Eligibilities are correctly sorted\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.expect(jsonData.eligibilities.length).to.eql(13);",
+							"  pm.expect(jsonData.eligibilities[0].name).to.eql('Alzheimers');",
+							"  pm.expect(jsonData.eligibilities[9].name).to.eql('Re-Entry');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/eligibilities",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get eligibilities by category",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"pm.test(\"Eligibilities are correctly created\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.expect(jsonData.eligibilities.length).to.be.above(0);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/eligibilities?category_id=12",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "12"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get featured eligibilities",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"pm.test(\"Featured eligibilities are correctly sorted by feature_rank\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.expect(jsonData.eligibilities.length).to.eql(6);",
+							"  pm.expect(jsonData.eligibilities[0].name).to.eql('Seniors (55+ years old)');",
+							"  pm.expect(jsonData.eligibilities[0].feature_rank).to.eql(1);",
+							"  pm.expect(jsonData.eligibilities[0].resource_count).to.eql(25);",
+							"  pm.expect(jsonData.eligibilities[0].service_count).to.eql(25);",
+							"  pm.expect(jsonData.eligibilities[5].name).to.eql('Immigrants');",
+							"  pm.expect(jsonData.eligibilities[5].feature_rank).to.eql(6);",
+							"  pm.expect(jsonData.eligibilities[5].resource_count).to.eql(8);",
+							"  pm.expect(jsonData.eligibilities[5].service_count).to.eql(8);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/eligibilities/featured",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities",
+						"featured"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get child eligibilities",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"pm.test(\"Featured eligibilities are correctly sorted by feature_rank\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.expect(jsonData.eligibilities.length).to.eql(1);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/eligibilities/subeligibilities?name=Homeless",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities",
+						"subeligibilities"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Homeless"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get child eligibilities by id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/eligibilities/subeligibilities?id=7",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities",
+						"subeligibilities"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "7"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update eligibility feature_rank, 1 of 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"pm.test(\"Eligibility feature_rank now 2\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.expect(jsonData.eligibility.name).to.eql(\"Seniors (55+ years old)\");",
+							"  pm.expect(jsonData.eligibility.feature_rank).to.eql(2);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"feature_rank\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/eligibilities/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update eligibility feature_rank, 2 of 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"pm.test(\"Eligibility feature_rank now back to 1\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.expect(jsonData.eligibility.name).to.eql(\"Seniors (55+ years old)\");",
+							"  pm.expect(jsonData.eligibility.feature_rank).to.eql(1);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"feature_rank\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/eligibilities/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"eligibilities",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get all resources by category id and sort by location",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1500ms\"] = responseTime < 1500;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							"",
+							"var schema = {",
+							"    \"type\": \"object\",",
+							"    \"properties\": {",
+							"        \"resources\": {",
+							"            \"type\": \"array\",",
+							"            \"items\": pm.globals.get('schemas').resource,",
+							"        },",
+							"    },",
+							"    \"required\": [",
+							"        \"resources\",",
+							"    ],",
+							"};",
+							"",
+							"var response = pm.response.json();",
+							"if (tv4.error) {",
+							"    console.log(\"Validation failed: \", tv4.error);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/resources?category_id=1&lat=100&long=100",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources"
+					],
+					"query": [
+						{
+							"key": "category_id",
+							"value": "1"
+						},
+						{
+							"key": "lat",
+							"value": "100"
+						},
+						{
+							"key": "long",
+							"value": "100"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Resource ChangeRequest",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\" : {\n\t\t\"website\" : \"www.google.com\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/resources/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Service ChangeRequest",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\" : {\n\t\t\"name\" : \"newname\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/services/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Schedule Day ChangeRequest",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\" : {\n\t\t\"opens_at\" : \"1000\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/schedule_days/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"schedule_days",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Note ChangeRequest",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\" : {\n\t\t\"note\" : \"newnote\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/notes/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"notes",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Phone ChangeRequest",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\" : {\n\t\t\"number\" : \"4155555267\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/phones/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"phones",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit Address ChangeRequest",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\" : {\n\t\t\"city\" : \"San Francisco\",\n\t\t\"state_province\" : \"CA\",\n\t\t\"address_1\" : \"140 Market Street\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/addresses/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"addresses",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit New Service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"services\": [\n    {\n      \"name\": \"Foo Service\",\n      \"long_description\": \"Bar description\",\n      \"eligibility\": \"foo\",\n      \"required_documents\": \"bar\",\n      \"fee\": \"foo\",\n      \"application_process\": \"bar\",\n      \"schedule\": {\n        \"schedule_days\": [\n          {\n            \"day\": \"Friday\",\n            \"opens_at\": 9,\n            \"closes_at\": 17,\n            \"open_day\": \"Friday\",\n            \"open_time\": \"9:00:00\",\n            \"close_day\": \"Friday\",\n            \"close_time\": \"17:00:00\"\n          },\n          {\n            \"day\": \"Thursday\",\n            \"opens_at\": 9,\n            \"closes_at\": 17,\n            \"open_day\": \"Thursday\",\n            \"open_time\": \"9:00:00\",\n            \"close_day\": \"Thursday\",\n            \"close_time\": \"17:00:00\"\n          },\n          {\n            \"day\": \"Wednesday\",\n            \"opens_at\": 9,\n            \"closes_at\": 17,\n            \"open_day\": \"Wednesday\",\n            \"open_time\": \"9:00:00\",\n            \"close_day\": \"Wednesday\",\n            \"close_time\": \"17:00:00\"            \n          },\n          {\n            \"day\": \"Tuesday\",\n            \"opens_at\": 11,\n            \"closes_at\": 19,\n            \"open_day\": \"Tuesday\",\n            \"open_time\": \"9:00:00\",\n            \"close_day\": \"Tuesday\",\n            \"close_time\": \"17:00:00\"  \n          },\n          {\n            \"day\": \"Monday\",\n            \"opens_at\": 11,\n            \"closes_at\": 19,\n            \"open_day\": \"Monday\",\n            \"open_time\": \"9:00:00\",\n            \"close_day\": \"Monday\",\n            \"close_time\": \"17:00:00\"  \n          }\n        ]\n      },\n      \"notes\": [\n        {\n          \"note\": \"foo\"\n        }\n      ],\n      \"categories\": [\n        {\n          \"id\": 3\n        }\n      ]\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/resources/1/services",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources",
+						"1",
+						"services"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit New Resource",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"resources\":[{\"name\":\"Test new\",\"addresses\":[{\"address_1\":\"601 4th Street\",\"city\":\"San Francisco\",\"state_province\":\"CA\",\"postal_code\":\"49032\"}],\"long_description\":\"test\",\"email\":\"test@test.com\",\"website\":\"test.com\",\"notes\":[],\"schedule\":{\"schedule_days\":[{\"day\":\"Monday\",\"opens_at\":900,\"closes_at\":1000,\"open_time\":\"09:00:00\",\"open_day\":\"Monday\",\"close_time\":\"10:00:00\",\"close_day\":\"Monday\"},{\"day\":\"Tuesday\",\"opens_at\":100,\"closes_at\":1000,\"open_time\":\"09:00:00\",\"open_day\":\"Tuesday\",\"close_time\":\"10:00:00\",\"close_day\":\"Tuesday\"}]},\"phones\":[{\"number\":\"4155555555\",\"service_type\":\"English\"}],\"sites\":[{\"id\":2}]\n}]}"
+				},
+				"url": {
+					"raw": "{{base_url}}/resources",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit New Resource with no Site Code",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"resources\":[{\"name\":\"Test new\",\"addresses\":[{\"address_1\":\"601 4th Street\",\"city\":\"San Francisco\",\"state_province\":\"CA\",\"postal_code\":\"49032\"}],\"long_description\":\"test\",\"email\":\"test@test.com\",\"website\":\"test.com\",\"notes\":[],\"schedule\":{\"schedule_days\":[{\"day\":\"Monday\",\"opens_at\":900,\"closes_at\":1000,\"open_time\":\"09:00:00\",\"open_day\":\"Monday\",\"close_time\":\"10:00:00\",\"close_day\":\"Monday\"},{\"day\":\"Tuesday\",\"opens_at\":100,\"closes_at\":1000,\"open_time\":\"09:00:00\",\"open_day\":\"Tuesday\",\"close_time\":\"10:00:00\",\"close_day\":\"Tuesday\"}]},\"phones\":[{\"number\":\"4155555555\",\"service_type\":\"English\"}]\n}]}"
+				},
+				"url": {
+					"raw": "{{base_url}}/resources",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit New Resource with multiple addresses",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"resources\":[{\"name\":\"Test new\",\"addresses\":[{\"address_1\":\"601 4th Street\",\"city\":\"San Francisco\",\"state_province\":\"CA\",\"postal_code\":\"49032\"},{\"address_1\":\"636 4th Street\",\"city\":\"San Francisco\",\"state_province\":\"CA\",\"postal_code\":\"49032\"}],\"long_description\":\"test\",\"email\":\"test@test.com\",\"website\":\"test.com\",\"notes\":[],\"schedule\":{\"schedule_days\":[{\"day\":\"Monday\",\"opens_at\":900,\"closes_at\":1000,\"open_time\":\"09:00:00\",\"open_day\":\"Monday\",\"close_time\":\"10:00:00\",\"close_day\":\"Monday\"},{\"day\":\"Tuesday\",\"opens_at\":100,\"closes_at\":1000,\"open_time\":\"09:00:00\",\"open_day\":\"Tuesday\",\"close_time\":\"10:00:00\",\"close_day\":\"Tuesday\"}]},\"phones\":[{\"number\":\"4155555555\",\"service_type\":\"English\"}]\n}]}"
+				},
+				"url": {
+					"raw": "{{base_url}}/resources",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Note to Service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"note\" : {\n\t\t\"note\" : \"harro\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/services/1/notes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"1",
+						"notes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Address to Service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/services/15/addresses/11",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"15",
+						"addresses",
+						"11"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Remove Address From Service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 204\"] = responseCode.code === 204;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/services/15/addresses/11",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"15",
+						"addresses",
+						"11"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Note to Resource",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"note\" : {\n\t\t\"note\" : \"harro\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/resources/1/notes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources",
+						"1",
+						"notes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Note",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 204\"] = responseCode.code === 204;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/notes/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"notes",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Phone",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 204\"] = responseCode.code === 204;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/phones/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"phones",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Address",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"action\": \"remove\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/addresses/10/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"addresses",
+						"10",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Phone to Resource",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n    \"change_request\": {\n        \"action\": \"insert\",\n        \"field_changes\": {\n            \"number\": \"(415) 555-5555\",\n            \"service_type\": \"general inquiries\"\n        }\n    },\n    \"type\": \"phones\",\n    \"parent_resource_id\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Address to Resource",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\": {\n        \"action\": \"insert\",\n        \"field_changes\": {\n            \"address_1\":\"601 4th Street\",\n            \"city\":\"San Francisco\",\n            \"state_province\":\"CA\",\n            \"postal_code\":\"49032\"\n        }\n\t},\n\t\"type\": \"addresses\",\n\t\"parent_resource_id\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Schedule Day",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \n\t\"change_request\": {\n\t\t\"day\": \"Monday\",\n\t\t\"opens_at\" : \"1000\",\n\t\t\"closes_at\" : \"2000\"\n\t},\n\t\"type\": \"schedule_days\",\n\t\"schedule_id\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Service Category",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 1000ms\"] = responseTime < 1000;",
+							"",
+							"tests[\"Status code is 201\"] = responseCode.code === 201;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"change_request\": {\n\t\t\"categories\": [\n\t\t\t{\"name\": \"Food\", \"id\": 2},\n\t\t\t{\"name\": \"Health\", \"id\": 3}\n\t\t]\n\t}\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/services/1/change_requests",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"services",
+						"1",
+						"change_requests"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Resources Counts",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Response time is less than 12000ms\"] = responseTime < 12000;",
+							"",
+							"tests[\"Status code is 200\"] = responseCode.code === 200;"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "access-token",
+						"value": "{{access-token}}"
+					},
+					{
+						"key": "client",
+						"value": "{{client}}"
+					},
+					{
+						"key": "uid",
+						"value": "dev-admin@sheltertech.org"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/resources/count",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"resources",
+						"count"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post Texting Empty Phone Number",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Sending Empty Phone Number\", function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.response.to.have.status(400);",
+							"    pm.response.to.have.jsonBody(\"error\");",
+							"    pm.expect(responseJson.error).to.eql(\"failure\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"data\": {\n        \"recipient_name\": \"uesr test\",\n        \"phone_number\": \"\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/textings",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"textings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post Texting with Phone Number",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Sending with a phone number\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"data\": {\n        \"recipient_name\": \"uesr test\",\n        \"phone_number\": \"4156789876\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/textings",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"textings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Instruction",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Adding instruction\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"instruction\": {\n        \"instruction\": \"test instruction\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/instructions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"instructions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Instruction",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Updating instruction\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"instruction\": {\n        \"instruction\": \"test instruction (modified) \"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/instructions/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"instructions",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Instruction",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Deleting instruction\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"instruction\": {\n        \"instruction\": \"test instruction\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/instructions/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"instructions",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Document",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Adding document\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"document\": {\n        \"name\": \"document name\",\n        \"url\": \"http://www.theonion.com/\",\n        \"description\": \"document description\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/documents",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"documents"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Document",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Updating document\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"document\": {\n        \"name\": \"document name\",\n        \"url\": \"http://www.theonion.com/\",\n        \"description\": \"document description\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/documents/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"documents",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Document",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Deleting document\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"document\": {\n        \"document\": \"test document\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/documents/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"documents",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Breaking News",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Adding breaking news\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"news_article\": {\n        \"headline\": \"headline\",\n        \"body\": \"Lorem Ipsum etc etc etc\",\n        \"effective_date\": \"2022-12-01\",\n        \"priority\": \"1\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/news_articles",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"news_articles"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Breaking News",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Modifying breaking news\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"news_article\": {\n        \"headline\": \"modified headline\",\n        \"body\": \"Lorem Ipsum etc etc etc (modified)\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/news_articles/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"news_articles",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Breaking News",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Deleting breaking news\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"document\": {\n        \"document\": \"test document\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/news_articles/1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"news_articles",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieve Breaking News",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Retrieving breaking news\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"document\": {\n        \"document\": \"test document\",\n        \"service_id\": 1\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/news_articles",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"news_articles"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"var idSchema = {",
+					"    \"type\": \"integer\",",
+					"    \"minimum\": 1,",
+					"}",
+					"",
+					"var addressSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"address_1\": {\"type\": \"string\"},",
+					"        \"address_2\": {\"type\": [\"string\", \"null\"]},",
+					"        \"address_3\": {\"type\": [\"string\", \"null\"]},",
+					"        \"address_4\": {\"type\": [\"string\", \"null\"]},",
+					"        \"attention\": {\"type\": \"string\"},",
+					"        \"city\": {\"type\": \"string\"},",
+					"        \"country\": {\"type\": \"string\"},",
+					"        \"id\": idSchema,",
+					"        \"latitude\": {\"type\": \"string\"},  // Why is this not a number?",
+					"        \"longitude\": {\"type\": \"string\"},",
+					"        \"postal_code\": {\"type\": \"string\"},",
+					"        \"state_province\": {\"type\": \"string\"},",
+					"    },",
+					"    \"required\": [",
+					"        \"address_1\",",
+					"        \"city\",",
+					"        \"country\",",
+					"        \"id\",",
+					"        \"state_province\",",
+					"    ],",
+					"};",
+					"",
+					"var categorySchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"id\": idSchema,",
+					"        \"name\": {\"type\": \"string\"},",
+					"    },",
+					"    \"required\": [\"id\", \"name\"],",
+					"};",
+					"",
+					"var noteSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"id\": idSchema,",
+					"        \"note\": {\"type\": \"string\"},",
+					"    },",
+					"    \"required\": [\"id\", \"note\"],",
+					"};",
+					"",
+					"var phoneSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"country_code\": {\"type\": \"string\"},",
+					"        \"extension\": {\"type\": [\"string\", \"null\"]},",
+					"        \"id\": idSchema,",
+					"        \"number\": {\"type\": \"string\"},",
+					"        \"service_type\": {\"type\": \"string\"},",
+					"    },",
+					"    \"required\": [\"country_code\", \"extension\", \"id\", \"number\", \"service_type\"],",
+					"};",
+					"",
+					"var timeSchema = {",
+					"    \"type\": \"integer\",",
+					"    \"minimum\": 0,",
+					"    \"maximum\": 2400,  // Isn't it bad if midnight has two representations?",
+					"};",
+					"",
+					"var scheduleDaySchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"closes_at\": timeSchema,",
+					"        \"day\": {",
+					"            \"enum\": [",
+					"                \"Sunday\",",
+					"                \"Monday\",",
+					"                \"Tuesday\",",
+					"                \"Wednesday\",",
+					"                \"Thursday\",",
+					"                \"Friday\",",
+					"                \"Saturday\",",
+					"            ],",
+					"        },",
+					"        \"id\": idSchema,",
+					"        \"opens_at\": timeSchema,",
+					"    },",
+					"};",
+					"",
+					"var scheduleSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"id\": idSchema,",
+					"        \"schedule_days\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": scheduleDaySchema,",
+					"        },",
+					"    },",
+					"    \"required\": [\"id\", \"schedule_days\"],",
+					"};",
+					"",
+					"var serviceSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"application_process\": {\"type\": [\"string\", \"null\"]},",
+					"        \"categories\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": categorySchema,",
+					"        },",
+					"        \"certified\": {\"type\": [\"boolean\", \"null\"]}, ",
+					"        \"eligibility\": {\"type\": [\"string\", \"null\"]},",
+					"        \"email\": {\"type\": [\"string\", \"null\"]},",
+					"        \"fee\": {\"type\": [\"string\", \"null\"]},",
+					"        \"id\": idSchema,",
+					"        \"long_description\": {\"type\": \"string\"},",
+					"        \"name\": {\"type\": \"string\"},",
+					"        \"notes\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": noteSchema,",
+					"        },",
+					"        \"required_documents\": {\"type\": [\"string\", \"null\"]},",
+					"        \"schedule\": scheduleSchema,",
+					"        \"verified_at\": {",
+					"            \"type\": [\"string\", \"null\"],",
+					"            \"format\": \"date-time\",",
+					"        },",
+					"        \"eligibilities\": eligibilitySchema,",
+					"    },",
+					"    \"required\": [",
+					"        \"application_process\",",
+					"        \"categories\",",
+					"        \"eligibility\",",
+					"        \"email\",",
+					"        \"fee\",",
+					"        \"id\",",
+					"        \"long_description\",",
+					"        \"name\",",
+					"        \"notes\",",
+					"        \"required_documents\",",
+					"        \"schedule\",",
+					"        \"verified_at\",",
+					"        \"eligibilities\"",
+					"    ],",
+					"};",
+					"",
+					"var resourceSchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"alternate_name\": {\"type\": [\"string\", \"null\"]},",
+					"        \"addresses\": [addressSchema],",
+					"        \"categories\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": categorySchema,",
+					"        },",
+					"        \"certified\": {\"type\": [\"boolean\", \"null\"]},",
+					"        \"email\": {",
+					"            \"type\": [\"string\", \"null\"],",
+					"        },",
+					"        \"id\": idSchema,",
+					"        \"long_description\": {\"type\": \"string\"},",
+					"        \"name\": {\"type\": \"string\"},",
+					"        \"notes\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": noteSchema,",
+					"        },",
+					"        \"phones\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": phoneSchema,",
+					"        },",
+					"        \"ratings\": {",
+					"            \"type\": \"array\",",
+					"            // What is this? It's always empty",
+					"        },",
+					"        \"schedule\": scheduleSchema,",
+					"        \"services\": {",
+					"            \"type\": \"array\",",
+					"            \"items\": serviceSchema,",
+					"        },",
+					"        \"short_description\": {\"type\": [\"string\", \"null\"]},",
+					"        \"status\": {",
+					"            \"enum\": [\"pending\", \"approved\", \"rejected\"],",
+					"        },",
+					"        \"verified_at\": {",
+					"            \"type\": [\"string\", \"null\"],",
+					"            \"format\": \"date-time\",",
+					"        },",
+					"        \"website\": {\"type\": [\"string\", \"null\"]},",
+					"    },",
+					"    \"required\": [",
+					"        \"addresses\",",
+					"        \"categories\",",
+					"        \"email\",",
+					"        \"id\",",
+					"        \"long_description\",",
+					"        \"name\",",
+					"        \"notes\",",
+					"        \"phones\",",
+					"        \"ratings\",",
+					"        \"schedule\",",
+					"        \"services\",",
+					"        \"short_description\",",
+					"        \"status\",",
+					"        \"verified_at\",",
+					"        \"website\",",
+					"    ],",
+					"};",
+					"",
+					"var eligibilitySchema = {",
+					"    \"type\": \"object\",",
+					"    \"properties\": {",
+					"        \"id\": idSchema,",
+					"        \"name\": {\"type\": \"string\"},",
+					"    },",
+					"    \"required\": [\"id\", \"name\"],",
+					"};",
+					"",
+					"pm.globals.set(\"schemas\", {",
+					"    \"id\": idSchema,",
+					"    \"addresses\": [addressSchema],",
+					"    \"category\": categorySchema,",
+					"    \"note\": noteSchema,",
+					"    \"phone\": phoneSchema,",
+					"    \"time\": timeSchema,",
+					"    \"scheduleDay\": scheduleDaySchema,",
+					"    \"schedule\": scheduleSchema,",
+					"    \"service\": serviceSchema,",
+					"    \"resource\": resourceSchema,",
+					"    \"eligibility\": eligibilitySchema",
+					"});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

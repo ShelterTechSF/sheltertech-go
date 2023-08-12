@@ -1,0 +1,23 @@
+name: api-postman
+
+env:
+  DOCKER_REPO: sheltertechsf/sheltertech-go
+  NODE_VERSION: 16.x
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test_postman:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.x'
+      - uses: actions/setup-node@v2
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: yarn global add newman
+      - run: ./postman/postman.sh
