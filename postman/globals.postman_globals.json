@@ -4,7 +4,7 @@
   "values": [
     {
       "key": "base_url",
-      "value": "http://askdarcel.lvh.me:3001",
+      "value": "http://askdarcel.lvh.me:3001/api",
       "type": "text",
       "enabled": true
     }
