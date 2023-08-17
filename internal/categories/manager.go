@@ -23,6 +23,15 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
+// Get lists all existing categories
+//
+//	@Summary		Get Categories
+//	@Description	get all categories
+//	@Tags			categories
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}	categories.Categories
+//	@Router			/categories [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	topLevelString := r.URL.Query().Get("top_level")
 	var topLevel *bool
