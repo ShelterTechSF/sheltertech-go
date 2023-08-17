@@ -1,0 +1,58 @@
+basePath: /api/v1
+definitions:
+  categories.Categories:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/categories.Category'
+        type: array
+    type: object
+  categories.Category:
+    properties:
+      featured:
+        type: boolean
+      id:
+        type: integer
+      name:
+        type: string
+      top_level:
+        type: boolean
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server celler server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /categories:
+    get:
+      consumes:
+      - application/json
+      description: get all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/categories.Categories'
+            type: array
+      summary: Get Categories
+      tags:
+      - categories
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

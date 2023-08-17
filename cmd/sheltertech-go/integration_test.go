@@ -63,6 +63,20 @@ func TestPostServicesChangeRequest(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
 }
 
+func TestSwaggerDocs(t *testing.T) {
+	startServer()
+
+	url := "http://localhost:3002/swagger/index.html"
+
+	req, err := http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
 func startServer() {
 	viper.SetDefault("DB_USER", "postgres")
 	viper.SetDefault("DB_HOST", "localhost")
