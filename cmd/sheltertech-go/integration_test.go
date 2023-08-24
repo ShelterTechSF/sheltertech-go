@@ -77,6 +77,23 @@ func TestSwaggerDocs(t *testing.T) {
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
 
+func TestPrometheusMetrics(t *testing.T) {
+	startServer()
+
+	url := "http://localhost:3001/metrics"
+
+	req, err := http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	assert.True(t, len(body) > 0)
+	assert.Equal(t, 200, res.StatusCode)
+}
+
 func startServer() {
 	viper.SetDefault("DB_USER", "postgres")
 	viper.SetDefault("DB_HOST", "localhost")

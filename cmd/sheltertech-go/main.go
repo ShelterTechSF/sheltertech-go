@@ -2,12 +2,14 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sheltertechsf/sheltertech-go/docs"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -47,6 +49,7 @@ func main() {
 	changeRequestManager := changerequest.New(dbManager)
 
 	r := chi.NewRouter()
+	r.Use(prometheusMiddleware)
 	r.Use(middleware.Logger)
 	r.Get("/api/categories", categoriesManager.Get)
 	r.Get("/api/categories/{id}", categoriesManager.GetByID)
@@ -54,6 +57,8 @@ func main() {
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 
 	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
+
+	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	docs.SwaggerInfo.Title = "Swagger Example API"
 	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
@@ -65,6 +70,7 @@ func main() {
 	rg := gin.Default()
 	rg.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	go rg.Run(":3002")
+
 
 	http.ListenAndServe(":3001", r)
 }
