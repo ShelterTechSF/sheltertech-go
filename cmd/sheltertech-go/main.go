@@ -33,8 +33,8 @@ import (
 
 //	@securityDefinitions.basic	BasicAuth
 
-//	@externalDocs.description	OpenAPI
-//	@externalDocs.url			https://swagger.io/resources/open-api/
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
 
 	viper.AutomaticEnv()
@@ -43,6 +43,7 @@ func main() {
 	dbPort := viper.GetString("DB_PORT")
 	dbName := viper.GetString("DB_NAME")
 	dbPass := viper.GetString("DB_PASS")
+	serveDocs := viper.GetBool("SERVE_DOCS")
 
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)
@@ -67,10 +68,12 @@ func main() {
 	docs.SwaggerInfo.BasePath = "/v2"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
-	rg := gin.Default()
-	rg.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	go rg.Run(":3002")
-
+	if serveDocs {
+		gin.SetMode(gin.ReleaseMode)
+		rg := gin.Default()
+		rg.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		go rg.Run(":3002")
+	}
 
 	http.ListenAndServe(":3001", r)
 }

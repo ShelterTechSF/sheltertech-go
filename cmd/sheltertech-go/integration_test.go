@@ -64,6 +64,7 @@ func TestPostServicesChangeRequest(t *testing.T) {
 }
 
 func TestSwaggerDocs(t *testing.T) {
+	viper.SetDefault("SERVE_DOCS", "true")
 	startServer()
 
 	url := "http://localhost:3002/swagger/index.html"
@@ -75,6 +76,7 @@ func TestSwaggerDocs(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, res.StatusCode)
+	viper.SetDefault("SERVE_DOCS", "false")
 }
 
 func TestPrometheusMetrics(t *testing.T) {
