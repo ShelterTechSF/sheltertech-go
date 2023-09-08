@@ -1,19 +1,23 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
+	"fmt"
+	"net/http"
+
 	"github.com/sheltertechsf/sheltertech-go/docs"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
+	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"net/http"
 )
 
 //	@title			Swagger Example API
@@ -49,9 +53,23 @@ func main() {
 	categoriesManager := categories.New(dbManager)
 	changeRequestManager := changerequest.New(dbManager)
 
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
+		EnableTracing: true,
+		// Set TracesSampleRate to 1.0 to capture 100%
+		// of transactions for performance monitoring.
+		// We recommend adjusting this value in production,
+		TracesSampleRate: 1.0,
+	}); err != nil {
+		fmt.Printf("Sentry initialization failed: %v", err)
+	}
+
+	sentryHandler := sentryhttp.New(sentryhttp.Options{})
+
 	r := chi.NewRouter()
 	r.Use(prometheusMiddleware)
 	r.Use(middleware.Logger)
+	r.Use(sentryHandler.Handle)
 	r.Get("/api/categories", categoriesManager.Get)
 	r.Get("/api/categories/{id}", categoriesManager.GetByID)
 	r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
