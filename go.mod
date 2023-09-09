@@ -5,6 +5,7 @@ go 1.20
 require github.com/go-chi/chi/v5 v5.0.10
 
 require (
+	github.com/getsentry/sentry-go v0.24.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/lib/pq v1.10.9
 	github.com/prometheus/client_golang v1.16.0
@@ -42,7 +43,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
