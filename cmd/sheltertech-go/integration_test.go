@@ -57,7 +57,8 @@ func TestGetCategories(t *testing.T) {
 	err = json.Unmarshal(body, &categoriesResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, 121, categoriesResponse[0].Id, "1st element id should equal 121")
+	assert.Equal(t, 121, categoriesResponse[0].Id, "12-step ID 121")
+	assert.Equal(t, "12-Step", categoriesResponse[0].Name, "12-step is the first category ordered by Name")
 }
 
 func TestPostServicesChangeRequest(t *testing.T) {
