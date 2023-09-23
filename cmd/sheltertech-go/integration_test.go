@@ -39,6 +39,27 @@ func TestGetCategoriesFeatured(t *testing.T) {
 	assert.True(t, len(categoriesResponse.Categories) > 0)
 }
 
+func TestGetCategories(t *testing.T) {
+	startServer()
+
+	url := "http://localhost:3001/api/categories"
+
+	req, err := http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	categoriesResponse := []categories.Category{}
+
+	err = json.Unmarshal(body, &categoriesResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, 121, categoriesResponse[0].Id, "1st element id should equal 121")
+}
+
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
 
