@@ -5,7 +5,7 @@ go 1.20
 require github.com/go-chi/chi/v5 v5.0.10
 
 require (
-	github.com/getsentry/sentry-go v0.24.0
+	github.com/getsentry/sentry-go v0.24.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/lib/pq v1.10.9
 	github.com/prometheus/client_golang v1.16.0
