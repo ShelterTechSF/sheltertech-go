@@ -61,34 +61,42 @@ func TestGetCategories(t *testing.T) {
 	assert.Equal(t, "12-Step", categoriesResponse[0].Name, "12-step is the first category ordered by Name")
 }
 
-func TestGetCategoriesByID(t *testing.T) {
+
+func TestGetCategoryByID(t *testing.T) {
+	// baseUrl to avoid repitition and ease any future changes.
+	baseUrl := "http://localhost:3001/api/categories"
 	startServer()
 
-	// get all the categories, assumes 12 step is the first category
-	url := "http://localhost:3001/api/categories"
-	req, err := http.NewRequest("GET", url, nil)
-	res, err := http.DefaultClient.Do(req)
+	// Fetch a valid category ID.
+	res, err := http.Get(baseUrl)
+	require.NoError(t, err)
 	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
 	categoriesResponse := []categories.Category{}
-	json.Unmarshal(body, &categoriesResponse)
-	id := strconv.Itoa(categoriesResponse[0].Id)
-
-	// Use the found ID to query the byID api
-	url = "http://localhost:3001/api/categories/" + id
-	req, err = http.NewRequest("GET", url, nil)
+	err = json.Unmarshal(body, &categoriesResponse)
 	require.NoError(t, err)
+	require.NotEmpty(t, categoriesResponse, "Did not find any categories. Check database connection and baseUrl")
 
-	res, err = http.DefaultClient.Do(req)
+	// Use the ID found at [0] to query the GetByID api assert.
+	categoryId := strconv.Itoa(categoriesResponse[0].Id)
+	categoryName := categoriesResponse[0].Name
+
+	res, err = http.Get(baseUrl + "/" + categoryId)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	body, _ = ioutil.ReadAll(res.Body)
-	categoriesByIdResponse := categories.Category{}
-	err = json.Unmarshal(body, &categoriesByIdResponse)
+
+	body, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	assert.Equal(t, 121, categoriesByIdResponse.Id, "12-step ID 121")
-	assert.Equal(t, "12-Step", categoriesByIdResponse.Name, "12-step is the first category ordered by Name")
+	categoryResponse := categories.Category{}
+	err = json.Unmarshal(body, &categoryResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, categoryId, strconv.Itoa(categoryResponse.Id), "IDs should match")
+	assert.Equal(t, categoryName, categoryResponse.Name, "Names should match")
 }
 
 func TestPostServicesChangeRequest(t *testing.T) {
