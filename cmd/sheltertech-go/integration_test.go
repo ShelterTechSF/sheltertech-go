@@ -6,16 +6,16 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"testing"
-	"time"
-
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"testing"
+	"time"
 )
 
 func TestGetCategoriesFeatured(t *testing.T) {
@@ -37,6 +37,58 @@ func TestGetCategoriesFeatured(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.True(t, len(categoriesResponse.Categories) > 0)
+}
+
+func TestGetCategories(t *testing.T) {
+	startServer()
+
+	url := "http://localhost:3001/api/categories"
+
+	req, err := http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	categoriesResponse := []categories.Category{}
+
+	err = json.Unmarshal(body, &categoriesResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, 121, categoriesResponse[0].Id, "12-step ID 121")
+	assert.Equal(t, "12-Step", categoriesResponse[0].Name, "12-step is the first category ordered by Name")
+}
+
+func TestGetCategoriesByID(t *testing.T) {
+	startServer()
+
+	// get all the categories, assumes 12 step is the first category
+	url := "http://localhost:3001/api/categories"
+	req, err := http.NewRequest("GET", url, nil)
+	res, err := http.DefaultClient.Do(req)
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+	categoriesResponse := []categories.Category{}
+	json.Unmarshal(body, &categoriesResponse)
+	id := strconv.Itoa(categoriesResponse[0].Id)
+
+	// Use the found ID to query the byID api
+	url = "http://localhost:3001/api/categories/" + id
+	req, err = http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, _ = ioutil.ReadAll(res.Body)
+	categoriesByIdResponse := categories.Category{}
+	err = json.Unmarshal(body, &categoriesByIdResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, 121, categoriesByIdResponse.Id, "12-step ID 121")
+	assert.Equal(t, "12-Step", categoriesByIdResponse.Name, "12-step is the first category ordered by Name")
 }
 
 func TestPostServicesChangeRequest(t *testing.T) {
