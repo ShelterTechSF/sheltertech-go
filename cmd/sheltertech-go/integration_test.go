@@ -18,10 +18,12 @@ import (
 	"time"
 )
 
+const baseCategoryUrl string = "http://localhost:3001/api/categories"
+
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
 
-	url := "http://localhost:3001/api/categories/featured"
+	url := baseCategoryUrl + "/featured"
 
 	req, err := http.NewRequest("GET", url, nil)
 	require.NoError(t, err)
@@ -42,9 +44,7 @@ func TestGetCategoriesFeatured(t *testing.T) {
 func TestGetCategories(t *testing.T) {
 	startServer()
 
-	url := "http://localhost:3001/api/categories"
-
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", baseCategoryUrl, nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
@@ -61,14 +61,11 @@ func TestGetCategories(t *testing.T) {
 	assert.Equal(t, "12-Step", categoriesResponse[0].Name, "12-step is the first category ordered by Name")
 }
 
-
 func TestGetCategoryByID(t *testing.T) {
-	// baseUrl to avoid repitition and ease any future changes.
-	baseUrl := "http://localhost:3001/api/categories"
 	startServer()
 
 	// Fetch a valid category ID.
-	res, err := http.Get(baseUrl)
+	res, err := http.Get(baseCategoryUrl)
 	require.NoError(t, err)
 	defer res.Body.Close()
 
@@ -84,7 +81,7 @@ func TestGetCategoryByID(t *testing.T) {
 	categoryId := strconv.Itoa(categoriesResponse[0].Id)
 	categoryName := categoriesResponse[0].Name
 
-	res, err = http.Get(baseUrl + "/" + categoryId)
+	res, err = http.Get(baseCategoryUrl + "/" + categoryId)
 	require.NoError(t, err)
 	defer res.Body.Close()
 
