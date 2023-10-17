@@ -118,6 +118,8 @@ func TestGetSubCategoriesByID(t *testing.T) {
 		err = json.Unmarshal(body, &subCategoryResponse)
 		if len(subCategoryResponse) > 0 {
 			foundSubCategories = true
+			assert.NotEmpty(t, subCategoryResponse[0].Name)
+			assert.NotEmpty(t, subCategoryResponse[0].Id)
 			break
 		}
 	}
