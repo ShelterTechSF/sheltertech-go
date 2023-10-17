@@ -96,6 +96,35 @@ func TestGetCategoryByID(t *testing.T) {
 	assert.Equal(t, categoryName, categoryResponse.Name, "Names should match")
 }
 
+func TestGetSubCategoriesByID(t *testing.T) {
+	startServer()
+
+	// Fetch all categories and loop until we find one with a subcategory
+	res, err := http.Get(baseCategoryUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	categoriesResponse := []categories.Category{}
+	err = json.Unmarshal(body, &categoriesResponse)
+
+	// Loop until we find a category with subCategories
+	foundSubCategories := false
+	for i := 0; i < len(categoriesResponse); i++ {
+		categoryId := strconv.Itoa(categoriesResponse[i].Id)
+		res, err = http.Get(baseCategoryUrl + "/subcategories/" + categoryId)
+		defer res.Body.Close()
+		body, err = ioutil.ReadAll(res.Body)
+		subCategoryResponse := []categories.Category{}
+		err = json.Unmarshal(body, &subCategoryResponse)
+		if len(subCategoryResponse) > 0 {
+			foundSubCategories = true
+			break
+		}
+	}
+
+	assert.Equal(t, foundSubCategories, true, "Subcategory API returns a valid result")
+}
+
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
 
