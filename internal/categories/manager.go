@@ -43,7 +43,8 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 		topLevel = &topLevelBool
 	}
 	dbCategories := m.DbClient.GetCategories(topLevel)
-	writeJson(w, fromDBTypeArray(dbCategories))
+	categories := fromDBTypeArray(dbCategories)
+	writeJson(w, categories)
 }
 
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
