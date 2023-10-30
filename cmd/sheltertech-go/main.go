@@ -74,6 +74,7 @@ func main() {
 	r.Get("/api/categories/{id}", categoriesManager.GetByID)
 	r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
+	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
 	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 

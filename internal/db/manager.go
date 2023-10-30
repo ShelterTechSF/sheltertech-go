@@ -53,6 +53,26 @@ func (m *Manager) GetCategories(topLevel *bool) []*Category {
 	return scanCategories(rows)
 }
 
+func (m *Manager) GetCategoryServiceCounts() []*CategoryCount {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(categoryServiceCounts)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanCategoryCounts(rows)
+}
+
+func (m *Manager) GetCategoryResourceCounts() []*CategoryCount {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(categoryResourceCounts)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanCategoryCounts(rows)
+}
+
 func (m *Manager) GetCategoriesByFeatured() []*Category {
 	var rows *sql.Rows
 	var err error
@@ -91,6 +111,21 @@ func scanCategories(rows *sql.Rows) []*Category {
 		categories = append(categories, &category)
 	}
 	return categories
+}
+
+func scanCategoryCounts(rows *sql.Rows) []*CategoryCount {
+	var counts []*CategoryCount
+	for rows.Next() {
+		var count CategoryCount
+		err := rows.Scan(&count.CategoryName, &count.Count)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		counts = append(counts, &count)
+	}
+	return counts
 }
 
 func scanCategory(row *sql.Row) *Category {

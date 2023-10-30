@@ -46,6 +46,33 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, fromDBTypeArray(dbCategories))
 }
 
+func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
+	var dtos map[string]CategoryCountDTO
+	dtos = make(map[string]CategoryCountDTO)
+
+	serviceCounts := m.DbClient.GetCategoryServiceCounts()
+	for _, serviceCount := range serviceCounts {
+		var dto CategoryCountDTO
+		dto.Name = serviceCount.CategoryName
+		dto.Services = serviceCount.Count
+		dtos[serviceCount.CategoryName] = dto
+	}
+
+	resourceCounts := m.DbClient.GetCategoryResourceCounts()
+	for _, resourceCount := range resourceCounts {
+		dto, ok := dtos[resourceCount.CategoryName]
+		if ok {
+			dto.Resources = resourceCount.Count
+		} else {
+			var dto CategoryCountDTO
+			dto.Name = resourceCount.CategoryName
+			dto.Services = resourceCount.Count
+		}
+		dtos[resourceCount.CategoryName] = dto
+	}
+	writeJson(w, dtos)
+}
+
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	categoryId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {

@@ -10,3 +10,9 @@ type Category struct {
 type Categories struct {
 	Categories []*Category `json:"categories"`
 }
+
+type CategoryCountDTO struct {
+	Name      string `json:"name"`
+	Services  int    `json:services`
+	Resources int    `json:resources`
+}
