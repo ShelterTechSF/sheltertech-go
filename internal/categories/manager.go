@@ -51,6 +51,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 	}
+	// return json with 'categories' prefix
 	dbCategory := m.DbClient.GetCategoryByID(categoryId)
 	writeJson(w, fromDBType(dbCategory))
 }
