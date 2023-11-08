@@ -109,29 +109,29 @@ func TestGetCategoryByID(t *testing.T) {
 // 	categoriesResponse := new(categories.Categories)
 // 	err = json.Unmarshal(body, categoriesResponse)
 // 		require.NoError(t, err)
-// 		//require.NotNil(t, categoriesResponse.Categories, "Nothing found. Check database connection and baseUrl")
+// 		require.NotNil(t, categoriesResponse, "Nothing found. Check database connection and baseUrl")
 
-// 	// Loop categories to find one with a subcategory and store Id
-// 	foundSubCategories := false
-// 	for i := 0; i < len(categoriesResponse); i++ {
-// 		categoryId := categoriesResponse.Categories[i].Id
+	// Loop categories to find one with a subcategory and store Id
+	// foundSubCategories := false
+	// 	for _, category := range categoriesResponse {
+	// 	categoryId := category.Id
 
-// 		// Fetch with category Id found
-// 		res, err = http.Get(baseCategoryUrl + "/subcategories/" + fmt.Sprintf("%d", categoryId))
-// 		defer res.Body.Close()
+	// 	// Fetch with categoryId
+	// 	res, err = http.Get(baseCategoryUrl + "/subcategories/" + fmt.Sprintf("%d", categoryId))
+	// 	defer res.Body.Close()
 
-// 		body, err = ioutil.ReadAll(res.Body)
-// 		require.NoError(t, err)
+	// 	body, err = ioutil.ReadAll(res.Body)
+	// 	require.NoError(t, err)
 
 // 		subCategoryResponse := new(categories.Category)
 // 		err = json.Unmarshal(body, subCategoryResponse)
 // 		require.NoError(t, err)
 
-// 		if len(subCategoryResponse.Name) > 0 {
+// 		if len(subCategoryResponse) > 0 {
 // 			foundSubCategories = true
-// 			require.NotNil(t, subCategoryResponse.Id, "Pulled by Id Cat with Sub")
+// 			require.NotNil(t, subCategoryResponse.Id, "Pulled a Category with a Sub by Id")
 // 			break
-// 		}
+// }
 // 	}
 
 // 	assert.Equal(t, foundSubCategories, true, "Subcategory API returns a valid result")
