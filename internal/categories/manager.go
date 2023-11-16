@@ -47,12 +47,11 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
-	var dtos map[string]CategoryCountDTO
-	dtos = make(map[string]CategoryCountDTO)
+	dtos := make(map[string]CategoryCountDTO)
 
 	serviceCounts := m.DbClient.GetCategoryServiceCounts()
 	for _, serviceCount := range serviceCounts {
-		var dto CategoryCountDTO
+		dto := CategoryCountDTO{}
 		dto.Name = serviceCount.CategoryName
 		dto.Services = serviceCount.Count
 		dtos[serviceCount.CategoryName] = dto
