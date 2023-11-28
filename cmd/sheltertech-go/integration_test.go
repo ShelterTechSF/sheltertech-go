@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"bytes"
 	"encoding/json"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
@@ -23,7 +24,7 @@ import (
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
 
-	url := "http://localhost:3001/api/categories/featured"
+	url := baseCategoryUrl + "/featured"
 
 	req, err := http.NewRequest("GET", url, nil)
 	require.NoError(t, err)
@@ -44,9 +45,7 @@ func TestGetCategoriesFeatured(t *testing.T) {
 func TestGetCategories(t *testing.T) {
 	startServer()
 
-	url := "http://localhost:3001/api/categories"
-
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", baseCategoryUrl, nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
@@ -98,6 +97,48 @@ func TestGetCategoryByID(t *testing.T) {
 
 	assert.Equal(t, categoryResponse.Id, categoryId, "Category Id is a match")
 }
+
+// func TestGetSubCategoriesByID(t *testing.T) {
+// 	startServer()
+
+// 	// Fetch categories
+// 	res, err := http.Get(baseCategoryUrl)
+// 	require.NoError(t, err)
+// 	defer res.Body.Close()
+
+// 	body, err := ioutil.ReadAll(res.Body)
+// 	require.NoError(t, err)
+
+// 	categoriesResponse := new(categories.Categories)
+// 	err = json.Unmarshal(body, categoriesResponse)
+// 		require.NoError(t, err)
+// 		require.NotNil(t, categoriesResponse, "Nothing found. Check database connection and baseUrl")
+
+	// Loop categories to find one with a subcategory and store Id
+	// foundSubCategories := false
+	// 	for _, category := range categoriesResponse {
+	// 	categoryId := category.Id
+
+	// 	// Fetch with categoryId
+	// 	res, err = http.Get(baseCategoryUrl + "/subcategories/" + fmt.Sprintf("%d", categoryId))
+	// 	defer res.Body.Close()
+
+	// 	body, err = ioutil.ReadAll(res.Body)
+	// 	require.NoError(t, err)
+
+// 		subCategoryResponse := new(categories.Category)
+// 		err = json.Unmarshal(body, subCategoryResponse)
+// 		require.NoError(t, err)
+
+// 		if len(subCategoryResponse) > 0 {
+// 			foundSubCategories = true
+// 			require.NotNil(t, subCategoryResponse.Id, "Pulled a Category with a Sub by Id")
+// 			break
+// }
+// 	}
+
+// 	assert.Equal(t, foundSubCategories, true, "Subcategory API returns a valid result")
+// }
 
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
