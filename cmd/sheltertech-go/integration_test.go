@@ -1,5 +1,6 @@
 //go:build integration
 // +build integration
+// \cmd\sheltertech-go> go test -tags=integration
 
 package main
 
@@ -13,10 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"testing"
 	"time"
+	"fmt"
 )
+
 
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
@@ -52,43 +54,49 @@ func TestGetCategories(t *testing.T) {
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
 
-	categoriesResponse := []categories.Category{}
+	categoriesResponse := &categories.Categories{}
 
-	err = json.Unmarshal(body, &categoriesResponse)
+	err = json.Unmarshal(body, categoriesResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, 121, categoriesResponse[0].Id, "12-step ID 121")
-	assert.Equal(t, "12-Step", categoriesResponse[0].Name, "12-step is the first category ordered by Name")
+	assert.Equal(t, 121, (*categoriesResponse).Categories[0].Id, "12-step ID 121")
+	assert.Equal(t, "12-Step", (*categoriesResponse).Categories[0].Name, "12-step is the first category ordered by Name")
 }
 
-func TestGetCategoriesByID(t *testing.T) {
+func TestGetCategoryByID(t *testing.T) {
 	startServer()
 
-	// get all the categories, assumes 12 step is the first category
-	url := "http://localhost:3001/api/categories"
-	req, err := http.NewRequest("GET", url, nil)
-	res, err := http.DefaultClient.Do(req)
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
-	categoriesResponse := []categories.Category{}
-	json.Unmarshal(body, &categoriesResponse)
-	id := strconv.Itoa(categoriesResponse[0].Id)
+	const categoryUrl string = "http://localhost:3001/api/categories"
 
-	// Use the found ID to query the byID api
-	url = "http://localhost:3001/api/categories/" + id
-	req, err = http.NewRequest("GET", url, nil)
-	require.NoError(t, err)
-
-	res, err = http.DefaultClient.Do(req)
+	// Fetch categories.
+	res, err := http.Get(categoryUrl)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	body, _ = ioutil.ReadAll(res.Body)
-	categoriesByIdResponse := categories.Category{}
-	err = json.Unmarshal(body, &categoriesByIdResponse)
+
+	body, err := ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	assert.Equal(t, 121, categoriesByIdResponse.Id, "12-step ID 121")
-	assert.Equal(t, "12-Step", categoriesByIdResponse.Name, "12-step is the first category ordered by Name")
+	categoriesResponse := new(categories.Categories)
+	err = json.Unmarshal(body, categoriesResponse)
+	require.NoError(t, err)
+	require.NotEmpty(t, categoriesResponse.Categories, "Nothing found. Check database connection and baseUrl")
+
+	// Store the first category Id found.
+	categoryId := categoriesResponse.Categories[0].Id
+
+	// Fetch the category by stored Id.
+	res, err = http.Get(categoryUrl + "/" + fmt.Sprintf("%d", categoryId))
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err = ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	categoryResponse := new(categories.Category)
+	err = json.Unmarshal(body, categoryResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, categoryResponse.Id, categoryId, "Category Id is a match")
 }
 
 func TestPostServicesChangeRequest(t *testing.T) {
