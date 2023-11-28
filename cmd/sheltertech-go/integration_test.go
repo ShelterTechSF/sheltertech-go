@@ -1,13 +1,14 @@
 //go:build integration
 // +build integration
-// \cmd\sheltertech-go> go test -tags=integration
+
+// go test -tags=integration
 
 package main
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/spf13/viper"
@@ -17,9 +18,7 @@ import (
 	"net/http"
 	"testing"
 	"time"
-	"fmt"
 )
-
 
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
@@ -67,7 +66,6 @@ func TestGetCategoryByID(t *testing.T) {
 
 	const categoryUrl string = "http://localhost:3001/api/categories"
 
-	// Fetch categories.
 	res, err := http.Get(categoryUrl)
 	require.NoError(t, err)
 	defer res.Body.Close()
@@ -80,10 +78,8 @@ func TestGetCategoryByID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, categoriesResponse.Categories, "Nothing found. Check database connection and baseUrl")
 
-	// Store the first category Id found.
 	categoryId := categoriesResponse.Categories[0].Id
 
-	// Fetch the category by stored Id.
 	res, err = http.Get(categoryUrl + "/" + fmt.Sprintf("%d", categoryId))
 	require.NoError(t, err)
 	defer res.Body.Close()
@@ -97,48 +93,6 @@ func TestGetCategoryByID(t *testing.T) {
 
 	assert.Equal(t, categoryResponse.Id, categoryId, "Category Id is a match")
 }
-
-// func TestGetSubCategoriesByID(t *testing.T) {
-// 	startServer()
-
-// 	// Fetch categories
-// 	res, err := http.Get(baseCategoryUrl)
-// 	require.NoError(t, err)
-// 	defer res.Body.Close()
-
-// 	body, err := ioutil.ReadAll(res.Body)
-// 	require.NoError(t, err)
-
-// 	categoriesResponse := new(categories.Categories)
-// 	err = json.Unmarshal(body, categoriesResponse)
-// 		require.NoError(t, err)
-// 		require.NotNil(t, categoriesResponse, "Nothing found. Check database connection and baseUrl")
-
-	// Loop categories to find one with a subcategory and store Id
-	// foundSubCategories := false
-	// 	for _, category := range categoriesResponse {
-	// 	categoryId := category.Id
-
-	// 	// Fetch with categoryId
-	// 	res, err = http.Get(baseCategoryUrl + "/subcategories/" + fmt.Sprintf("%d", categoryId))
-	// 	defer res.Body.Close()
-
-	// 	body, err = ioutil.ReadAll(res.Body)
-	// 	require.NoError(t, err)
-
-// 		subCategoryResponse := new(categories.Category)
-// 		err = json.Unmarshal(body, subCategoryResponse)
-// 		require.NoError(t, err)
-
-// 		if len(subCategoryResponse) > 0 {
-// 			foundSubCategories = true
-// 			require.NotNil(t, subCategoryResponse.Id, "Pulled a Category with a Sub by Id")
-// 			break
-// }
-// 	}
-
-// 	assert.Equal(t, foundSubCategories, true, "Subcategory API returns a valid result")
-// }
 
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
