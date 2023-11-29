@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const categoryUrl string = "http://localhost:3001/api/categories"
+const categoryUrl = "http://localhost:3001/api/categories"
 
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
