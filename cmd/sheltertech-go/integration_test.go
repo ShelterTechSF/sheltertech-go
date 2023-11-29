@@ -20,10 +20,12 @@ import (
 	"time"
 )
 
+const categoryUrl string = "http://localhost:3001/api/categories"
+
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
 
-	url := baseCategoryUrl + "/featured"
+	url := categoryUrl + "/featured"
 
 	req, err := http.NewRequest("GET", url, nil)
 	require.NoError(t, err)
@@ -44,7 +46,7 @@ func TestGetCategoriesFeatured(t *testing.T) {
 func TestGetCategories(t *testing.T) {
 	startServer()
 
-	req, err := http.NewRequest("GET", baseCategoryUrl, nil)
+	req, err := http.NewRequest("GET", categoryUrl, nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
@@ -63,8 +65,6 @@ func TestGetCategories(t *testing.T) {
 
 func TestGetCategoryByID(t *testing.T) {
 	startServer()
-
-	const categoryUrl string = "http://localhost:3001/api/categories"
 
 	res, err := http.Get(categoryUrl)
 	require.NoError(t, err)
