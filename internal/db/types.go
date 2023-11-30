@@ -27,3 +27,8 @@ type Service struct {
 	Id         int
 	ResourceId int
 }
+
+type CategoryCount struct {
+	CategoryName string
+	Count        int
+}

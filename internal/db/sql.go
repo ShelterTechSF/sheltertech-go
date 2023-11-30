@@ -19,6 +19,26 @@ FROM public.categories
 WHERE id = $1
 `
 
+const categoryServiceCounts = `
+SELECT c.name, count(s.id) as services
+FROM categories c
+JOIN categories_services cs ON cs.category_id = c.id
+JOIN services s ON s.id = cs.service_id
+WHERE s.status = 1
+GROUP BY c.name
+ORDER BY c.name asc
+`
+
+const categoryResourceCounts = `
+SELECT c.name, count(r.id) as resources
+FROM categories c
+JOIN categories_resources cr ON cr.category_id = c.id
+JOIN resources r ON r.id = cr.resource_id
+WHERE r.status = 1
+GROUP BY c.name
+ORDER BY c.name asc
+`
+
 const categoriesByFeaturedSql = `
 SELECT id, name, top_level, featured 
 FROM public.categories
