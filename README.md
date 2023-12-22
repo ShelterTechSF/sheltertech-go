@@ -2,19 +2,19 @@
 
 This repository contains the beginnings of a Golang implementation of  https://github.com/ShelterTechSF/askdarcel-api/
 
-## Testing
+## Integrate with askdarcel-api and askdarcel-web stack
 
 This repository requires running the docker-compose setup inside https://github.com/ShelterTechSF/askdarcel-api/blob/master/docker-compose.yml
 
 The docker-compose in this repository links to the same docker network `askdarcel` and connects to the database defined at https://github.com/ShelterTechSF/askdarcel-api/blob/master/docker-compose.yml#L4
 
-To start the server in the docker network
+To start the server in the docker network connected to the existing askdarcel-web and askdarcel-api services
 ```
 make run
 ```
-To test
+To test, you just need to provide the `v2` path param in front of any existing API route for Rails API.
 ```
-curl -s localhost:3001/api/categories | jq 
+curl -s localhost:8080/api/v2/categories | jq
 ```
 
 ## Implementation
