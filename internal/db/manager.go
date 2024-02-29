@@ -98,6 +98,138 @@ func (m *Manager) GetCategoryByID(categoryId int) *Category {
 	return scanCategory(row)
 }
 
+func (m *Manager) GetCategoriesByServiceID(serviceId int) []*Category {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(categoriesByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanCategories(rows)
+}
+
+func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(notesByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanNotes(rows)
+}
+
+func scanNotes(rows *sql.Rows) []*Note {
+	var notes []*Note
+	for rows.Next() {
+		var note Note
+		err := rows.Scan(&note.Id, &note.Note, &note.CreatedAt, &note.UpdatedAt)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		notes = append(notes, &note)
+	}
+	return notes
+}
+
+func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(addressesByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanAddresses(rows)
+}
+
+func scanAddresses(rows *sql.Rows) []*Address {
+	var addresses []*Address
+	for rows.Next() {
+		var address Address
+		err := rows.Scan(&address.Id)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		addresses = append(addresses, &address)
+	}
+	return addresses
+}
+func (m *Manager) GetEligibitiesByServiceID(serviceId int) []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(eligibilitiesByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+}
+
+func scanEligibilities(rows *sql.Rows) []*Eligibility {
+	var eligibilities []*Eligibility
+	for rows.Next() {
+		var eligibility Eligibility
+		err := rows.Scan(&eligibility.Id)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		eligibilities = append(eligibilities, &eligibility)
+	}
+	return eligibilities
+}
+func (m *Manager) GetInstructionsByServiceID(serviceId int) []*Instruction {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(instructionsByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanInstructions(rows)
+}
+
+func scanInstructions(rows *sql.Rows) []*Instruction {
+	var instructions []*Instruction
+	for rows.Next() {
+		var instruction Instruction
+		err := rows.Scan(&instruction.Id)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		instructions = append(instructions, &instruction)
+	}
+	return instructions
+}
+func (m *Manager) GetDocumentsByServiceID(serviceId int) []*Document {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(documentsByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanDocuments(rows)
+}
+
+func scanDocuments(rows *sql.Rows) []*Document {
+	var documents []*Document
+	for rows.Next() {
+		var document Document
+		err := rows.Scan(&document.Id)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		documents = append(documents, &document)
+	}
+	return documents
+}
+
 func scanCategories(rows *sql.Rows) []*Category {
 	var categories []*Category
 	for rows.Next() {
@@ -145,7 +277,7 @@ func scanCategory(row *sql.Row) *Category {
 
 func scanService(row *sql.Row) *Service {
 	var service Service
-	err := row.Scan(&service.Id, &service.ResourceId)
+	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -156,6 +288,36 @@ func scanService(row *sql.Row) *Service {
 		}
 	}
 	return &service
+}
+
+func scanProgram(row *sql.Row) *Program {
+	var program Program
+	err := row.Scan(&program.Id)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &program
+}
+
+func scanResource(row *sql.Row) *Resource {
+	var resource Resource
+	err := row.Scan(&resource.Id)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &resource
 }
 
 func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
@@ -181,4 +343,13 @@ func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
 func (m *Manager) GetServiceById(serviceId int) *Service {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)
+}
+
+func (m *Manager) GetProgramById(programId int) *Program {
+	row := m.DB.QueryRow(programByIDSql, programId)
+	return scanProgram(row)
+}
+func (m *Manager) GetResourceById(resourceId int) *Resource {
+	row := m.DB.QueryRow(resourceByIDSql, resourceId)
+	return scanResource(row)
 }

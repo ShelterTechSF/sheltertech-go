@@ -8,6 +8,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/services"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
@@ -52,6 +53,7 @@ func main() {
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)
 	changeRequestManager := changerequest.New(dbManager)
+	servicesManager := services.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -77,6 +79,7 @@ func main() {
 	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
 	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
+	r.Get("/api/services/{id}", servicesManager.GetByID)
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 

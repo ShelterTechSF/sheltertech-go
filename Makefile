@@ -12,7 +12,7 @@ run:
 	docker-compose build && docker-compose up
 
 ci-run:
-	docker-compose -f docker-compose.ci.yml build && docker-compose -f docker-compose.ci.yml up -d
+	docker-compose -f docker-compose.ci.yml build && docker-compose -f docker-compose.ci.yml up
 
 build:
 	go build -v ./...

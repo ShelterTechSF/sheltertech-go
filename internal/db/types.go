@@ -24,10 +24,72 @@ type ChangeRequest struct {
 }
 
 type Service struct {
-	Id         int
-	ResourceId int
+	Id                     int
+	CreatedAt              sql.NullTime
+	UpdatedAt              sql.NullTime
+	Name                   sql.NullString
+	LongDescription        sql.NullString
+	Eligibility            sql.NullString
+	RequiredDocuments      sql.NullString
+	Fee                    sql.NullString
+	ApplicationProcess     sql.NullString
+	ResourceId             sql.NullInt32
+	VerifiedAt             sql.NullTime
+	Email                  sql.NullString
+	Status                 sql.NullInt32
+	Certified              sql.NullBool
+	ProgramId              sql.NullInt32
+	InterpretationServices sql.NullString
+	Url                    sql.NullString
+	WaitTime               sql.NullString
+	ContactId              sql.NullInt32
+	FundingId              sql.NullInt32
+	AlternateName          sql.NullString
+	CertifiedAt            sql.NullTime
+	Featured               sql.NullBool
+	SourceAttribution      sql.NullInt32
+	InternalNote           sql.NullString
 }
 
+type Note struct {
+	Id         int
+	Note       sql.NullString
+	ResourceId sql.NullInt32
+	ServiceId  sql.NullInt32
+	CreatedAt  sql.NullTime
+	UpdatedAt  sql.NullTime
+}
+
+type Address struct {
+	Id        int
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+type Eligibility struct {
+	Id        int
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+type Instruction struct {
+	Id        int
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+type Document struct {
+	Id        int
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+type Resource struct {
+	Id        int
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+type Program struct {
+	Id        int
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
 type CategoryCount struct {
 	CategoryName string
 	Count        int
