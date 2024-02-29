@@ -2,7 +2,7 @@ module github.com/sheltertechsf/sheltertech-go
 
 go 1.20
 
-require github.com/go-chi/chi/v5 v5.0.11
+require github.com/go-chi/chi/v5 v5.0.12
 
 require (
 	github.com/getsentry/sentry-go v0.27.0
