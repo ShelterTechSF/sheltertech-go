@@ -53,7 +53,7 @@ func FromDBType(dbService *db.Service) *Service {
 	service := &Service{
 		AlternateName:          dbService.AlternateName.String,
 		ApplicationProcess:     dbService.ApplicationProcess.String,
-		Certified:              dbService.Certified.Bool,
+		Certified:              dbService.Certified,
 		Eligibility:            dbService.Eligibility.String,
 		Email:                  dbService.Email.String,
 		Fee:                    dbService.Fee.String,
@@ -71,7 +71,7 @@ func FromDBType(dbService *db.Service) *Service {
 		Status:                 int(dbService.Status.Int32),
 		InternalNote:           dbService.InternalNote.String,
 		ShortDescription:       "temp",
-		UpdatedAt:              dbService.UpdatedAt.Time.String(),
+		UpdatedAt:              dbService.UpdatedAt.String(),
 	}
 	return service
 }

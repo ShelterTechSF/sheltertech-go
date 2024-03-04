@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Category struct {
@@ -25,8 +26,8 @@ type ChangeRequest struct {
 
 type Service struct {
 	Id                     int
-	CreatedAt              sql.NullTime
-	UpdatedAt              sql.NullTime
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 	Name                   sql.NullString
 	LongDescription        sql.NullString
 	Eligibility            sql.NullString
@@ -37,7 +38,7 @@ type Service struct {
 	VerifiedAt             sql.NullTime
 	Email                  sql.NullString
 	Status                 sql.NullInt32
-	Certified              sql.NullBool
+	Certified              bool
 	ProgramId              sql.NullInt32
 	InterpretationServices sql.NullString
 	Url                    sql.NullString
