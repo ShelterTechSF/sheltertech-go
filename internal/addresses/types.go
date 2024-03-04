@@ -14,7 +14,7 @@ func FromAddressDBType(dbAddress *db.Address) *Address {
 }
 
 func FromAddressesDBTypeArray(dbAddresses []*db.Address) []*Address {
-	var addresses []*Address
+	addresses := []*Address{}
 	for _, dbAddress := range dbAddresses {
 		addresses = append(addresses, FromAddressDBType(dbAddress))
 	}

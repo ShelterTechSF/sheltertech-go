@@ -55,7 +55,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		response.Program = programs.FromDBProgramType(m.DbClient.GetProgramById(int(dbService.ProgramId.Int32)))
 	}
 	if dbService.ResourceId.Valid {
-		response.Resource = resources.FromDBResourceType(m.DbClient.GetResourceById(int(dbService.ResourceId.Int32)))
+		response.Resource = resources.FromDBType(m.DbClient.GetResourceById(int(dbService.ResourceId.Int32)))
 	}
 	serviceResponse := &ServiceResponse{
 		Service: response,

@@ -3,12 +3,16 @@ package notes
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Note struct {
-	Id int `json:"id"`
+	Id   int     `json:"id"`
+	Note *string `json:"note"`
 }
 
 func FromNoteDBType(dbNote *db.Note) *Note {
 	note := &Note{
 		Id: dbNote.Id,
+	}
+	if dbNote.Note.Valid {
+		note.Note = &dbNote.Note.String
 	}
 	return note
 }

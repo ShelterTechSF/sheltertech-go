@@ -6,7 +6,7 @@ type Resource struct {
 	Id int `json:"id"`
 }
 
-func FromDBResourceType(dbResource *db.Resource) *Resource {
+func FromDBType(dbResource *db.Resource) *Resource {
 	resource := &Resource{
 		Id: dbResource.Id,
 	}

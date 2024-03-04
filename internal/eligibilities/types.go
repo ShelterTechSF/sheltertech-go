@@ -14,7 +14,7 @@ func FromEligibilityDBType(dbEligibility *db.Eligibility) *Eligibility {
 }
 
 func FromEligibilitiesDBTypeArray(dbEligibilities []*db.Eligibility) []*Eligibility {
-	var eligibilities []*Eligibility
+	eligibilities := []*Eligibility{}
 	for _, dbEligibility := range dbEligibilities {
 		eligibilities = append(eligibilities, FromEligibilityDBType(dbEligibility))
 	}

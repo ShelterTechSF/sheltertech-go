@@ -14,7 +14,7 @@ func FromInstructionDBType(dbInstruction *db.Instruction) *Instruction {
 }
 
 func FromInstructionDBTypeArray(dbInstructions []*db.Instruction) []*Instruction {
-	var instructions []*Instruction
+	instructions := []*Instruction{}
 	for _, dbInstruction := range dbInstructions {
 		instructions = append(instructions, FromInstructionDBType(dbInstruction))
 	}

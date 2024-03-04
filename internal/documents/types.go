@@ -14,7 +14,7 @@ func FromDocumentDBType(dbDocument *db.Document) *Document {
 }
 
 func FromDocumentDBTypeArray(dbDocuments []*db.Document) []*Document {
-	var documents []*Document
+	documents := []*Document{}
 	for _, dbDocument := range dbDocuments {
 		documents = append(documents, FromDocumentDBType(dbDocument))
 	}

@@ -107,11 +107,11 @@ func TestGetServiceByID(t *testing.T) {
 	body, err := ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	serviceResponse := new(services.Service)
+	serviceResponse := new(services.ServiceResponse)
 	err = json.Unmarshal(body, serviceResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, serviceResponse.Id, serviceId, "Service Id is a match")
+	assert.Equal(t, serviceResponse.Service.Id, serviceId, "Service Id is a match")
 }
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
@@ -134,7 +134,7 @@ func TestPostServicesChangeRequest(t *testing.T) {
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
 }
 
 func TestSwaggerDocs(t *testing.T) {
