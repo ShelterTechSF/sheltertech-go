@@ -104,9 +104,25 @@ type Document struct {
 	UpdatedAt   sql.NullTime
 }
 type Resource struct {
-	Id        int
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	Id                int
+	AlternateName     sql.NullString
+	Certified         sql.NullBool
+	Email             sql.NullString
+	LegalStatus       sql.NullString
+	LongDescription   sql.NullString
+	Name              string
+	ShortDescription  sql.NullString
+	Status            sql.NullString
+	VerifiedAt        sql.NullString
+	Website           sql.NullString
+	CertifiedAt       sql.NullString
+	Featured          sql.NullBool
+	SourceAttribution sql.NullString
+	InternalNote      sql.NullString
+	CreatedAt         sql.NullTime
+	UpdatedAt         sql.NullTime
+	ContactId         sql.NullInt32
+	FundingId         sql.NullInt32
 }
 type Program struct {
 	Id            int
@@ -115,6 +131,11 @@ type Program struct {
 	Description   sql.NullString
 	CreatedAt     sql.NullTime
 	UpdatedAt     sql.NullTime
+}
+
+type Schedule struct {
+	Id         int
+	HoursKnown bool
 }
 type CategoryCount struct {
 	CategoryName string

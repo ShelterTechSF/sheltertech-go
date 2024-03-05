@@ -13,6 +13,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/programs"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
+	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
 	"log"
 	"net/http"
 	"strconv"
@@ -51,6 +52,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	response.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(m.DbClient.GetEligibitiesByServiceID(serviceId))
 	response.Instructions = instructions.FromInstructionDBTypeArray(m.DbClient.GetInstructionsByServiceID(serviceId))
 	response.Documents = documents.FromDocumentDBTypeArray(m.DbClient.GetDocumentsByServiceID(serviceId))
+	response.Schedule = schedules.FromDBType(m.DbClient.GetScheduleByServiceId(serviceId))
 	if dbService.ProgramId.Valid {
 		response.Program = programs.FromDBProgramType(m.DbClient.GetProgramById(int(dbService.ProgramId.Int32)))
 	}

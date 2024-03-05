@@ -229,7 +229,6 @@ func scanDocuments(rows *sql.Rows) []*Document {
 	}
 	return documents
 }
-
 func scanCategories(rows *sql.Rows) []*Category {
 	var categories []*Category
 	for rows.Next() {
@@ -307,7 +306,7 @@ func scanProgram(row *sql.Row) *Program {
 
 func scanResource(row *sql.Row) *Resource {
 	var resource Resource
-	err := row.Scan(&resource.Id)
+	err := row.Scan(&resource.Id, &resource.Name, &resource.ShortDescription, &resource.LongDescription, &resource.Website, &resource.VerifiedAt, &resource.Email, &resource.Status, &resource.Certified, &resource.AlternateName, &resource.LegalStatus, &resource.ContactId, &resource.FundingId, &resource.CertifiedAt, &resource.Featured, &resource.SourceAttribution, &resource.InternalNote)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -318,6 +317,21 @@ func scanResource(row *sql.Row) *Resource {
 		}
 	}
 	return &resource
+}
+
+func scanSchedule(row *sql.Row) *Schedule {
+	var schedule Schedule
+	err := row.Scan(&schedule.Id, &schedule.HoursKnown)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &schedule
 }
 
 func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
@@ -352,4 +366,9 @@ func (m *Manager) GetProgramById(programId int) *Program {
 func (m *Manager) GetResourceById(resourceId int) *Resource {
 	row := m.DB.QueryRow(resourceByIDSql, resourceId)
 	return scanResource(row)
+}
+
+func (m *Manager) GetScheduleByServiceId(serviceId int) *Schedule {
+	row := m.DB.QueryRow(scheduleByServiceIDSql, serviceId)
+	return scanSchedule(row)
 }

@@ -3,12 +3,69 @@ package resources
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Resource struct {
-	Id int `json:"id"`
+	Id                int     `json:"id"`
+	AlternateName     *string `json:"alternate_name"`
+	Certified         *bool   `json:"certified"`
+	Email             *string `json:"email"`
+	LegalStatus       *string `json:"legal_status"`
+	LongDescription   *string `json:"long_description"`
+	Name              string  `json:"name"`
+	ShortDescription  *string `json:"short_description"`
+	Status            *string `json:"status"`
+	VerifiedAt        *string `json:"verified_at"`
+	Website           *string `json:"website"`
+	CertifiedAt       *string `json:"certified_at"`
+	Featured          *bool   `json:"featured"`
+	SourceAttribution *string `json:"source_attribution"`
+	InternalNote      *string `json:"internal_note"`
 }
 
 func FromDBType(dbResource *db.Resource) *Resource {
 	resource := &Resource{
-		Id: dbResource.Id,
+		Id:   dbResource.Id,
+		Name: dbResource.Name,
 	}
+	if dbResource.AlternateName.Valid {
+		resource.AlternateName = &dbResource.AlternateName.String
+	}
+	if dbResource.Certified.Valid {
+		certified := dbResource.Certified.Bool
+		resource.Certified = &certified
+	}
+	if dbResource.Email.Valid {
+		resource.Email = &dbResource.Email.String
+	}
+	if dbResource.LegalStatus.Valid {
+		resource.LegalStatus = &dbResource.LegalStatus.String
+	}
+	if dbResource.LongDescription.Valid {
+		resource.LongDescription = &dbResource.LongDescription.String
+	}
+	if dbResource.ShortDescription.Valid {
+		resource.ShortDescription = &dbResource.ShortDescription.String
+	}
+	if dbResource.Status.Valid {
+		resource.Status = &dbResource.Status.String
+	}
+	if dbResource.VerifiedAt.Valid {
+		resource.VerifiedAt = &dbResource.VerifiedAt.String
+	}
+	if dbResource.Website.Valid {
+		resource.Website = &dbResource.Website.String
+	}
+	if dbResource.CertifiedAt.Valid {
+		resource.CertifiedAt = &dbResource.CertifiedAt.String
+	}
+	if dbResource.Featured.Valid {
+		featured := dbResource.Featured.Bool
+		resource.Featured = &featured
+	}
+	if dbResource.SourceAttribution.Valid {
+		resource.SourceAttribution = &dbResource.SourceAttribution.String
+	}
+	if dbResource.InternalNote.Valid {
+		resource.InternalNote = &dbResource.InternalNote.String
+	}
+
 	return resource
 }

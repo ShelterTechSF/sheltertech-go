@@ -106,7 +106,12 @@ WHERE id = $1
 `
 
 const resourceByIDSql = `
-SELECT id
+SELECT id, name, short_description, long_description, website, verified_at, email, status, certified, alternate_name, legal_status, contact_id, funding_id, certified_at, featured, source_attribution, internal_note 
 FROM public.resources
 WHERE id = $1
+`
+const scheduleByServiceIDSql = `
+SELECT s.id, s.hours_known
+FROM public.schedules s
+WHERE s.service_id = $1 LIMIT 1
 `

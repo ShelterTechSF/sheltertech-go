@@ -10,6 +10,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/programs"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
+	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
 )
 
 type ServiceResponse struct {
@@ -40,6 +41,7 @@ type Service struct {
 
 	Resource *resources.Resource `json:"resource"`
 	Program  *programs.Program   `json:"program"`
+	Schedule *schedules.Schedule `json:"schedule`
 
 	Notes         []*notes.Note                `json:"notes"`
 	Categories    []*categories.Category       `json:"categories"`
