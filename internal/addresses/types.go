@@ -5,23 +5,23 @@ import (
 )
 
 type Address struct {
-	Id             int `json:"id"`
-	Attention      *string
-	Address1       string
-	Address2       *string
-	Address3       *string
-	Address4       *string
-	City           string
-	StateProvince  string
-	PostalCode     string
-	ResourceId     *int
-	Latitude       *int
-	Longitude      *int
-	Online         *bool
-	Region         *string
-	Name           *string
-	Description    *string
-	Transportation *string
+	Id             int     `json:"id"`
+	Attention      *string `json:"attention"`
+	Address1       string  `json:"address_1"`
+	Address2       *string `json:"address_2"`
+	Address3       *string `json:"address_3"`
+	Address4       *string `json:"address_4"`
+	City           string  `json:"city"`
+	StateProvince  string  `json:"state_province"`
+	PostalCode     string  `json:"postal_code"`
+	ResourceId     *int    `json:"resource_id"`
+	Latitude       *int    `json:"latitude"`
+	Longitude      *int    `json:"longitude"`
+	Online         *bool   `json:"online"`
+	Region         *string `json:"region"`
+	Name           *string `json:"name"`
+	Description    *string `json:"description"`
+	Transportation *string `json:"transportation"`
 }
 
 func FromAddressDBType(dbAddress *db.Address) *Address {

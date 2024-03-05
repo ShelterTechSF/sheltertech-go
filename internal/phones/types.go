@@ -6,6 +6,8 @@ type Phone struct {
 	Id          int    `json:"id"`
 	Number      string `json:"number"`
 	ServiceType string `json:"service_type"`
+	Extension   string `json:"extension"`
+	CountryCode string `json:"country_code"`
 }
 
 func FromDBTypeArray(dbPhones []*db.Phone) []*Phone {
@@ -21,6 +23,8 @@ func FromDBType(dbPhone *db.Phone) *Phone {
 		Id:          dbPhone.Id,
 		Number:      dbPhone.Number,
 		ServiceType: dbPhone.ServiceType,
+		Extension:   "test",
+		CountryCode: "test",
 	}
 	return phone
 }
