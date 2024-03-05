@@ -17,17 +17,19 @@ type ServiceResponse struct {
 	Service *Service `json:"service"`
 }
 type Service struct {
-	Id                     int     `json:"id"`
+	UpdatedAt              string  `json:"updated_at"`
 	AlternateName          *string `json:"alternate_name"`
 	ApplicationProcess     *string `json:"application_process"`
 	Certified              bool    `json:"certified"`
 	Eligibility            *string `json:"eligibility"`
 	Email                  *string `json:"email"`
 	Fee                    *string `json:"fee"`
+	Id                     int     `json:"id"`
 	InterpretationServices *string `json:"interpretation_services"`
 	LongDescription        *string `json:"long_description"`
 	Name                   *string `json:"name"`
 	RequiredDocuments      *string `json:"required_documents"`
+	ShortDescription       *string `json:"short_description"`
 	Url                    *string `json:"url"`
 	VerifiedAt             *string `json:"verified_at"`
 	WaitTime               *string `json:"wait_time"`
@@ -36,19 +38,16 @@ type Service struct {
 	SourceAttribution      int     `json:"source_attribution"`
 	Status                 *int    `json:"status"`
 	InternalNote           *string `json:"internal_note"`
-	ShortDescription       *string `json:"short_description"`
-	UpdatedAt              string  `json:"updated_at"`
 
-	Resource *resources.Resource `json:"resource"`
-	Program  *programs.Program   `json:"program"`
-	Schedule *schedules.Schedule `json:"schedule"`
-
+	Schedule      *schedules.Schedule          `json:"schedule"`
 	Notes         []*notes.Note                `json:"notes"`
 	Categories    []*categories.Category       `json:"categories"`
 	Addresses     []*addresses.Address         `json:"addresses"`
 	Eligibilities []*eligibilities.Eligibility `json:"eligibilities"`
 	Instructions  []*instructions.Instruction  `json:"instructions"`
 	Documents     []*documents.Document        `json:"documents"`
+	Resource      *resources.Resource          `json:"resource"`
+	Program       *programs.Program            `json:"program"`
 }
 
 func FromDBType(dbService *db.Service) *Service {

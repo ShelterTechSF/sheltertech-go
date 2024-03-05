@@ -50,7 +50,7 @@ func FromScheduleDayDBType(dbScheduleDay *db.ScheduleDay) *ScheduleDay {
 	}
 	if dbScheduleDay.ClosesAt.Valid {
 		closesAt := int(dbScheduleDay.ClosesAt.Int32)
-		scheduleDay.OpensAt = &closesAt
+		scheduleDay.ClosesAt = &closesAt
 	}
 	if dbScheduleDay.OpenTime.Valid {
 		openTime := dbScheduleDay.OpenTime.Time.String()
