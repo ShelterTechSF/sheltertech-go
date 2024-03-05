@@ -3,12 +3,24 @@ package documents
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Document struct {
-	Id int `json:"id"`
+	Id          int     `json:"id"`
+	Name        *string `json:"name"`
+	Url         *string `json:"url"`
+	Description *string `json:"description"`
 }
 
 func FromDocumentDBType(dbDocument *db.Document) *Document {
 	document := &Document{
 		Id: dbDocument.Id,
+	}
+	if dbDocument.Name.Valid {
+		document.Name = &dbDocument.Name.String
+	}
+	if dbDocument.Url.Valid {
+		document.Url = &dbDocument.Url.String
+	}
+	if dbDocument.Description.Valid {
+		document.Description = &dbDocument.Description.String
 	}
 	return document
 }

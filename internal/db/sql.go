@@ -46,12 +46,12 @@ WHERE es.service_id = $1
 `
 
 const instructionsByServiceIDSql = `
-SELECT i.id
+SELECT i.id, i.instruction
 FROM public.instructions i
 WHERE i.service_id = $1
 `
 const documentsByServiceIDSql = `
-SELECT d.id
+SELECT d.id, d.name, d.url, d.description
 FROM public.documents d
 LEFT JOIN public.documents_services ds on d.id = ds.document_id
 WHERE ds.service_id = $1
@@ -99,7 +99,7 @@ WHERE id = $1
 `
 
 const programByIDSql = `
-SELECT id
+SELECT id, name, alterante_name, description
 FROM public.programs
 WHERE id = $1
 `

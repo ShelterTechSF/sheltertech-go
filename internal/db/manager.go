@@ -195,7 +195,7 @@ func scanInstructions(rows *sql.Rows) []*Instruction {
 	var instructions []*Instruction
 	for rows.Next() {
 		var instruction Instruction
-		err := rows.Scan(&instruction.Id)
+		err := rows.Scan(&instruction.Id, &instruction.Instruction)
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
@@ -219,7 +219,7 @@ func scanDocuments(rows *sql.Rows) []*Document {
 	var documents []*Document
 	for rows.Next() {
 		var document Document
-		err := rows.Scan(&document.Id)
+		err := rows.Scan(&document.Id, &document.Name, &document.Url, &document.Description)
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
@@ -292,7 +292,7 @@ func scanService(row *sql.Row) *Service {
 
 func scanProgram(row *sql.Row) *Program {
 	var program Program
-	err := row.Scan(&program.Id)
+	err := row.Scan(&program.Id, &program.Name, &program.AlternateName, &program.Description)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:

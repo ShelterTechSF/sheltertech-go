@@ -72,14 +72,18 @@ type Eligibility struct {
 	UpdatedAt sql.NullTime
 }
 type Instruction struct {
-	Id        int
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	Id          int
+	Instruction sql.NullString
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
 }
 type Document struct {
-	Id        int
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	Id          int
+	Name        sql.NullString
+	Url         sql.NullString
+	Description sql.NullString
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
 }
 type Resource struct {
 	Id        int
@@ -87,9 +91,12 @@ type Resource struct {
 	UpdatedAt sql.NullTime
 }
 type Program struct {
-	Id        int
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	Id            int
+	Name          sql.NullString
+	AlternateName sql.NullString
+	Description   sql.NullString
+	CreatedAt     sql.NullTime
+	UpdatedAt     sql.NullTime
 }
 type CategoryCount struct {
 	CategoryName string
