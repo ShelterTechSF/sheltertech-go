@@ -10,10 +10,11 @@ import (
 )
 
 type Resource struct {
-	Id                int     `json:"id"`
+	UpdatedAt         string  `json:"updated_at"`
 	AlternateName     *string `json:"alternate_name"`
 	Certified         *bool   `json:"certified"`
 	Email             *string `json:"email"`
+	Id                int     `json:"id"`
 	LegalStatus       *string `json:"legal_status"`
 	LongDescription   *string `json:"long_description"`
 	Name              string  `json:"name"`
@@ -26,18 +27,20 @@ type Resource struct {
 	SourceAttribution *string `json:"source_attribution"`
 	InternalNote      *string `json:"internal_note"`
 
-	Schedule *schedules.Schedule `json:"schedule"`
-
+	Services   []*ResourceService     `json:"services"`
+	Schedule   *schedules.Schedule    `json:"schedule"`
+	Phones     []*phones.Phone        `json:"phones"`
+	Addresses  []*addresses.Address   `json:"addresses"`
 	Notes      []*notes.Note          `json:"notes"`
 	Categories []*categories.Category `json:"categories"`
-	Addresses  []*addresses.Address   `json:"addresses"`
-	Phones     []*phones.Phone        `json:"phones"`
 }
 
 func FromDBType(dbResource *db.Resource) *Resource {
 	resource := &Resource{
-		Id:   dbResource.Id,
-		Name: dbResource.Name,
+		Id:        dbResource.Id,
+		Name:      dbResource.Name,
+		UpdatedAt: dbResource.UpdatedAt.Time.String(),
+		Services:  []*ResourceService{},
 	}
 	if dbResource.AlternateName.Valid {
 		resource.AlternateName = &dbResource.AlternateName.String
@@ -82,4 +85,7 @@ func FromDBType(dbResource *db.Resource) *Resource {
 	}
 
 	return resource
+}
+
+type ResourceService struct {
 }
