@@ -26,10 +26,23 @@ LEFT JOIN public.categories_services cs on c.id = cs.category_id
 WHERE cs.service_id = $1
 `
 
+const categoriesByResourceIDSql = `
+SELECT c.id, c.name, c.top_level, c.featured 
+FROM public.categories c
+LEFT JOIN public.categories_resources cs on c.id = cs.category_id
+WHERE cs.resource_id = $1
+`
+
 const notesByServiceIDSql = `
 SELECT n.id, n.note, n.created_at, n.updated_at 
 FROM public.notes n
 WHERE n.service_id = $1
+`
+
+const notesByResourceIDSql = `
+SELECT n.id, n.note, n.created_at, n.updated_at 
+FROM public.notes n
+WHERE n.resource_id = $1
 `
 
 const addressesByServiceIDSql = `
@@ -37,6 +50,18 @@ SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.
 FROM public.addresses a
 LEFT JOIN public.addresses_services ads on a.id = ads.address_id
 WHERE ads.service_id = $1
+`
+
+const addressesByResourceIDSql = `
+SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.city, a.state_province, a.postal_code, a.resource_id, a.latitude, a.longitude, a.online, a.region, a.name ,a.description , a.transportation
+FROM public.addresses a
+WHERE a.resource_id = $1
+`
+
+const phonesByResourceIDSql = `
+SELECT p.id, p.number, p.service_type
+FROM public.phones p
+WHERE p.resource_id = $1
 `
 
 const eligibilitiesByServiceIDSql = `
@@ -114,4 +139,16 @@ const scheduleByServiceIDSql = `
 SELECT s.id, s.hours_known
 FROM public.schedules s
 WHERE s.service_id = $1 LIMIT 1
+`
+
+const scheduleByResourceIDSql = `
+SELECT s.id, s.hours_known
+FROM public.schedules s
+WHERE s.resource_id = $1 LIMIT 1
+`
+
+const scheduleDaysByScheduleIDSql = `
+SELECT sd.id, sd.day, sd.opens_at, sd.closes_at, sd.open_time, sd.open_day, sd.close_time, sd.close_day
+FROM public.schedule_days sd
+WHERE sd.schedule_id = $1
 `

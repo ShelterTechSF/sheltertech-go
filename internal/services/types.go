@@ -41,7 +41,7 @@ type Service struct {
 
 	Resource *resources.Resource `json:"resource"`
 	Program  *programs.Program   `json:"program"`
-	Schedule *schedules.Schedule `json:"schedule`
+	Schedule *schedules.Schedule `json:"schedule"`
 
 	Notes         []*notes.Note                `json:"notes"`
 	Categories    []*categories.Category       `json:"categories"`

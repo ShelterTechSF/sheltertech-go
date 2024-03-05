@@ -108,10 +108,30 @@ func (m *Manager) GetCategoriesByServiceID(serviceId int) []*Category {
 	return scanCategories(rows)
 }
 
+func (m *Manager) GetCategoriesByResourceID(resourceId int) []*Category {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(categoriesByResourceIDSql, resourceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanCategories(rows)
+}
+
 func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
 	var rows *sql.Rows
 	var err error
 	rows, err = m.DB.Query(notesByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanNotes(rows)
+}
+
+func (m *Manager) GetNotesByResourceID(resourceId int) []*Note {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(notesByResourceIDSql, resourceId)
 	if err != nil {
 		log.Printf("%v\n", err)
 	}
@@ -143,6 +163,16 @@ func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	return scanAddresses(rows)
 }
 
+func (m *Manager) GetAddressesByResourceID(resourceId int) []*Address {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(addressesByResourceIDSql, resourceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanAddresses(rows)
+}
+
 func scanAddresses(rows *sql.Rows) []*Address {
 	var addresses []*Address
 	for rows.Next() {
@@ -157,6 +187,32 @@ func scanAddresses(rows *sql.Rows) []*Address {
 	}
 	return addresses
 }
+
+func (m *Manager) GetPhonesByResourceID(resourceId int) []*Phone {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(phonesByResourceIDSql, resourceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanPhones(rows)
+}
+
+func scanPhones(rows *sql.Rows) []*Phone {
+	var phones []*Phone
+	for rows.Next() {
+		var phone Phone
+		err := rows.Scan(&phone.Id, &phone.Number, &phone.ServiceType)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		phones = append(phones, &phone)
+	}
+	return phones
+}
+
 func (m *Manager) GetEligibitiesByServiceID(serviceId int) []*Eligibility {
 	var rows *sql.Rows
 	var err error
@@ -370,5 +426,39 @@ func (m *Manager) GetResourceById(resourceId int) *Resource {
 
 func (m *Manager) GetScheduleByServiceId(serviceId int) *Schedule {
 	row := m.DB.QueryRow(scheduleByServiceIDSql, serviceId)
-	return scanSchedule(row)
+	schedule := scanSchedule(row)
+	schedule.ScheduleDays = m.GetScheduleDaysByScheduleID(schedule.Id)
+	return schedule
+}
+
+func (m *Manager) GetScheduleByResourceId(resourceId int) *Schedule {
+	row := m.DB.QueryRow(scheduleByResourceIDSql, resourceId)
+	schedule := scanSchedule(row)
+	schedule.ScheduleDays = m.GetScheduleDaysByScheduleID(schedule.Id)
+	return schedule
+}
+
+func (m *Manager) GetScheduleDaysByScheduleID(scheduleId int) []*ScheduleDay {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(scheduleDaysByScheduleIDSql, scheduleId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanScheduleDays(rows)
+}
+
+func scanScheduleDays(rows *sql.Rows) []*ScheduleDay {
+	var scheduleDays []*ScheduleDay
+	for rows.Next() {
+		var scheduleDay ScheduleDay
+		err := rows.Scan(&scheduleDay.Id, &scheduleDay.Day, &scheduleDay.OpensAt, &scheduleDay.ClosesAt, &scheduleDay.OpenTime, &scheduleDay.OpenDay, &scheduleDay.CloseTime, &scheduleDay.CloseDay)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		scheduleDays = append(scheduleDays, &scheduleDay)
+	}
+	return scheduleDays
 }
