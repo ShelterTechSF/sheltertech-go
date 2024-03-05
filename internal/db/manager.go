@@ -147,7 +147,7 @@ func scanAddresses(rows *sql.Rows) []*Address {
 	var addresses []*Address
 	for rows.Next() {
 		var address Address
-		err := rows.Scan(&address.Id)
+		err := rows.Scan(&address.Id, &address.Attention, &address.Address1, &address.Address2, &address.Address3, &address.Address4, &address.City, address.StateProvince, address.PostalCode, &address.ResourceId, &address.Latitude, &address.Longitude, &address.Online, &address.Region, &address.Name, &address.Description, &address.Transportation)
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
@@ -171,7 +171,7 @@ func scanEligibilities(rows *sql.Rows) []*Eligibility {
 	var eligibilities []*Eligibility
 	for rows.Next() {
 		var eligibility Eligibility
-		err := rows.Scan(&eligibility.Id)
+		err := rows.Scan(&eligibility.Id, &eligibility.Name, &eligibility.FeatureRank)
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")

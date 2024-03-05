@@ -62,14 +62,32 @@ type Note struct {
 }
 
 type Address struct {
-	Id        int
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	Id             int
+	Attention      sql.NullString
+	Address1       string
+	Address2       sql.NullString
+	Address3       sql.NullString
+	Address4       sql.NullString
+	City           string
+	StateProvince  string
+	PostalCode     string
+	ResourceId     sql.NullInt32
+	Latitude       sql.NullInt32
+	Longitude      sql.NullInt32
+	Online         sql.NullBool
+	Region         sql.NullString
+	Name           sql.NullString
+	Description    sql.NullString
+	Transportation sql.NullString
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
 }
 type Eligibility struct {
-	Id        int
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	Id          int
+	Name        sql.NullString
+	FeatureRank sql.NullInt32
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
 }
 type Instruction struct {
 	Id          int

@@ -33,13 +33,14 @@ WHERE n.service_id = $1
 `
 
 const addressesByServiceIDSql = `
-SELECT a.id
+SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.city, a.state_province, a.postal_code, a.resource_id, a.latitude, a.longitude, a.online, a.region, a.name ,a.description , a.transportation
 FROM public.addresses a
 LEFT JOIN public.addresses_services ads on a.id = ads.address_id
 WHERE ads.service_id = $1
 `
+
 const eligibilitiesByServiceIDSql = `
-SELECT e.id
+SELECT e.id, e.name, e.feature_rank
 FROM public.eligibilities e
 LEFT JOIN public.eligibilities_services es on e.id = es.eligibility_id
 WHERE es.service_id = $1
