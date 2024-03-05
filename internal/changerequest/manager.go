@@ -46,7 +46,7 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 		ObjectId:   changeRequest.ObjectID,
 		Status:     changeRequest.Status,
 		Action:     changeRequest.Action,
-		ResourceId: service.ResourceId,
+		ResourceId: int(service.ResourceId.Int32),
 	}
 
 	err = m.DbClient.SubmitChangeRequest(dBChangeRequest)

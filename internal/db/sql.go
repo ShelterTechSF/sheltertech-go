@@ -19,6 +19,44 @@ FROM public.categories
 WHERE id = $1
 `
 
+const categoriesByServiceIDSql = `
+SELECT c.id, c.name, c.top_level, c.featured 
+FROM public.categories c
+LEFT JOIN public.categories_services cs on c.id = cs.category_id
+WHERE cs.service_id = $1
+`
+
+const notesByServiceIDSql = `
+SELECT n.id, n.note, n.created_at, n.updated_at 
+FROM public.notes n
+WHERE n.service_id = $1
+`
+
+const addressesByServiceIDSql = `
+SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.city, a.state_province, a.postal_code, a.resource_id, a.latitude, a.longitude, a.online, a.region, a.name ,a.description , a.transportation
+FROM public.addresses a
+LEFT JOIN public.addresses_services ads on a.id = ads.address_id
+WHERE ads.service_id = $1
+`
+
+const eligibilitiesByServiceIDSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+LEFT JOIN public.eligibilities_services es on e.id = es.eligibility_id
+WHERE es.service_id = $1
+`
+
+const instructionsByServiceIDSql = `
+SELECT i.id, i.instruction
+FROM public.instructions i
+WHERE i.service_id = $1
+`
+const documentsByServiceIDSql = `
+SELECT d.id, d.name, d.url, d.description
+FROM public.documents d
+LEFT JOIN public.documents_services ds on d.id = ds.document_id
+WHERE ds.service_id = $1
+`
 const categoryServiceCounts = `
 SELECT c.name, count(s.id) as services
 FROM categories c
@@ -56,7 +94,24 @@ INSERT INTO public.change_requests (type, object_id, status, action, resource_id
 VALUES ($1, $2, $3, $4, $5, now(), now())`
 
 const serviceByIDSql = `
-SELECT id, resource_id
+SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note
 FROM public.services
 WHERE id = $1
+`
+
+const programByIDSql = `
+SELECT id, name, alterante_name, description
+FROM public.programs
+WHERE id = $1
+`
+
+const resourceByIDSql = `
+SELECT id, name, short_description, long_description, website, verified_at, email, status, certified, alternate_name, legal_status, contact_id, funding_id, certified_at, featured, source_attribution, internal_note 
+FROM public.resources
+WHERE id = $1
+`
+const scheduleByServiceIDSql = `
+SELECT s.id, s.hours_known
+FROM public.schedules s
+WHERE s.service_id = $1 LIMIT 1
 `

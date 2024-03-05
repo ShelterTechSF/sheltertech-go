@@ -1,5 +1,7 @@
 package categories
 
+import "github.com/sheltertechsf/sheltertech-go/internal/db"
+
 type Category struct {
 	Id       int    `json:"id"`
 	Name     string `json:"name"`
@@ -15,4 +17,22 @@ type CategoryCountDTO struct {
 	Name      string `json:"name"`
 	Services  int    `json:services`
 	Resources int    `json:resources`
+}
+
+func FromDBType(dbCategory *db.Category) *Category {
+	category := &Category{
+		Id:       dbCategory.Id,
+		Name:     dbCategory.Name,
+		TopLevel: dbCategory.TopLevel,
+		Featured: dbCategory.Featured,
+	}
+	return category
+}
+
+func FromDBTypeArray(dbCategories []*db.Category) []*Category {
+	var categories []*Category
+	for _, dbCategory := range dbCategories {
+		categories = append(categories, FromDBType(dbCategory))
+	}
+	return categories
 }

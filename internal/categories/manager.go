@@ -44,7 +44,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	dbCategories := m.DbClient.GetCategories(topLevel)
 	response := Categories{
-		Categories: fromDBTypeArray(dbCategories),
+		Categories: FromDBTypeArray(dbCategories),
 	}
 	writeJson(w, response)
 }
@@ -81,7 +81,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%v", err)
 	}
 	dbCategory := m.DbClient.GetCategoryByID(categoryId)
-	writeJson(w, fromDBType(dbCategory))
+	writeJson(w, FromDBType(dbCategory))
 }
 
 func (m *Manager) GetSubCategoriesByID(w http.ResponseWriter, r *http.Request) {
@@ -90,13 +90,13 @@ func (m *Manager) GetSubCategoriesByID(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%v", err)
 	}
 	dbCategories := m.DbClient.GetSubCategoriesByID(categoryId)
-	writeJson(w, fromDBTypeArray(dbCategories))
+	writeJson(w, FromDBTypeArray(dbCategories))
 }
 
 func (m *Manager) GetByFeatured(w http.ResponseWriter, _ *http.Request) {
 	dbCategories := m.DbClient.GetCategoriesByFeatured()
 	response := Categories{
-		Categories: fromDBTypeArray(dbCategories),
+		Categories: FromDBTypeArray(dbCategories),
 	}
 	writeJson(w, response)
 }
@@ -112,22 +112,4 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func fromDBType(dbCategory *db.Category) *Category {
-	category := &Category{
-		Id:       dbCategory.Id,
-		Name:     dbCategory.Name,
-		TopLevel: dbCategory.TopLevel,
-		Featured: dbCategory.Featured,
-	}
-	return category
-}
-
-func fromDBTypeArray(dbCategories []*db.Category) []*Category {
-	var categories []*Category
-	for _, dbCategory := range dbCategories {
-		categories = append(categories, fromDBType(dbCategory))
-	}
-	return categories
 }

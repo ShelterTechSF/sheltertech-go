@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
+	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,6 +22,7 @@ import (
 )
 
 const categoryUrl = "http://localhost:3001/api/categories"
+const serviceUrl = "http://localhost:3001/api/services"
 
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
@@ -94,6 +96,23 @@ func TestGetCategoryByID(t *testing.T) {
 	assert.Equal(t, categoryResponse.Id, categoryId, "Category Id is a match")
 }
 
+func TestGetServiceByID(t *testing.T) {
+	startServer()
+	serviceId := 1
+
+	res, err := http.Get(serviceUrl + "/" + fmt.Sprintf("%d", serviceId))
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	serviceResponse := new(services.ServiceResponse)
+	err = json.Unmarshal(body, serviceResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, serviceResponse.Service.Id, serviceId, "Service Id is a match")
+}
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
 
