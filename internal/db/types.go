@@ -133,9 +133,28 @@ type Program struct {
 	UpdatedAt     sql.NullTime
 }
 
+type Phone struct {
+	Id          int
+	Number      string
+	ServiceType string
+}
+
 type Schedule struct {
 	Id         int
 	HoursKnown bool
+
+	ScheduleDays []*ScheduleDay
+}
+
+type ScheduleDay struct {
+	Id        int
+	Day       string
+	OpensAt   sql.NullInt32
+	ClosesAt  sql.NullInt32
+	OpenTime  sql.NullTime
+	OpenDay   sql.NullString
+	CloseTime sql.NullTime
+	CloseDay  sql.NullString
 }
 type CategoryCount struct {
 	CategoryName string

@@ -1,6 +1,13 @@
 package resources
 
-import "github.com/sheltertechsf/sheltertech-go/internal/db"
+import (
+	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
+	"github.com/sheltertechsf/sheltertech-go/internal/categories"
+	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/notes"
+	"github.com/sheltertechsf/sheltertech-go/internal/phones"
+	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+)
 
 type Resource struct {
 	Id                int     `json:"id"`
@@ -18,6 +25,13 @@ type Resource struct {
 	Featured          *bool   `json:"featured"`
 	SourceAttribution *string `json:"source_attribution"`
 	InternalNote      *string `json:"internal_note"`
+
+	Schedule *schedules.Schedule `json:"schedule"`
+
+	Notes      []*notes.Note          `json:"notes"`
+	Categories []*categories.Category `json:"categories"`
+	Addresses  []*addresses.Address   `json:"addresses"`
+	Phones     []*phones.Phone        `json:"phones"`
 }
 
 func FromDBType(dbResource *db.Resource) *Resource {
