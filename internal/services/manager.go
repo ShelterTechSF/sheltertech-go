@@ -65,7 +65,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	response.Resource.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByResourceID(response.Resource.Id))
 	response.Resource.Addresses = addresses.FromAddressesDBTypeArray(m.DbClient.GetAddressesByResourceID(response.Resource.Id))
 	response.Resource.Phones = phones.FromDBTypeArray(m.DbClient.GetPhonesByResourceID(response.Resource.Id))
-	response.Resource.Services = convertServicesToResourceServices(m.DbClient.GetApprovedServicesByResourceId(response.Resource.Id), serviceId)
+	response.Resource.Services = m.convertServicesToResourceServices(m.DbClient.GetApprovedServicesByResourceId(response.Resource.Id), serviceId)
 
 	serviceResponse := &ServiceResponse{
 		Service: response,
@@ -86,11 +86,21 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	}
 }
 
-func convertServicesToResourceServices(dbServices []*db.Service, baseServiceId int) []*resources.ResourceService {
+func (m *Manager) convertServicesToResourceServices(dbServices []*db.Service, baseServiceId int) []*resources.ResourceService {
 	var resourceServices []*resources.ResourceService
 	for _, dbService := range dbServices {
 		if dbService.Id != baseServiceId {
-			resourceServices = append(resourceServices, convertServiceToResourceService(dbService))
+
+			resourceService := convertServiceToResourceService(dbService)
+			resourceService.Categories = categories.FromDBTypeArray(m.DbClient.GetCategoriesByServiceID(dbService.Id))
+			resourceService.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByServiceID(dbService.Id))
+			resourceService.Addresses = addresses.FromAddressesDBTypeArray(m.DbClient.GetAddressesByServiceID(dbService.Id))
+			resourceService.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(m.DbClient.GetEligibitiesByServiceID(dbService.Id))
+			resourceService.Instructions = instructions.FromInstructionDBTypeArray(m.DbClient.GetInstructionsByServiceID(dbService.Id))
+			resourceService.Documents = documents.FromDocumentDBTypeArray(m.DbClient.GetDocumentsByServiceID(dbService.Id))
+			resourceService.Schedule = schedules.FromDBType(m.DbClient.GetScheduleByServiceId(dbService.Id))
+
+			resourceServices = append(resourceServices, resourceService)
 		}
 	}
 	return resourceServices

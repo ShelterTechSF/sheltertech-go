@@ -15,7 +15,6 @@ type Address struct {
 	City          string  `json:"city"`
 	StateProvince string  `json:"state_province"`
 	PostalCode    string  `json:"postal_code"`
-	ResourceId    *int    `json:"resource_id"`
 	Latitude      *int    `json:"latitude"`
 	Longitude     *int    `json:"longitude"`
 }
@@ -39,10 +38,6 @@ func FromAddressDBType(dbAddress *db.Address) *Address {
 	}
 	if dbAddress.Address4.Valid {
 		address.Address4 = &dbAddress.Address4.String
-	}
-	if dbAddress.ResourceId.Valid {
-		resourceId := int(dbAddress.ResourceId.Int32)
-		address.ResourceId = &resourceId
 	}
 	if dbAddress.Latitude.Valid {
 		latitude := int(dbAddress.Latitude.Int32)
