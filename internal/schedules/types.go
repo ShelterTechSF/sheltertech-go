@@ -31,7 +31,7 @@ func FromDBType(dbSchedule *db.Schedule) *Schedule {
 }
 
 func FromDBTypeArray(dbScheduleDays []*db.ScheduleDay) []*ScheduleDay {
-	var scheduleDays []*ScheduleDay
+	scheduleDays := []*ScheduleDay{}
 	for _, scheduleDay := range dbScheduleDays {
 		scheduleDays = append(scheduleDays, FromScheduleDayDBType(scheduleDay))
 	}

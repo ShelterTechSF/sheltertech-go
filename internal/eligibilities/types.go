@@ -3,8 +3,8 @@ package eligibilities
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Eligibility struct {
-	Id          int     `json:"id"`
 	Name        *string `json:"name"`
+	Id          int     `json:"id"`
 	FeatureRank *int    `json:"feature_rank"`
 }
 
