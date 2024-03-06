@@ -124,6 +124,12 @@ FROM public.services
 WHERE id = $1
 `
 
+const approvedServicesByResourceIDSql = `
+SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note
+FROM public.services
+WHERE resource_id = $1 and status = 1
+`
+
 const programByIDSql = `
 SELECT id, name, alterante_name, description
 FROM public.programs

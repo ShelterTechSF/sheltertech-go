@@ -1,6 +1,11 @@
 package phones
 
-import "github.com/sheltertechsf/sheltertech-go/internal/db"
+import (
+	"fmt"
+	"github.com/nyaruka/phonenumbers"
+	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"strconv"
+)
 
 type Phone struct {
 	Id          int    `json:"id"`
@@ -21,10 +26,18 @@ func FromDBTypeArray(dbPhones []*db.Phone) []*Phone {
 func FromDBType(dbPhone *db.Phone) *Phone {
 	phone := &Phone{
 		Id:          dbPhone.Id,
-		Number:      dbPhone.Number,
 		ServiceType: dbPhone.ServiceType,
-		Extension:   "test",
-		CountryCode: "test",
 	}
+	num, err := phonenumbers.Parse(dbPhone.Number, "")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	if num.NationalNumber != nil {
+		phone.Number = strconv.Itoa(int(*num.NationalNumber))
+	}
+	if num.Extension != nil {
+		phone.Extension = *num.Extension
+	}
+	phone.CountryCode = phonenumbers.GetRegionCodeForNumber(num)
 	return phone
 }

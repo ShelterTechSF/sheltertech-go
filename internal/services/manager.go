@@ -65,6 +65,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	response.Resource.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByResourceID(response.Resource.Id))
 	response.Resource.Addresses = addresses.FromAddressesDBTypeArray(m.DbClient.GetAddressesByResourceID(response.Resource.Id))
 	response.Resource.Phones = phones.FromDBTypeArray(m.DbClient.GetPhonesByResourceID(response.Resource.Id))
+	response.Resource.Services = convertServicesToResourceServices(m.DbClient.GetApprovedServicesByResourceId(response.Resource.Id), serviceId)
 
 	serviceResponse := &ServiceResponse{
 		Service: response,
@@ -83,4 +84,77 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func convertServicesToResourceServices(dbServices []*db.Service, baseServiceId int) []*resources.ResourceService {
+	var resourceServices []*resources.ResourceService
+	for _, dbService := range dbServices {
+		if dbService.Id != baseServiceId {
+			resourceServices = append(resourceServices, convertServiceToResourceService(dbService))
+		}
+	}
+	return resourceServices
+}
+
+func convertServiceToResourceService(dbService *db.Service) *resources.ResourceService {
+	service := &resources.ResourceService{
+		Certified:         dbService.Certified,
+		Id:                dbService.Id,
+		SourceAttribution: int(dbService.SourceAttribution.Int32),
+		UpdatedAt:         dbService.UpdatedAt.String(),
+	}
+	if dbService.AlternateName.Valid {
+		service.AlternateName = &dbService.AlternateName.String
+	}
+	if dbService.ApplicationProcess.Valid {
+		service.ApplicationProcess = &dbService.ApplicationProcess.String
+	}
+	if dbService.Eligibility.Valid {
+		service.Eligibility = &dbService.Eligibility.String
+	}
+	if dbService.Email.Valid {
+		service.Email = &dbService.Email.String
+	}
+	if dbService.Fee.Valid {
+		service.Fee = &dbService.Fee.String
+	}
+	if dbService.InterpretationServices.Valid {
+		service.InterpretationServices = &dbService.InterpretationServices.String
+	}
+	if dbService.LongDescription.Valid {
+		service.LongDescription = &dbService.LongDescription.String
+	}
+	if dbService.Name.Valid {
+		service.Name = &dbService.Name.String
+	}
+	if dbService.RequiredDocuments.Valid {
+		service.RequiredDocuments = &dbService.RequiredDocuments.String
+	}
+	if dbService.Url.Valid {
+		service.Url = &dbService.Url.String
+	}
+	if dbService.VerifiedAt.Valid {
+		verifiedAt := dbService.VerifiedAt.Time.String()
+		service.VerifiedAt = &verifiedAt
+	}
+	if dbService.WaitTime.Valid {
+		service.WaitTime = &dbService.WaitTime.String
+	}
+	if dbService.CertifiedAt.Valid {
+		certifiedAt := dbService.CertifiedAt.Time.String()
+		service.CertifiedAt = &certifiedAt
+	}
+	if dbService.Featured.Valid {
+		service.Featured = &dbService.Featured.Bool
+	}
+	if dbService.Status.Valid {
+		status := int(dbService.Status.Int32)
+		service.Status = &status
+	}
+	if dbService.InternalNote.Valid {
+		service.InternalNote = &dbService.InternalNote.String
+	}
+	shortDescription := "temp"
+	service.ShortDescription = &shortDescription
+	return service
 }
