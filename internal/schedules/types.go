@@ -5,10 +5,9 @@ import (
 )
 
 type Schedule struct {
-	Id         int  `json:"id"`
-	HoursKnown bool `json:"hours_known"`
-
+	Id           int            `json:"id"`
 	ScheduleDays []*ScheduleDay `json:"schedule_days"`
+	HoursKnown   bool           `json:"hours_known"`
 }
 
 type ScheduleDay struct {

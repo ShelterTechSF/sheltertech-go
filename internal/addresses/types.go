@@ -5,23 +5,19 @@ import (
 )
 
 type Address struct {
-	Id             int     `json:"id"`
-	Attention      *string `json:"attention"`
-	Address1       string  `json:"address_1"`
-	Address2       *string `json:"address_2"`
-	Address3       *string `json:"address_3"`
-	Address4       *string `json:"address_4"`
-	City           string  `json:"city"`
-	StateProvince  string  `json:"state_province"`
-	PostalCode     string  `json:"postal_code"`
-	ResourceId     *int    `json:"resource_id"`
-	Latitude       *int    `json:"latitude"`
-	Longitude      *int    `json:"longitude"`
-	Online         *bool   `json:"online"`
-	Region         *string `json:"region"`
-	Name           *string `json:"name"`
-	Description    *string `json:"description"`
-	Transportation *string `json:"transportation"`
+	Id            int     `json:"id"`
+	Attention     *string `json:"attention"`
+	Name          *string `json:"name"`
+	Address1      string  `json:"address_1"`
+	Address2      *string `json:"address_2"`
+	Address3      *string `json:"address_3"`
+	Address4      *string `json:"address_4"`
+	City          string  `json:"city"`
+	StateProvince string  `json:"state_province"`
+	PostalCode    string  `json:"postal_code"`
+	ResourceId    *int    `json:"resource_id"`
+	Latitude      *int    `json:"latitude"`
+	Longitude     *int    `json:"longitude"`
 }
 
 func FromAddressDBType(dbAddress *db.Address) *Address {
@@ -56,21 +52,8 @@ func FromAddressDBType(dbAddress *db.Address) *Address {
 		longitude := int(dbAddress.Longitude.Int32)
 		address.Longitude = &longitude
 	}
-	if dbAddress.Online.Valid {
-		online := dbAddress.Online.Bool
-		address.Online = &online
-	}
-	if dbAddress.Region.Valid {
-		address.Region = &dbAddress.Region.String
-	}
 	if dbAddress.Name.Valid {
 		address.Name = &dbAddress.Name.String
-	}
-	if dbAddress.Description.Valid {
-		address.Description = &dbAddress.Description.String
-	}
-	if dbAddress.Transportation.Valid {
-		address.Transportation = &dbAddress.Transportation.String
 	}
 	return address
 }

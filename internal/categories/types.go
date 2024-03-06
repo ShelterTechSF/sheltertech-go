@@ -3,8 +3,8 @@ package categories
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Category struct {
-	Id       int    `json:"id"`
 	Name     string `json:"name"`
+	Id       int    `json:"id"`
 	TopLevel bool   `json:"top_level"`
 	Featured bool   `json:"featured"`
 }
