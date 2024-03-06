@@ -4,6 +4,9 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/documents"
+	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
+	"github.com/sheltertechsf/sheltertech-go/internal/instructions"
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
@@ -40,7 +43,6 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		Id:        dbResource.Id,
 		Name:      dbResource.Name,
 		UpdatedAt: dbResource.UpdatedAt.Time.String(),
-		Services:  []*ResourceService{},
 	}
 	if dbResource.AlternateName.Valid {
 		resource.AlternateName = &dbResource.AlternateName.String
@@ -88,4 +90,33 @@ func FromDBType(dbResource *db.Resource) *Resource {
 }
 
 type ResourceService struct {
+	UpdatedAt              string  `json:"updated_at"`
+	AlternateName          *string `json:"alternate_name"`
+	ApplicationProcess     *string `json:"application_process"`
+	Certified              bool    `json:"certified"`
+	Eligibility            *string `json:"eligibility"`
+	Email                  *string `json:"email"`
+	Fee                    *string `json:"fee"`
+	Id                     int     `json:"id"`
+	InterpretationServices *string `json:"interpretation_services"`
+	LongDescription        *string `json:"long_description"`
+	Name                   *string `json:"name"`
+	RequiredDocuments      *string `json:"required_documents"`
+	ShortDescription       *string `json:"short_description"`
+	Url                    *string `json:"url"`
+	VerifiedAt             *string `json:"verified_at"`
+	WaitTime               *string `json:"wait_time"`
+	CertifiedAt            *string `json:"certified_at"`
+	Featured               *bool   `json:"featured"`
+	SourceAttribution      int     `json:"source_attribution"`
+	Status                 *int    `json:"status"`
+	InternalNote           *string `json:"internal_note"`
+
+	Schedule      *schedules.Schedule          `json:"schedule"`
+	Notes         []*notes.Note                `json:"notes"`
+	Categories    []*categories.Category       `json:"categories"`
+	Addresses     []*addresses.Address         `json:"addresses"`
+	Eligibilities []*eligibilities.Eligibility `json:"eligibilities"`
+	Instructions  []*instructions.Instruction  `json:"instructions"`
+	Documents     []*documents.Document        `json:"documents"`
 }
