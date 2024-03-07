@@ -72,8 +72,8 @@ type Address struct {
 	StateProvince  string
 	PostalCode     string
 	ResourceId     sql.NullInt32
-	Latitude       sql.NullInt32
-	Longitude      sql.NullInt32
+	Latitude       sql.NullFloat64
+	Longitude      sql.NullFloat64
 	Online         sql.NullBool
 	Region         sql.NullString
 	Name           sql.NullString
