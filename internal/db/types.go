@@ -50,6 +50,7 @@ type Service struct {
 	Featured               sql.NullBool
 	SourceAttribution      sql.NullInt32
 	InternalNote           sql.NullString
+	ShortDescription       sql.NullString
 }
 
 type Note struct {
