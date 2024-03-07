@@ -1,22 +1,23 @@
 package addresses
 
 import (
+	"fmt"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Address struct {
-	Id            int      `json:"id"`
-	Attention     *string  `json:"attention"`
-	Name          *string  `json:"name"`
-	Address1      string   `json:"address_1"`
-	Address2      *string  `json:"address_2"`
-	Address3      *string  `json:"address_3"`
-	Address4      *string  `json:"address_4"`
-	City          string   `json:"city"`
-	StateProvince string   `json:"state_province"`
-	PostalCode    string   `json:"postal_code"`
-	Latitude      *float64 `json:"latitude"`
-	Longitude     *float64 `json:"longitude"`
+	Id            int     `json:"id"`
+	Attention     *string `json:"attention"`
+	Name          *string `json:"name"`
+	Address1      string  `json:"address_1"`
+	Address2      *string `json:"address_2"`
+	Address3      *string `json:"address_3"`
+	Address4      *string `json:"address_4"`
+	City          string  `json:"city"`
+	StateProvince string  `json:"state_province"`
+	PostalCode    string  `json:"postal_code"`
+	Latitude      *string `json:"latitude"`
+	Longitude     *string `json:"longitude"`
 }
 
 func FromAddressDBType(dbAddress *db.Address) *Address {
@@ -40,10 +41,12 @@ func FromAddressDBType(dbAddress *db.Address) *Address {
 		address.Address4 = &dbAddress.Address4.String
 	}
 	if dbAddress.Latitude.Valid {
-		address.Latitude = &dbAddress.Latitude.Float64
+		latitude := fmt.Sprintf("%f", dbAddress.Latitude.Float64)
+		address.Latitude = &latitude
 	}
 	if dbAddress.Longitude.Valid {
-		address.Longitude = &dbAddress.Longitude.Float64
+		longitude := fmt.Sprintf("%f", dbAddress.Longitude.Float64)
+		address.Longitude = &longitude
 	}
 	if dbAddress.Name.Valid {
 		address.Name = &dbAddress.Name.String

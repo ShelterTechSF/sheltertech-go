@@ -81,7 +81,11 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		resource.Featured = &featured
 	}
 	if dbResource.SourceAttribution.Valid {
-		resource.SourceAttribution = &dbResource.SourceAttribution.String
+		sourceAttribution := dbResource.SourceAttribution.String
+		if sourceAttribution == "0" {
+			sourceAttribution = "ask_darcel"
+		}
+		resource.SourceAttribution = &sourceAttribution
 	}
 	if dbResource.InternalNote.Valid {
 		resource.InternalNote = &dbResource.InternalNote.String
