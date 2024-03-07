@@ -115,7 +115,7 @@ type Resource struct {
 	Status            sql.NullString
 	VerifiedAt        sql.NullString
 	Website           sql.NullString
-	CertifiedAt       sql.NullString
+	CertifiedAt       sql.NullTime
 	Featured          sql.NullBool
 	SourceAttribution sql.NullString
 	InternalNote      sql.NullString
