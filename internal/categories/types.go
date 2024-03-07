@@ -30,7 +30,7 @@ func FromDBType(dbCategory *db.Category) *Category {
 }
 
 func FromDBTypeArray(dbCategories []*db.Category) []*Category {
-	var categories []*Category
+	categories := []*Category{}
 	for _, dbCategory := range dbCategories {
 		categories = append(categories, FromDBType(dbCategory))
 	}

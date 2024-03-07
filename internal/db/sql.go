@@ -24,6 +24,7 @@ SELECT c.id, c.name, c.top_level, c.featured
 FROM public.categories c
 LEFT JOIN public.categories_services cs on c.id = cs.category_id
 WHERE cs.service_id = $1
+ORDER BY c.id
 `
 
 const categoriesByResourceIDSql = `
@@ -31,6 +32,7 @@ SELECT c.id, c.name, c.top_level, c.featured
 FROM public.categories c
 LEFT JOIN public.categories_resources cs on c.id = cs.category_id
 WHERE cs.resource_id = $1
+ORDER BY c.id
 `
 
 const notesByServiceIDSql = `
@@ -50,12 +52,14 @@ SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.
 FROM public.addresses a
 LEFT JOIN public.addresses_services ads on a.id = ads.address_id
 WHERE ads.service_id = $1
+ORDER BY a.id
 `
 
 const addressesByResourceIDSql = `
 SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.city, a.state_province, a.postal_code, a.resource_id, a.latitude, a.longitude, a.online, a.region, a.name ,a.description , a.transportation
 FROM public.addresses a
 WHERE a.resource_id = $1
+ORDER BY a.id
 `
 
 const phonesByResourceIDSql = `
