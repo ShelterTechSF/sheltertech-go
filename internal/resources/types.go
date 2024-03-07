@@ -65,7 +65,8 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		resource.ShortDescription = &dbResource.ShortDescription.String
 	}
 	if dbResource.Status.Valid {
-		resource.Status = &dbResource.Status.String
+		status := Status(dbResource.Status.String)
+		resource.Status = &status
 	}
 	if dbResource.VerifiedAt.Valid {
 		resource.VerifiedAt = &dbResource.VerifiedAt.String
@@ -81,10 +82,7 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		resource.Featured = &featured
 	}
 	if dbResource.SourceAttribution.Valid {
-		sourceAttribution := dbResource.SourceAttribution.String
-		if sourceAttribution == "0" {
-			sourceAttribution = "ask_darcel"
-		}
+		sourceAttribution := SourceAttribution(dbResource.SourceAttribution.String)
 		resource.SourceAttribution = &sourceAttribution
 	}
 	if dbResource.InternalNote.Valid {
@@ -113,8 +111,8 @@ type ResourceService struct {
 	WaitTime               *string `json:"wait_time"`
 	CertifiedAt            *string `json:"certified_at"`
 	Featured               *bool   `json:"featured"`
-	SourceAttribution      int     `json:"source_attribution"`
-	Status                 *int    `json:"status"`
+	SourceAttribution      string  `json:"source_attribution"`
+	Status                 *string `json:"status"`
 	InternalNote           *string `json:"internal_note"`
 
 	Schedule      *schedules.Schedule          `json:"schedule"`
@@ -124,4 +122,30 @@ type ResourceService struct {
 	Eligibilities []*eligibilities.Eligibility `json:"eligibilities"`
 	Instructions  []*instructions.Instruction  `json:"instructions"`
 	Documents     []*documents.Document        `json:"documents"`
+}
+
+func Status(status string) string {
+	switch status {
+	case "0":
+		return "pending"
+	case "1":
+		return "approved"
+	case "2":
+		return "rejected"
+	case "3":
+		return "inactive"
+	default:
+		return "unknown"
+	}
+}
+
+func SourceAttribution(sourceAttribution string) string {
+	switch sourceAttribution {
+	case "0":
+		return "ask_darcel"
+	case "1":
+		return "service_net"
+	default:
+		return "unknown"
+	}
 }

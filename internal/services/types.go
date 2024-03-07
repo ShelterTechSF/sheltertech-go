@@ -36,8 +36,8 @@ type Service struct {
 	WaitTime               *string `json:"wait_time"`
 	CertifiedAt            *string `json:"certified_at"`
 	Featured               *bool   `json:"featured"`
-	SourceAttribution      int     `json:"source_attribution"`
-	Status                 *int    `json:"status"`
+	SourceAttribution      string  `json:"source_attribution"`
+	Status                 *string `json:"status"`
 	InternalNote           *string `json:"internal_note"`
 
 	Schedule      *schedules.Schedule          `json:"schedule"`
@@ -55,7 +55,7 @@ func FromDBType(dbService *db.Service) *Service {
 	service := &Service{
 		Certified:         dbService.Certified,
 		Id:                dbService.Id,
-		SourceAttribution: int(dbService.SourceAttribution.Int32),
+		SourceAttribution: SourceAttribution(int(dbService.SourceAttribution.Int32)),
 		UpdatedAt:         dbService.UpdatedAt.Format(time.RFC3339),
 	}
 	if dbService.AlternateName.Valid {
@@ -103,11 +103,37 @@ func FromDBType(dbService *db.Service) *Service {
 		service.Featured = &dbService.Featured.Bool
 	}
 	if dbService.Status.Valid {
-		status := int(dbService.Status.Int32)
+		status := Status(int(dbService.Status.Int32))
 		service.Status = &status
 	}
 	if dbService.InternalNote.Valid {
 		service.InternalNote = &dbService.InternalNote.String
 	}
 	return service
+}
+
+func Status(status int) string {
+	switch status {
+	case 0:
+		return "pending"
+	case 1:
+		return "approved"
+	case 2:
+		return "rejected"
+	case 3:
+		return "inactive"
+	default:
+		return "unknown"
+	}
+}
+
+func SourceAttribution(sourceAttribution int) string {
+	switch sourceAttribution {
+	case 0:
+		return "ask_darcel"
+	case 1:
+		return "service_net"
+	default:
+		return "unknown"
+	}
 }
