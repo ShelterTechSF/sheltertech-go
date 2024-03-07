@@ -41,11 +41,11 @@ func FromAddressDBType(dbAddress *db.Address) *Address {
 		address.Address4 = &dbAddress.Address4.String
 	}
 	if dbAddress.Latitude.Valid {
-		latitude := fmt.Sprintf("%f", dbAddress.Latitude.Float64)
+		latitude := fmt.Sprintf("%.7f", dbAddress.Latitude.Float64)
 		address.Latitude = &latitude
 	}
 	if dbAddress.Longitude.Valid {
-		longitude := fmt.Sprintf("%f", dbAddress.Longitude.Float64)
+		longitude := fmt.Sprintf("%.7f", dbAddress.Longitude.Float64)
 		address.Longitude = &longitude
 	}
 	if dbAddress.Name.Valid {

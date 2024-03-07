@@ -110,7 +110,7 @@ func convertServiceToResourceService(dbService *db.Service) *resources.ResourceS
 	service := &resources.ResourceService{
 		Certified:         dbService.Certified,
 		Id:                dbService.Id,
-		SourceAttribution: int(dbService.SourceAttribution.Int32),
+		SourceAttribution: SourceAttribution(int(dbService.SourceAttribution.Int32)),
 		UpdatedAt:         dbService.UpdatedAt.String(),
 	}
 	if dbService.AlternateName.Valid {
@@ -158,7 +158,7 @@ func convertServiceToResourceService(dbService *db.Service) *resources.ResourceS
 		service.Featured = &dbService.Featured.Bool
 	}
 	if dbService.Status.Valid {
-		status := int(dbService.Status.Int32)
+		status := Status(int(dbService.Status.Int32))
 		service.Status = &status
 	}
 	if dbService.InternalNote.Valid {
