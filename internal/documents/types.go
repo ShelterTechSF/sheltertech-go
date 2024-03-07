@@ -4,8 +4,8 @@ import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Document struct {
 	Id          int     `json:"id"`
-	Name        *string `json:"name"`
 	Url         *string `json:"url"`
+	Name        *string `json:"name"`
 	Description *string `json:"description"`
 }
 

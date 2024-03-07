@@ -3,8 +3,8 @@ package instructions
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Instruction struct {
-	Id          int     `json:"id"`
 	Instruction *string `json:"instruction"`
+	Id          int     `json:"id"`
 }
 
 func FromInstructionDBType(dbInstruction *db.Instruction) *Instruction {
