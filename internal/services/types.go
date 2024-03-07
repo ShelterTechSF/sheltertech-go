@@ -55,7 +55,7 @@ func FromDBType(dbService *db.Service) *Service {
 		Certified:         dbService.Certified,
 		Id:                dbService.Id,
 		SourceAttribution: SourceAttribution(int(dbService.SourceAttribution.Int32)),
-		UpdatedAt:         dbService.UpdatedAt.Format("2006-01-02T15:04:05.000Z07:00"),
+		UpdatedAt:         dbService.UpdatedAt.Format("2006-01-02T15:04:05.000Z"),
 	}
 	if dbService.AlternateName.Valid {
 		service.AlternateName = &dbService.AlternateName.String
@@ -87,15 +87,15 @@ func FromDBType(dbService *db.Service) *Service {
 	if dbService.Url.Valid {
 		service.Url = &dbService.Url.String
 	}
-	if dbService.VerifiedAt.Valid {
-		verifiedAt := dbService.VerifiedAt.Time.String()
+	if dbService.VerifiedAt != nil {
+		verifiedAt := dbService.VerifiedAt.Format("2006-01-02T15:04:05.000Z")
 		service.VerifiedAt = &verifiedAt
 	}
 	if dbService.WaitTime.Valid {
 		service.WaitTime = &dbService.WaitTime.String
 	}
-	if dbService.CertifiedAt.Valid {
-		certifiedAt := dbService.CertifiedAt.Time.String()
+	if dbService.CertifiedAt != nil {
+		certifiedAt := dbService.CertifiedAt.Format("2006-01-02T15:04:05.000Z")
 		service.CertifiedAt = &certifiedAt
 	}
 	if dbService.Featured.Valid {

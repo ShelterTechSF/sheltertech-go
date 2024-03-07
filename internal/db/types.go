@@ -35,7 +35,7 @@ type Service struct {
 	Fee                    sql.NullString
 	ApplicationProcess     sql.NullString
 	ResourceId             sql.NullInt32
-	VerifiedAt             sql.NullTime
+	VerifiedAt             *time.Time
 	Email                  sql.NullString
 	Status                 sql.NullInt32
 	Certified              bool
@@ -46,7 +46,7 @@ type Service struct {
 	ContactId              sql.NullInt32
 	FundingId              sql.NullInt32
 	AlternateName          sql.NullString
-	CertifiedAt            sql.NullTime
+	CertifiedAt            *time.Time
 	Featured               sql.NullBool
 	SourceAttribution      sql.NullInt32
 	InternalNote           sql.NullString
@@ -80,29 +80,29 @@ type Address struct {
 	Name           sql.NullString
 	Description    sql.NullString
 	Transportation sql.NullString
-	CreatedAt      sql.NullTime
-	UpdatedAt      sql.NullTime
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 type Eligibility struct {
 	Id          int
 	Name        sql.NullString
 	FeatureRank sql.NullInt32
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 type Instruction struct {
 	Id          int
 	Instruction sql.NullString
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 type Document struct {
 	Id          int
 	Name        sql.NullString
 	Url         sql.NullString
 	Description sql.NullString
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 type Resource struct {
 	Id                int
@@ -114,9 +114,9 @@ type Resource struct {
 	Name              string
 	ShortDescription  sql.NullString
 	Status            sql.NullString
-	VerifiedAt        sql.NullString
+	VerifiedAt        *time.Time
 	Website           sql.NullString
-	CertifiedAt       sql.NullTime
+	CertifiedAt       *time.Time
 	Featured          sql.NullBool
 	SourceAttribution sql.NullString
 	InternalNote      sql.NullString
