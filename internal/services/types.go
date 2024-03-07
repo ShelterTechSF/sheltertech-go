@@ -108,6 +108,9 @@ func FromDBType(dbService *db.Service) *Service {
 	if dbService.InternalNote.Valid {
 		service.InternalNote = &dbService.InternalNote.String
 	}
+	if dbService.ShortDescription.Valid {
+		service.ShortDescription = &dbService.ShortDescription.String
+	}
 	return service
 }
 
