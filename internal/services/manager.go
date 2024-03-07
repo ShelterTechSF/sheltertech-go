@@ -87,7 +87,7 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 }
 
 func (m *Manager) convertServicesToResourceServices(dbServices []*db.Service, baseServiceId int) []*resources.ResourceService {
-	var resourceServices []*resources.ResourceService
+	resourceServices := []*resources.ResourceService{}
 	for _, dbService := range dbServices {
 		if dbService.Id != baseServiceId {
 

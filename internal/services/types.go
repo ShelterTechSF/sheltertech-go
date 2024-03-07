@@ -11,6 +11,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/programs"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+	"time"
 )
 
 type ServiceResponse struct {
@@ -55,7 +56,7 @@ func FromDBType(dbService *db.Service) *Service {
 		Certified:         dbService.Certified,
 		Id:                dbService.Id,
 		SourceAttribution: int(dbService.SourceAttribution.Int32),
-		UpdatedAt:         dbService.UpdatedAt.String(),
+		UpdatedAt:         dbService.UpdatedAt.Format(time.RFC3339),
 	}
 	if dbService.AlternateName.Valid {
 		service.AlternateName = &dbService.AlternateName.String
