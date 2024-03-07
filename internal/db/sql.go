@@ -137,7 +137,7 @@ WHERE id = $1
 `
 
 const resourceByIDSql = `
-SELECT id, name, short_description, long_description, website, verified_at, email, status, certified, alternate_name, legal_status, contact_id, funding_id, certified_at, featured, source_attribution, internal_note 
+SELECT id, name, short_description, long_description, website, verified_at, email, status, certified, alternate_name, legal_status, contact_id, funding_id, certified_at, featured, source_attribution, internal_note, updated_at
 FROM public.resources
 WHERE id = $1
 `

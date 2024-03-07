@@ -119,8 +119,8 @@ type Resource struct {
 	Featured          sql.NullBool
 	SourceAttribution sql.NullString
 	InternalNote      sql.NullString
-	CreatedAt         sql.NullTime
-	UpdatedAt         sql.NullTime
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 	ContactId         sql.NullInt32
 	FundingId         sql.NullInt32
 }
