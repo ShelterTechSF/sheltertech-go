@@ -43,6 +43,7 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		Id:        dbResource.Id,
 		Name:      dbResource.Name,
 		UpdatedAt: dbResource.UpdatedAt.Time.String(),
+		Services:  []*ResourceService{},
 	}
 	if dbResource.AlternateName.Valid {
 		resource.AlternateName = &dbResource.AlternateName.String

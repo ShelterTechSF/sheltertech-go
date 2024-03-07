@@ -164,7 +164,5 @@ func convertServiceToResourceService(dbService *db.Service) *resources.ResourceS
 	if dbService.InternalNote.Valid {
 		service.InternalNote = &dbService.InternalNote.String
 	}
-	shortDescription := "temp"
-	service.ShortDescription = &shortDescription
 	return service
 }
