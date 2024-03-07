@@ -55,7 +55,7 @@ func FromDBType(dbService *db.Service) *Service {
 		Certified:         dbService.Certified,
 		Id:                dbService.Id,
 		SourceAttribution: SourceAttribution(int(dbService.SourceAttribution.Int32)),
-		UpdatedAt:         dbService.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+		UpdatedAt:         dbService.UpdatedAt.Format("2006-01-02T15:04:05.000Z07:00"),
 	}
 	if dbService.AlternateName.Valid {
 		service.AlternateName = &dbService.AlternateName.String

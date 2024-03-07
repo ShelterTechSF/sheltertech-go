@@ -1156,7 +1156,8 @@ CREATE TABLE public.services (
     certified_at timestamp without time zone,
     featured boolean,
     source_attribution integer DEFAULT 0,
-    internal_note text
+    internal_note text,
+    short_description character varying
 );
 
 

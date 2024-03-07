@@ -75,7 +75,7 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		resource.Website = &dbResource.Website.String
 	}
 	if dbResource.CertifiedAt.Valid {
-		certifiedAt := dbResource.CertifiedAt.Time.Format("2006-01-02T15:04:05.999Z07:00")
+		certifiedAt := dbResource.CertifiedAt.Time.Format("2006-01-02T15:04:05.000Z07:00")
 		resource.CertifiedAt = &certifiedAt
 	}
 	if dbResource.Featured.Valid {
