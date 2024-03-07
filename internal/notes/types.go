@@ -18,7 +18,7 @@ func FromNoteDBType(dbNote *db.Note) *Note {
 }
 
 func FromNoteDBTypeArray(dbNotes []*db.Note) []*Note {
-	var notes []*Note
+	notes := []*Note{}
 	for _, dbNote := range dbNotes {
 		notes = append(notes, FromNoteDBType(dbNote))
 	}
