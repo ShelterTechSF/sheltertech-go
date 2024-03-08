@@ -42,7 +42,7 @@ func FromDBType(dbResource *db.Resource) *Resource {
 	resource := &Resource{
 		Id:        dbResource.Id,
 		Name:      dbResource.Name,
-		UpdatedAt: dbResource.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+		UpdatedAt: dbResource.UpdatedAt.Format("2006-01-02T15:04:05.000Z"),
 		Services:  []*ResourceService{},
 	}
 	if dbResource.AlternateName.Valid {
@@ -68,14 +68,15 @@ func FromDBType(dbResource *db.Resource) *Resource {
 		status := Status(dbResource.Status.String)
 		resource.Status = &status
 	}
-	if dbResource.VerifiedAt.Valid {
-		resource.VerifiedAt = &dbResource.VerifiedAt.String
+	if dbResource.VerifiedAt != nil {
+		verifiedAt := dbResource.VerifiedAt.Format("2006-01-02T15:04:05.000Z")
+		resource.VerifiedAt = &verifiedAt
 	}
 	if dbResource.Website.Valid {
 		resource.Website = &dbResource.Website.String
 	}
-	if dbResource.CertifiedAt.Valid {
-		certifiedAt := dbResource.CertifiedAt.Time.Format("2006-01-02T15:04:05.000Z07:00")
+	if dbResource.CertifiedAt != nil {
+		certifiedAt := dbResource.CertifiedAt.Format("2006-01-02T15:04:05.000Z")
 		resource.CertifiedAt = &certifiedAt
 	}
 	if dbResource.Featured.Valid {
