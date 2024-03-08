@@ -8,10 +8,10 @@ import (
 
 type Phone struct {
 	Id          int     `json:"id"`
-	Number      string  `json:"number"`
+	Number      *string `json:"number"`
 	Extension   *string `json:"extension"`
 	ServiceType string  `json:"service_type"`
-	CountryCode string  `json:"country_code"`
+	CountryCode *string `json:"country_code"`
 }
 
 func FromDBTypeArray(dbPhones []*db.Phone) []*Phone {
@@ -32,9 +32,22 @@ func FromDBType(dbPhone *db.Phone) *Phone {
 		fmt.Println(err.Error())
 	}
 	if num.NationalNumber != nil {
-		phone.Number = phonenumbers.Format(num, phonenumbers.NATIONAL)
+		number := phonenumbers.Format(num, phonenumbers.NATIONAL)
+		if number == "" {
+			phone.Number = nil
+		} else {
+			phone.Number = &number
+		}
 	}
 	phone.Extension = num.Extension
-	phone.CountryCode = phonenumbers.GetRegionCodeForNumber(num)
+	countryCode := phonenumbers.GetRegionCodeForNumber(num)
+	if countryCode == "" {
+		phone.CountryCode = nil
+	} else if phone.Number != nil && (*phone.Number == "711" || *phone.Number == "311") {
+		usCode := "US"
+		phone.CountryCode = &usCode
+	} else {
+		phone.CountryCode = &countryCode
+	}
 	return phone
 }
