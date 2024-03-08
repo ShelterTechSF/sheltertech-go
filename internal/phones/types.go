@@ -27,7 +27,7 @@ func FromDBType(dbPhone *db.Phone) *Phone {
 		Id:          dbPhone.Id,
 		ServiceType: dbPhone.ServiceType,
 	}
-	num, err := phonenumbers.Parse(dbPhone.Number, "")
+	num, err := phonenumbers.Parse(dbPhone.Number, "US")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -43,9 +43,6 @@ func FromDBType(dbPhone *db.Phone) *Phone {
 	countryCode := phonenumbers.GetRegionCodeForNumber(num)
 	if countryCode == "" {
 		phone.CountryCode = nil
-	} else if phone.Number != nil && (*phone.Number == "711" || *phone.Number == "311") {
-		usCode := "US"
-		phone.CountryCode = &usCode
 	} else {
 		phone.CountryCode = &countryCode
 	}
