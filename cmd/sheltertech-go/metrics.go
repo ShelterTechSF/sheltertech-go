@@ -1,11 +1,12 @@
 package main
 
 import (
-	"net/http"
-	"strconv"
-
+	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"net/http"
+	"strconv"
+	"time"
 )
 
 var totalRequests = prometheus.NewCounterVec(
@@ -31,16 +32,16 @@ var httpDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 
 func prometheusMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		timer := prometheus.NewTimer(httpDuration.WithLabelValues(r.URL.Path))
 		rw := NewResponseWriter(w)
+		start := time.Now()
 		next.ServeHTTP(rw, r)
-
+		duration := time.Since(start)
+		routePattern := chi.RouteContext(r.Context()).RoutePattern()
 		statusCode := rw.statusCode
 
 		responseStatus.WithLabelValues(strconv.Itoa(statusCode)).Inc()
-		totalRequests.WithLabelValues(r.URL.Path).Inc()
-
-		timer.ObserveDuration()
+		totalRequests.WithLabelValues(routePattern).Inc()
+		httpDuration.WithLabelValues(routePattern).Observe(duration.Seconds())
 	})
 }
 
