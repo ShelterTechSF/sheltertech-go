@@ -42,7 +42,12 @@ func FromDBType(dbPhone *db.Phone) *Phone {
 	phone.Extension = num.Extension
 	countryCode := phonenumbers.GetRegionCodeForNumber(num)
 	if countryCode == "" {
-		phone.CountryCode = nil
+		if phone.Number != nil && (*phone.Number == "311" || *phone.Number == "911" || *phone.Number == "741741" || *phone.Number == "711") {
+			usCountry := "US"
+			phone.CountryCode = &usCountry
+		} else {
+			phone.CountryCode = nil
+		}
 	} else {
 		phone.CountryCode = &countryCode
 	}
