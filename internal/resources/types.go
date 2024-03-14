@@ -12,6 +12,9 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
 )
 
+type ResourceResponse struct {
+	Resource *Resource `json:"resource"`
+}
 type Resource struct {
 	UpdatedAt         string  `json:"updated_at"`
 	AlternateName     *string `json:"alternate_name"`
@@ -150,4 +153,85 @@ func SourceAttribution(sourceAttribution string) string {
 	default:
 		return "unknown"
 	}
+}
+
+func ConvertServicesToResourceServices(dbServices []*db.Service, dbClient *db.Manager) []*ResourceService {
+	resourceServices := []*ResourceService{}
+	for _, dbService := range dbServices {
+		resourceService := convertServiceToResourceService(dbService)
+		resourceService.Categories = categories.FromDBTypeArray(dbClient.GetCategoriesByServiceID(dbService.Id))
+		resourceService.Notes = notes.FromNoteDBTypeArray(dbClient.GetNotesByServiceID(dbService.Id))
+		resourceService.Addresses = addresses.FromAddressesDBTypeArray(dbClient.GetAddressesByServiceID(dbService.Id))
+		resourceService.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(dbClient.GetEligibitiesByServiceID(dbService.Id))
+		resourceService.Instructions = instructions.FromInstructionDBTypeArray(dbClient.GetInstructionsByServiceID(dbService.Id))
+		resourceService.Documents = documents.FromDocumentDBTypeArray(dbClient.GetDocumentsByServiceID(dbService.Id))
+		resourceService.Schedule = schedules.FromDBType(dbClient.GetScheduleByServiceId(dbService.Id))
+
+		resourceServices = append(resourceServices, resourceService)
+	}
+	return resourceServices
+}
+
+func convertServiceToResourceService(dbService *db.Service) *ResourceService {
+	service := &ResourceService{
+		Certified:         dbService.Certified,
+		Id:                dbService.Id,
+		SourceAttribution: SourceAttribution(string(dbService.SourceAttribution.Int32)),
+		UpdatedAt:         dbService.UpdatedAt.Format("2006-01-02T15:04:05.000Z"),
+	}
+	if dbService.AlternateName.Valid {
+		service.AlternateName = &dbService.AlternateName.String
+	}
+	if dbService.ApplicationProcess.Valid {
+		service.ApplicationProcess = &dbService.ApplicationProcess.String
+	}
+	if dbService.Eligibility.Valid {
+		service.Eligibility = &dbService.Eligibility.String
+	}
+	if dbService.Email.Valid {
+		service.Email = &dbService.Email.String
+	}
+	if dbService.Fee.Valid {
+		service.Fee = &dbService.Fee.String
+	}
+	if dbService.InterpretationServices.Valid {
+		service.InterpretationServices = &dbService.InterpretationServices.String
+	}
+	if dbService.LongDescription.Valid {
+		service.LongDescription = &dbService.LongDescription.String
+	}
+	if dbService.Name.Valid {
+		service.Name = &dbService.Name.String
+	}
+	if dbService.RequiredDocuments.Valid {
+		service.RequiredDocuments = &dbService.RequiredDocuments.String
+	}
+	if dbService.Url.Valid {
+		service.Url = &dbService.Url.String
+	}
+	if dbService.VerifiedAt != nil {
+		verifiedAt := dbService.VerifiedAt.Format("2006-01-02T15:04:05.000Z")
+		service.VerifiedAt = &verifiedAt
+	}
+	if dbService.WaitTime.Valid {
+		service.WaitTime = &dbService.WaitTime.String
+	}
+	if dbService.CertifiedAt != nil {
+		certifiedAt := dbService.CertifiedAt.Format("2006-01-02T15:04:05.000Z")
+		service.CertifiedAt = &certifiedAt
+	}
+	if dbService.Featured.Valid {
+		service.Featured = &dbService.Featured.Bool
+	}
+	if dbService.Status.Valid {
+		status := Status(string(dbService.Status.Int32))
+		service.Status = &status
+	}
+	if dbService.InternalNote.Valid {
+		service.InternalNote = &dbService.InternalNote.String
+	}
+	if dbService.ShortDescription.Valid {
+		service.ShortDescription = &dbService.ShortDescription.String
+	}
+	return service
 }
