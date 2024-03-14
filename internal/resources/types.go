@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"strconv"
+
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
@@ -176,7 +178,7 @@ func convertServiceToResourceService(dbService *db.Service) *ResourceService {
 	service := &ResourceService{
 		Certified:         dbService.Certified,
 		Id:                dbService.Id,
-		SourceAttribution: SourceAttribution(string(dbService.SourceAttribution.Int32)),
+		SourceAttribution: SourceAttribution(strconv.Itoa(int(dbService.SourceAttribution.Int32))),
 		UpdatedAt:         dbService.UpdatedAt.Format("2006-01-02T15:04:05.000Z"),
 	}
 	if dbService.AlternateName.Valid {
@@ -224,7 +226,7 @@ func convertServiceToResourceService(dbService *db.Service) *ResourceService {
 		service.Featured = &dbService.Featured.Bool
 	}
 	if dbService.Status.Valid {
-		status := Status(string(dbService.Status.Int32))
+		status := Status(strconv.Itoa(int(dbService.Status.Int32)))
 		service.Status = &status
 	}
 	if dbService.InternalNote.Valid {
