@@ -10,7 +10,7 @@ require (
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/lib/pq v1.10.9
-	github.com/nyaruka/phonenumbers v1.3.2
+	github.com/nyaruka/phonenumbers v1.3.4
 	github.com/prometheus/client_golang v1.19.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
