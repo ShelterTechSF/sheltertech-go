@@ -487,3 +487,38 @@ func scanScheduleDays(rows *sql.Rows) []*ScheduleDay {
 	}
 	return scheduleDays
 }
+
+func (m *Manager) GetContentCurationData() []*DatathonData {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(contentCurationData)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanDatathonData(rows)
+}
+
+func (m *Manager) GetDatathonData() []*DatathonData {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(datathonData)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanDatathonData(rows)
+}
+
+func scanDatathonData(rows *sql.Rows) []*DatathonData {
+	var records []*DatathonData
+	for rows.Next() {
+		var record DatathonData
+		err := rows.Scan(&record.ServiceId, &record.ServiceName, &record.ResourceId, &record.ResourceId, &record.ResourceWebsite, &record.ServiceEmail, &record.ServiceUpdatedAt)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		records = append(records, &record)
+	}
+	return records
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/docs"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
+	"github.com/sheltertechsf/sheltertech-go/internal/datathon"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
@@ -56,6 +57,7 @@ func main() {
 	changeRequestManager := changerequest.New(dbManager)
 	servicesManager := services.New(dbManager)
 	resourcesManager := resources.New(dbManager)
+	datathonManager := datathon.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -79,6 +81,9 @@ func main() {
 	r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
+
+	r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
+	r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 
 	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 	r.Get("/api/services/{id}", servicesManager.GetByID)
