@@ -23,6 +23,8 @@ import (
 
 const categoryUrl = "http://localhost:3001/api/categories"
 const serviceUrl = "http://localhost:3001/api/services"
+const contentCurationDatasetUrl = "http://localhost:3001/api/datathon/content_curation_dataset"
+const datathonDatasetUrl = "http://localhost:3001/api/datathon/datathon_dataset"
 
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
@@ -135,6 +137,34 @@ func TestPostServicesChangeRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
+}
+
+func TestGetContentCurationDataset(t *testing.T) {
+	startServer()
+
+	res, err := http.Get(contentCurationDatasetUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	_, err = ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, "text/csv", res.Header.Get("Content-Type"))
+}
+
+func TestGetDatathonDataset(t *testing.T) {
+	startServer()
+
+	res, err := http.Get(datathonDatasetUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	_, err = ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, "text/csv", res.Header.Get("Content-Type"))
 }
 
 func TestSwaggerDocs(t *testing.T) {

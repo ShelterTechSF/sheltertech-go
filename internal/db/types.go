@@ -161,3 +161,13 @@ type CategoryCount struct {
 	CategoryName string
 	Count        int
 }
+
+type DatathonData struct {
+	ServiceId        int
+	ServiceName      sql.NullString
+	ResourceId       int
+	ResourceName     string
+	ResourceWebsite  sql.NullString
+	ServiceEmail     sql.NullString
+	ServiceUpdatedAt time.Time
+}
