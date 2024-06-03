@@ -7,7 +7,7 @@ toolchain go1.22.1
 require github.com/go-chi/chi/v5 v5.0.12
 
 require (
-	github.com/getsentry/sentry-go v0.27.0
+	github.com/getsentry/sentry-go v0.28.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/phonenumbers v1.3.4
