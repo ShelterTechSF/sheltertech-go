@@ -488,6 +488,29 @@ func (m *Manager) GetScheduleDaysByScheduleID(scheduleId int) []*ScheduleDay {
 	return scanScheduleDays(rows)
 }
 
+func (m *Manager) DeleteBookmarkByID(bookmarkId int) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(deleteBookmarkByIDSql, bookmarkId)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+
+	return tx.Commit()
+
+}
+
 func scanScheduleDays(rows *sql.Rows) []*ScheduleDay {
 	var scheduleDays []*ScheduleDay
 	for rows.Next() {

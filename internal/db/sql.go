@@ -157,6 +157,10 @@ const submitChangeRequest = `
 INSERT INTO public.change_requests (type, object_id, status, action, resource_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, now(), now())`
 
+const deleteBookmarkByIDSql = `
+DELETE FROM public.bookmarks WHERE id = $1
+`
+
 const serviceByIDSql = `
 SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note, short_description
 FROM public.services
