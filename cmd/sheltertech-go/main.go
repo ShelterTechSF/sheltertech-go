@@ -8,6 +8,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 
@@ -54,6 +55,7 @@ func main() {
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)
 	changeRequestManager := changerequest.New(dbManager)
+	foldersManager := folders.New(dbManager)
 	servicesManager := services.New(dbManager)
 	resourcesManager := resources.New(dbManager)
 
@@ -74,11 +76,18 @@ func main() {
 	r.Use(prometheusMiddleware)
 	r.Use(middleware.Logger)
 	r.Use(sentryHandler.Handle)
+
 	r.Get("/api/categories", categoriesManager.Get)
 	r.Get("/api/categories/{id}", categoriesManager.GetByID)
 	r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
+
+	r.Get("/api/folders", foldersManager.Get)
+	r.Post("/api/folders", foldersManager.Post)
+	r.Get("/api/folders/{id}", foldersManager.GetByID)
+	// r.Put("/api/folders/{id}", foldersManager.Put)
+	// r.Delete("/api/folders/{id}", foldersManager.Delete)
 
 	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 	r.Get("/api/services/{id}", servicesManager.GetByID)
