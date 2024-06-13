@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/docs"
@@ -11,6 +12,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/gin-gonic/gin"
@@ -50,6 +52,16 @@ func main() {
 	dbName := viper.GetString("DB_NAME")
 	dbPass := viper.GetString("DB_PASS")
 	serveDocs := viper.GetBool("SERVE_DOCS")
+	auth0Domain := viper.GetString("AUTH0_DOMAIN")
+
+	if auth0Domain != "" {
+		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
+		var err error
+		_, err = keyfunc.NewDefault([]string{jwksUrl})
+		if err != nil {
+			log.Fatalf("Failed to create keyfunc for %q.\nError: %s", jwksUrl, err)
+		}
+	}
 
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)

@@ -161,3 +161,11 @@ type CategoryCount struct {
 	CategoryName string
 	Count        int
 }
+
+type User struct {
+	Id             int
+	Name           string
+	Organization   string
+	UserExternalId string
+	Email          string
+}
