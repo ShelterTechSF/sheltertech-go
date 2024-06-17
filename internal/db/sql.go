@@ -79,6 +79,17 @@ INSERT INTO public.folders (name, order, user_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, now(), now())
 `
 
+const updateFolder = `
+UPDATE public.folders f
+SET name = $2, order = $3
+WHERE f.id = $1
+`
+
+const DeleteFolderById = `
+DELETE FROM public.folders f
+WHERE f.id = $1
+`
+
 // const bookmarksByFolderIDSQL = `
 // SELECT b.if, b.order, b.service_id
 // FROM public.bookmarks b

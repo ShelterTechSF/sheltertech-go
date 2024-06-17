@@ -521,6 +521,7 @@ func scanFolders(rows *sql.Rows) []*Folder {
 	}
 	return folders
 }
+
 func (m *Manager) GetFolders(userId int) []*Folder {
 	var rows *sql.Rows
 	var err error
@@ -537,6 +538,47 @@ func (m *Manager) CreateFolder(folder *Folder) error {
 		return err
 	}
 	res, err := tx.Exec(createFolder, folder.Name, folder.Order, folder.UserId)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
+func (m *Manager) UpdateFolder(folder *Folder) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(updateFolder, folder.Id, folder.Name, folder.Order)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
+func (m *Manager) DeleteFolderById(userId int) []*Folder {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(deleteFolder, folderId)
 	if err != nil {
 		return err
 	}

@@ -112,13 +112,28 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [put]
 func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Hello PUT")
-
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 
 	folder := &Folder{}
-	json.Unmarshal(body, folder)
+	err := json.Unmarshal(body, folder)
+	if err != nil {
+		writeStatus(w, http.StatusInternalServerError)
+	}
+
+	dBFolder := &db.Folder{
+		Id: folder.Id,
+		Name:   folder.Name,
+		Order:  folder.Order,
+	}
+
+	err = m.DbClient.UpdateFolder(dBFolder)
+	if err != nil {
+		log.Print(err)
+		writeStatus(w, http.StatusInternalServerError)
+	}
+
+	writeStatus(w, http.StatusCreated)
 }
 
 // Delete folder by ID
@@ -133,13 +148,12 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Hello PUT")
-
-	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
-
-	folder := &Folder{}
-	json.Unmarshal(body, folder)
+	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	dbFolder := m.DbClient.DeleteFolderById(folderId)
+	writeJson(w, FromDBType(dbFolder))
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {

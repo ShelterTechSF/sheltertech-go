@@ -83,11 +83,12 @@ func main() {
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
+	// no user auth in folders yet
 	r.Get("/api/folders/user/{user_id}", foldersManager.Get)
 	r.Post("/api/folders", foldersManager.Post)
 	r.Get("/api/folders/{id}", foldersManager.GetByID)
-	// r.Put("/api/folders/{id}", foldersManager.Put)
-	// r.Delete("/api/folders/{id}", foldersManager.Delete)
+	r.Put("/api/folders/{id}", foldersManager.Put)
+	r.Delete("/api/folders/{id}", foldersManager.Delete)
 
 	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 	r.Get("/api/services/{id}", servicesManager.GetByID)
