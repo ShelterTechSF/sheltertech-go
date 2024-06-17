@@ -85,7 +85,7 @@ SET name = $2, order = $3
 WHERE f.id = $1
 `
 
-const DeleteFolderById = `
+const deleteFolder = `
 DELETE FROM public.folders f
 WHERE f.id = $1
 `

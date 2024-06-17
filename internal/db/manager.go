@@ -572,7 +572,7 @@ func (m *Manager) UpdateFolder(folder *Folder) error {
 	return tx.Commit()
 }
 
-func (m *Manager) DeleteFolderById(userId int) []*Folder {
+func (m *Manager) DeleteFolderById(folderId int) error {
 	tx, err := m.DB.Begin()
 	if err != nil {
 		return err

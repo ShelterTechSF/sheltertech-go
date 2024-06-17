@@ -152,8 +152,13 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 	}
-	dbFolder := m.DbClient.DeleteFolderById(folderId)
-	writeJson(w, FromDBType(dbFolder))
+	err = m.DbClient.DeleteFolderById(folderId)
+	if err != nil {
+		log.Print(err)
+		writeStatus(w, http.StatusInternalServerError)
+	}
+
+	writeStatus(w, http.StatusCreated)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
