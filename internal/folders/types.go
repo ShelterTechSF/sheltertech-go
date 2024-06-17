@@ -9,6 +9,10 @@ type Folder struct {
 	UserId int    `json:"user_id"`
 }
 
+type Folders struct {
+	Folders []*Folder `json:"folders"`
+}
+
 func FromDBType(dbFolder *db.Folder) *Folder {
 	folder := &Folder{
 		Id:     dbFolder.Id,

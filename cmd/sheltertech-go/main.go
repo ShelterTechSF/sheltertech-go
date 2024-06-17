@@ -83,7 +83,7 @@ func main() {
 	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
-	r.Get("/api/folders", foldersManager.Get)
+	r.Get("/api/folders/user/{user_id}", foldersManager.Get)
 	r.Post("/api/folders", foldersManager.Post)
 	r.Get("/api/folders/{id}", foldersManager.GetByID)
 	// r.Put("/api/folders/{id}", foldersManager.Put)
