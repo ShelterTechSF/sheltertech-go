@@ -440,6 +440,27 @@ func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
 	return tx.Commit()
 }
 
+func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(submitBookmark, bookmark.Order)
+	if err != nil {
+		return err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
 func (m *Manager) GetServiceById(serviceId int) *Service {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)

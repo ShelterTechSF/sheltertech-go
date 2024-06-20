@@ -24,6 +24,17 @@ type ChangeRequest struct {
 	UpdatedAt  sql.NullTime
 }
 
+type Bookmark struct {
+	Id int
+	Order int
+	FolderID int
+	ServiceID int
+	ResourceID int
+	UserID int
+	CreatedAt  sql.NullTime
+	UpdatedAt  sql.NullTime
+}
+
 type Service struct {
 	Id                     int
 	CreatedAt              time.Time

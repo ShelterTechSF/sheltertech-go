@@ -157,6 +157,10 @@ const submitChangeRequest = `
 INSERT INTO public.change_requests (type, object_id, status, action, resource_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, now(), now())`
 
+const submitBookmark = `
+INSERT INTO public.bookmarks ("order", created_at, updated_at)
+VALUES ($1, now(), now())`
+
 const deleteBookmarkByIDSql = `
 DELETE FROM public.bookmarks WHERE id = $1
 `
