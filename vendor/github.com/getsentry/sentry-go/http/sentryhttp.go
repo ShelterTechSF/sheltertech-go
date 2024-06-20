@@ -11,7 +11,7 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-// The identifier of the Gin SDK.
+// The identifier of the HTTP SDK.
 const sdkIdentifier = "sentry.go.http"
 
 // A Handler is an HTTP middleware factory that provides integration with
@@ -99,23 +99,29 @@ func (h *Handler) handle(handler http.Handler) http.HandlerFunc {
 			sentry.ContinueFromRequest(r),
 			sentry.WithTransactionSource(sentry.SourceURL),
 		}
-		// We don't mind getting an existing transaction back so we don't need to
-		// check if it is.
+
 		transaction := sentry.StartTransaction(ctx,
 			fmt.Sprintf("%s %s", r.Method, r.URL.Path),
 			options...,
 		)
-		defer transaction.Finish()
+		transaction.SetData("http.request.method", r.Method)
+
+		rw := NewWrapResponseWriter(w, r.ProtoMajor)
+
+		defer func() {
+			status := rw.Status()
+			transaction.Status = sentry.HTTPtoSpanStatus(status)
+			transaction.SetData("http.response.status_code", status)
+			transaction.Finish()
+		}()
+
 		// TODO(tracing): if the next handler.ServeHTTP panics, store
 		// information on the transaction accordingly (status, tag,
 		// level?, ...).
 		r = r.WithContext(transaction.Context())
 		hub.Scope().SetRequest(r)
 		defer h.recoverWithSentry(hub, r)
-		// TODO(tracing): use custom response writer to intercept
-		// response. Use HTTP status to add tag to transaction; set span
-		// status.
-		handler.ServeHTTP(w, r)
+		handler.ServeHTTP(rw, r)
 	}
 }
 

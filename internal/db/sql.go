@@ -197,3 +197,9 @@ SELECT sd.id, sd.day, sd.opens_at, sd.closes_at, sd.open_time, sd.open_day, sd.c
 FROM public.schedule_days sd
 WHERE sd.schedule_id = $1
 `
+
+const userByUserExternalIDSql = `
+SELECT u.id, u.name, u.organization, u.user_external_id, u.email
+FROM public.users u
+WHERE u.user_external_id = $1
+`

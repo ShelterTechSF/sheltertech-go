@@ -10,6 +10,7 @@ services:
       DB_PORT: 5432
       DB_NAME: askdarcel_development
       DB_USER: postgres
+      AUTH0_DOMAIN: "dev-nykixf8szsm220fi.us.auth0.com"
     networks:
       - askdarcel
     ports:

@@ -405,6 +405,21 @@ func scanSchedule(row *sql.Row) *Schedule {
 	return &schedule
 }
 
+func scanUser(row *sql.Row) *User {
+	var user User
+	err := row.Scan(&user.Id, &user.Name, &user.Organization, &user.UserExternalId, &user.Email)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &user
+}
+
 func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -585,4 +600,9 @@ func (m *Manager) DeleteFolderById(folderId int) error {
 		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
 	}
 	return tx.Commit()
+}
+
+func (m *Manager) GetUserByUserExternalID(userExternalId string) *User {
+	row := m.DB.QueryRow(userByUserExternalIDSql, userExternalId)
+	return scanUser(row)
 }

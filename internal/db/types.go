@@ -168,3 +168,11 @@ type Folder struct {
 	Order  int
 	UserId int
 }
+
+type User struct {
+	Id             int
+	Name           string
+	Organization   string
+	UserExternalId string
+	Email          string
+}
