@@ -3,12 +3,12 @@ package folders
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"github.com/go-chi/chi/v5"
-	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
@@ -22,7 +22,7 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
-// Get lists folders for current user 
+// Get lists folders for current user
 // (note - I don't have the user auth stuff here)
 //
 //	@Summary		Get Folders for current User
@@ -33,9 +33,11 @@ func New(dbManager *db.Manager) *Manager {
 //	@Success		200	{array}	folders.Folders
 //	@Router			/folders [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	userId, err := strconv.Atoi(chi.URLParam(r, "user_id"))
+	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
 	if err != nil {
 		fmt.Println("error:", err)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
 
 	dbFolders := m.DbClient.GetFolders(userId)
@@ -45,7 +47,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
-// Create folder for current user 
+// Create folder for current user
 // (note - I don't have the user auth stuff here)
 //
 //	@Summary		Create Folder for current User
@@ -65,19 +67,29 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 		writeStatus(w, http.StatusInternalServerError)
 	}
 
-	dBFolder := &db.Folder{
+	dbFolder := &db.Folder{
 		Name:   folder.Name,
 		Order:  folder.Order,
 		UserId: folder.UserId,
 	}
 
-	err = m.DbClient.CreateFolder(dBFolder)
+	folderId, err := m.DbClient.CreateFolder(dbFolder)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
+	}
+
+	dbFolder = m.DbClient.GetFolderById(folderId)
+	if dbFolder == nil {
+		// This really shouldn't happen, since we just created it.
+		writeStatus(w, http.StatusInternalServerError)
+	} else {
+		writeJson(w, FromDBType(dbFolder))
 	}
 
 	writeStatus(w, http.StatusCreated)
+	writeJson(w, FromDBType(dbFolder))
 }
 
 // Get folder by ID
@@ -96,7 +108,11 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%v", err)
 	}
 	dbFolder := m.DbClient.GetFolderById(folderId)
-	writeJson(w, FromDBType(dbFolder))
+	if dbFolder == nil {
+		writeStatus(w, http.StatusNotFound)
+	} else {
+		writeJson(w, FromDBType(dbFolder))
+	}
 }
 
 // Update folder by ID
@@ -122,9 +138,9 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dBFolder := &db.Folder{
-		Id: folder.Id,
-		Name:   folder.Name,
-		Order:  folder.Order,
+		Id:    folder.Id,
+		Name:  folder.Name,
+		Order: folder.Order,
 	}
 
 	err = m.DbClient.UpdateFolder(dBFolder)

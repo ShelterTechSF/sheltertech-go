@@ -532,24 +532,18 @@ func (m *Manager) GetFolders(userId int) []*Folder {
 	return scanFolders(rows)
 }
 
-func (m *Manager) CreateFolder(folder *Folder) error {
+func (m *Manager) CreateFolder(folder *Folder) (int, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return -1, err
 	}
-	res, err := tx.Exec(createFolder, folder.Name, folder.Order, folder.UserId)
+	row := tx.QueryRow(createFolder, folder.Name, folder.Order, folder.UserId)
+	var id int
+	err = row.Scan(&id)
 	if err != nil {
-		return err
+		return -1, err
 	}
-	rowCount, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowCount != 1 {
-		defer tx.Rollback()
-		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
-	}
-	return tx.Commit()
+	return id, tx.Commit()
 }
 
 func (m *Manager) UpdateFolder(folder *Folder) error {

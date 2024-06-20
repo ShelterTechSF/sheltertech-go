@@ -63,7 +63,7 @@ ORDER BY a.id
 `
 
 const folderByIDSql = `
-SELECT id, name, order, user_id
+SELECT id, name, "order", user_id
 FROM public.folders
 WHERE id = $1
 `
@@ -75,13 +75,14 @@ WHERE f.user_id = $1
 `
 
 const createFolder = `
-INSERT INTO public.folders (name, order, user_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, now(), now())
+INSERT INTO public.folders (name, "order", user_id, created_at, updated_at)
+VALUES ($1, $2, $3, now(), now())
+RETURNING id
 `
 
 const updateFolder = `
 UPDATE public.folders f
-SET name = $2, order = $3
+SET name = $2, "order" = $3
 WHERE f.id = $1
 `
 
