@@ -162,6 +162,13 @@ type CategoryCount struct {
 	Count        int
 }
 
+type Folder struct {
+	Id     int
+	Name   string
+	Order  int
+	UserId int
+}
+
 type User struct {
 	Id             int
 	Name           string

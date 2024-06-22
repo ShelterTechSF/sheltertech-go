@@ -503,6 +503,105 @@ func scanScheduleDays(rows *sql.Rows) []*ScheduleDay {
 	return scheduleDays
 }
 
+func scanFolder(row *sql.Row) *Folder {
+	var folder Folder
+	err := row.Scan(&folder.Id, &folder.Name, &folder.Order, &folder.UserId)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &folder
+}
+func (m *Manager) GetFolderById(folderId int) *Folder {
+	row := m.DB.QueryRow(folderByIDSql, folderId)
+	return scanFolder(row)
+}
+
+func scanFolders(rows *sql.Rows) []*Folder {
+	var folders []*Folder
+	for rows.Next() {
+		var folder Folder
+		err := rows.Scan(&folder.Id, &folder.Name, &folder.Order, &folder.UserId)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		folders = append(folders, &folder)
+	}
+	return folders
+}
+
+func (m *Manager) GetFolders(userId int) []*Folder {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(foldersByUserIDSql, userId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanFolders(rows)
+}
+
+func (m *Manager) CreateFolder(folder *Folder) (int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return -1, err
+	}
+	row := tx.QueryRow(createFolder, folder.Name, folder.Order, folder.UserId)
+	var id int
+	err = row.Scan(&id)
+	if err != nil {
+		return -1, err
+	}
+	return id, tx.Commit()
+}
+
+func (m *Manager) UpdateFolder(folder *Folder) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(updateFolder, folder.Id, folder.Name, folder.Order)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
+func (m *Manager) DeleteFolderById(folderId int) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(deleteFolder, folderId)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
 func (m *Manager) GetUserByUserExternalID(userExternalId string) *User {
 	row := m.DB.QueryRow(userByUserExternalIDSql, userExternalId)
 	return scanUser(row)

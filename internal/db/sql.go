@@ -62,6 +62,41 @@ WHERE a.resource_id = $1
 ORDER BY a.id
 `
 
+const folderByIDSql = `
+SELECT id, name, "order", user_id
+FROM public.folders
+WHERE id = $1
+`
+
+const foldersByUserIDSql = `
+SELECT f.id, f.name, f.order, f.user_id
+FROM public.folders f
+WHERE f.user_id = $1
+`
+
+const createFolder = `
+INSERT INTO public.folders (name, "order", user_id, created_at, updated_at)
+VALUES ($1, $2, $3, now(), now())
+RETURNING id
+`
+
+const updateFolder = `
+UPDATE public.folders f
+SET name = $2, "order" = $3
+WHERE f.id = $1
+`
+
+const deleteFolder = `
+DELETE FROM public.folders f
+WHERE f.id = $1
+`
+
+// const bookmarksByFolderIDSQL = `
+// SELECT b.if, b.order, b.service_id
+// FROM public.bookmarks b
+// WHERE b.folder_id = $1
+// `
+
 const phonesByResourceIDSql = `
 SELECT p.id, p.number, p.service_type
 FROM public.phones p
