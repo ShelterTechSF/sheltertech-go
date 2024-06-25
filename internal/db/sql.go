@@ -157,9 +157,15 @@ const submitChangeRequest = `
 INSERT INTO public.change_requests (type, object_id, status, action, resource_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, now(), now())`
 
+const findBookmarksSql = `
+SELECT id, "order", user_id, folder_id, service_id, resource_id from public.bookmarks`
+
 const submitBookmark = `
-INSERT INTO public.bookmarks ("order", created_at, updated_at)
-VALUES ($1, now(), now())`
+INSERT INTO public.bookmarks ("order", user_id, folder_id, resource_id, service_id, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, now(), now())`
+
+const updateBookmark = `
+UPDATE public.bookmarks SET "order" = $2, user_id = $3, folder_id= $4, resource_id = $5, service_id = $6 where id = $1`
 
 const deleteBookmarkByIDSql = `
 DELETE FROM public.bookmarks WHERE id = $1

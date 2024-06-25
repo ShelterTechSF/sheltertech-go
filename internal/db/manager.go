@@ -153,6 +153,31 @@ func scanNotes(rows *sql.Rows) []*Note {
 	return notes
 }
 
+func (m *Manager) GetBookmarks() []*Bookmark {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(findBookmarksSql)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanBookmarks(rows)
+}
+
+func scanBookmarks(rows *sql.Rows) []*Bookmark {
+	var bookmarks []*Bookmark
+	for rows.Next() {
+		var bookmark Bookmark
+		err := rows.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		bookmarks = append(bookmarks, &bookmark)
+	}
+	return bookmarks
+}
+
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	var rows *sql.Rows
 	var err error
@@ -441,11 +466,34 @@ func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
 }
 
 func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
+
 	tx, err := m.DB.Begin()
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(submitBookmark, bookmark.Order)
+	res, err := tx.Exec(submitBookmark, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+
+	return tx.Commit()
+}
+
+func (m *Manager) UpdateBookmark(bookmark *Bookmark) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(updateBookmark, bookmark.Id, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID)
 	if err != nil {
 		return err
 	}
@@ -460,6 +508,7 @@ func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
 	}
 	return tx.Commit()
 }
+
 
 func (m *Manager) GetServiceById(serviceId int) *Service {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)

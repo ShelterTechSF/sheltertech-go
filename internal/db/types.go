@@ -27,10 +27,10 @@ type ChangeRequest struct {
 type Bookmark struct {
 	Id int
 	Order int
-	FolderID int
-	ServiceID int
-	ResourceID int
-	UserID int
+	FolderID *int
+	ServiceID *int
+	ResourceID *int
+	UserID *int
 	CreatedAt  sql.NullTime
 	UpdatedAt  sql.NullTime
 }

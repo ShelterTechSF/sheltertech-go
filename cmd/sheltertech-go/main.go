@@ -114,7 +114,9 @@ func main() {
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
+	r.Get("/api/bookmarks", bookmarksManager.Get)
 	r.Post("/api/bookmarks", bookmarksManager.Submit)
+	r.Put("/api/bookmarks/{id}", bookmarksManager.Update)
 	r.Delete("/api/bookmarks/{id}", bookmarksManager.DeleteByID)
 
 	docs.SwaggerInfo.Title = "Swagger Example API"
