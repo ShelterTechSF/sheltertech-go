@@ -26,13 +26,35 @@ func New(dbManager *db.Manager) *Manager {
 
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 
-	dbBookmarks := m.DbClient.GetBookmarks()
+	var dbBookmarks []*db.Bookmark
+
+	userId := r.URL.Query().Get("user_id")
+
+	if (userId != "") {
+		iUserId, _ := strconv.Atoi(userId)
+		dbBookmarks = m.DbClient.GetBookmarksByUserID(iUserId)
+	} else {
+		dbBookmarks = m.DbClient.GetBookmarks()
+	}
 	response := Bookmarks{
 		Bookmarks: FromDBTypeArray(dbBookmarks),
 	}
 	writeJson(w, response)
 }
 
+func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	dbBookmark := m.DbClient.GetBookmarkByID(id)
+
+	response := FromDBType(dbBookmark)
+	
+	writeJson(w, response)
+}
 
 func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 
@@ -101,8 +123,6 @@ func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 	}
-
-	log.Printf("id: %d", bookmarkId)
 
 	err = m.DbClient.DeleteBookmarkByID(bookmarkId)
 	if err != nil {

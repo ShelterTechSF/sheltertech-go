@@ -115,6 +115,7 @@ func main() {
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	r.Get("/api/bookmarks", bookmarksManager.Get)
+	r.Get("/api/bookmarks/{id}", bookmarksManager.GetByID)
 	r.Post("/api/bookmarks", bookmarksManager.Submit)
 	r.Put("/api/bookmarks/{id}", bookmarksManager.Update)
 	r.Delete("/api/bookmarks/{id}", bookmarksManager.DeleteByID)

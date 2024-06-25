@@ -163,6 +163,21 @@ func (m *Manager) GetBookmarks() []*Bookmark {
 	return scanBookmarks(rows)
 }
 
+func (m *Manager) GetBookmarksByUserID(userId int) []*Bookmark {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(findBookmarksByUserIDSql, userId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanBookmarks(rows)
+}
+
+func (m *Manager) GetBookmarkByID(bookmarkId int) *Bookmark {
+	row := m.DB.QueryRow(findBookmarksByIDSql, bookmarkId)
+	return scanBookmark(row)
+}
+
 func scanBookmarks(rows *sql.Rows) []*Bookmark {
 	var bookmarks []*Bookmark
 	for rows.Next() {
@@ -176,6 +191,21 @@ func scanBookmarks(rows *sql.Rows) []*Bookmark {
 		bookmarks = append(bookmarks, &bookmark)
 	}
 	return bookmarks
+}
+
+func scanBookmark(row *sql.Row) *Bookmark {
+	var bookmark Bookmark
+	err := row.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &bookmark
 }
 
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
