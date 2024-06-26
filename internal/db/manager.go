@@ -539,7 +539,6 @@ func (m *Manager) UpdateBookmark(bookmark *Bookmark) error {
 	return tx.Commit()
 }
 
-
 func (m *Manager) GetServiceById(serviceId int) *Service {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)

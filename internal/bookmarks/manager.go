@@ -1,12 +1,11 @@
 package bookmarks
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"encoding/json"
-	"io/ioutil"
-
 
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 
@@ -30,7 +29,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 
 	userId := r.URL.Query().Get("user_id")
 
-	if (userId != "") {
+	if userId != "" {
 		iUserId, _ := strconv.Atoi(userId)
 		dbBookmarks = m.DbClient.GetBookmarksByUserID(iUserId)
 	} else {
@@ -52,7 +51,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	dbBookmark := m.DbClient.GetBookmarkByID(id)
 
 	response := FromDBType(dbBookmark)
-	
+
 	writeJson(w, response)
 }
 
@@ -67,26 +66,25 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 		writeStatus(w, http.StatusInternalServerError)
 	}
 
-	dbBookmark := &db.Bookmark {
-		Order: bookmark.Order,
-		FolderID: bookmark.FolderID,
-		ServiceID: bookmark.ServiceID,
+	dbBookmark := &db.Bookmark{
+		Order:      bookmark.Order,
+		FolderID:   bookmark.FolderID,
+		ServiceID:  bookmark.ServiceID,
 		ResourceID: bookmark.ResourceID,
-		UserID: bookmark.UserID,
+		UserID:     bookmark.UserID,
 	}
-	
+
 	err = m.DbClient.SubmitBookmark(dbBookmark)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
 	}
-	 
+
 	writeStatus(w, http.StatusCreated)
 
 }
 
 func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
-
 
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
@@ -97,25 +95,24 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 		writeStatus(w, http.StatusInternalServerError)
 	}
 
-	dbBookmark := &db.Bookmark {
-		Id: bookmark.Id,
-		Order: bookmark.Order,
-		FolderID: bookmark.FolderID,
-		ServiceID: bookmark.ServiceID,
+	dbBookmark := &db.Bookmark{
+		Id:         bookmark.Id,
+		Order:      bookmark.Order,
+		FolderID:   bookmark.FolderID,
+		ServiceID:  bookmark.ServiceID,
 		ResourceID: bookmark.ResourceID,
-		UserID: bookmark.UserID,
+		UserID:     bookmark.UserID,
 	}
-	
+
 	err = m.DbClient.UpdateBookmark(dbBookmark)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
 	}
-	 
+
 	writeStatus(w, http.StatusCreated)
 
 }
-
 
 func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 

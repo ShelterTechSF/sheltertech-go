@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/docs"
+	"github.com/sheltertechsf/sheltertech-go/internal/bookmarks"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
@@ -13,7 +14,6 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
-	"github.com/sheltertechsf/sheltertech-go/internal/bookmarks"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/getsentry/sentry-go"

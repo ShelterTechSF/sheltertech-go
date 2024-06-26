@@ -3,13 +3,12 @@ package bookmarks
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Bookmark struct {
-
-	Id int `json:"id"`
-	Order int `json:"order"`
-	FolderID *int `json:"folder_id"`
-	ServiceID *int `json:"service_id"`
+	Id         int  `json:"id"`
+	Order      int  `json:"order"`
+	FolderID   *int `json:"folder_id"`
+	ServiceID  *int `json:"service_id"`
 	ResourceID *int `json:"resource_id"`
-	UserID *int `json:"user_id"`
+	UserID     *int `json:"user_id"`
 }
 
 type Bookmarks struct {
@@ -18,12 +17,12 @@ type Bookmarks struct {
 
 func FromDBType(dbBookmark *db.Bookmark) *Bookmark {
 	bookmark := &Bookmark{
-		Id:       dbBookmark.Id,
-		Order:	dbBookmark.Order,
-		ServiceID: dbBookmark.ServiceID,
+		Id:         dbBookmark.Id,
+		Order:      dbBookmark.Order,
+		ServiceID:  dbBookmark.ServiceID,
 		ResourceID: dbBookmark.ResourceID,
-		UserID: dbBookmark.UserID,
-		FolderID: dbBookmark.FolderID,
+		UserID:     dbBookmark.UserID,
+		FolderID:   dbBookmark.FolderID,
 	}
 	return bookmark
 }
@@ -35,4 +34,3 @@ func FromDBTypeArray(dbBookmarks []*db.Bookmark) []*Bookmark {
 	}
 	return bookmarks
 }
-
