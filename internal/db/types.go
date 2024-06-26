@@ -2,6 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
 )
 
@@ -178,6 +181,36 @@ type Folder struct {
 	Name   string
 	Order  int
 	UserId int
+}
+
+type SavedSearchQuery struct {
+	Eligibilities []int    `json:"eligibilities"`
+	Categories    []int    `json:"categories"`
+	Lat           *float64 `json:"lat"`
+	Lng           *float64 `json:"lng"`
+	Query         string   `json:"query"`
+}
+
+// Methods needed for automatic serialization/deserialization to JSONB column.
+// https://www.alexedwards.net/blog/using-postgresql-jsonb
+
+func (s SavedSearchQuery) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+func (s *SavedSearchQuery) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, &s)
+}
+
+type SavedSearch struct {
+	Id     int
+	UserId int
+	Name   string
+	Search SavedSearchQuery
 }
 
 type User struct {

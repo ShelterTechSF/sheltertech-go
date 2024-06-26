@@ -164,7 +164,7 @@ func ConvertServicesToResourceServices(dbServices []*db.Service, dbClient *db.Ma
 		resourceService.Categories = categories.FromDBTypeArray(dbClient.GetCategoriesByServiceID(dbService.Id))
 		resourceService.Notes = notes.FromNoteDBTypeArray(dbClient.GetNotesByServiceID(dbService.Id))
 		resourceService.Addresses = addresses.FromAddressesDBTypeArray(dbClient.GetAddressesByServiceID(dbService.Id))
-		resourceService.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(dbClient.GetEligibitiesByServiceID(dbService.Id))
+		resourceService.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(dbClient.GetEligibilitiesByServiceID(dbService.Id))
 		resourceService.Instructions = instructions.FromInstructionDBTypeArray(dbClient.GetInstructionsByServiceID(dbService.Id))
 		resourceService.Documents = documents.FromDocumentDBTypeArray(dbClient.GetDocumentsByServiceID(dbService.Id))
 		resourceService.Schedule = schedules.FromDBType(dbClient.GetScheduleByServiceId(dbService.Id))

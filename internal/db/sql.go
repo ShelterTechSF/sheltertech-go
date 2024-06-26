@@ -19,6 +19,18 @@ FROM public.categories
 WHERE id = $1
 `
 
+const categoriesByIDsSql = `
+SELECT c.id, c.name, c.top_level, c.featured
+FROM public.categories c
+WHERE c.id = ANY ($1)
+`
+
+const categoriesByNamesSql = `
+SELECT c.id, c.name, c.top_level, c.featured
+FROM public.categories c
+WHERE c.name = ANY ($1)
+`
+
 const categoriesByServiceIDSql = `
 SELECT c.id, c.name, c.top_level, c.featured 
 FROM public.categories c
@@ -97,10 +109,45 @@ WHERE f.id = $1
 // WHERE b.folder_id = $1
 // `
 
+const savedSearchByIDSql = `
+SELECT id, user_id, name, search
+FROM public.saved_searches
+WHERE id = $1
+`
+
+const savedSearchesByUserIDSql = `
+SELECT ss.id, ss.user_id, ss.name, ss.search
+FROM public.saved_searches ss
+WHERE ss.user_id = $1
+`
+
+const createSavedSearchSql = `
+INSERT INTO public.saved_searches (user_id, name, search, created_at, updated_at)
+VALUES ($1, $2, $3, now(), now())
+RETURNING id
+`
+
+const deleteSavedSearchSql = `
+DELETE FROM public.saved_searches ss
+WHERE ss.id = $1
+`
+
 const phonesByResourceIDSql = `
 SELECT p.id, p.number, p.service_type
 FROM public.phones p
 WHERE p.resource_id = $1
+`
+
+const eligibilitiesByIDsSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+WHERE e.id = ANY ($1)
+`
+
+const eligibilitiesByNamesSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+WHERE e.name = ANY ($1)
 `
 
 const eligibilitiesByServiceIDSql = `
