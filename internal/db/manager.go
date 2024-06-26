@@ -153,6 +153,61 @@ func scanNotes(rows *sql.Rows) []*Note {
 	return notes
 }
 
+func (m *Manager) GetBookmarks() []*Bookmark {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(findBookmarksSql)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanBookmarks(rows)
+}
+
+func (m *Manager) GetBookmarksByUserID(userId int) []*Bookmark {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(findBookmarksByUserIDSql, userId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanBookmarks(rows)
+}
+
+func (m *Manager) GetBookmarkByID(bookmarkId int) *Bookmark {
+	row := m.DB.QueryRow(findBookmarksByIDSql, bookmarkId)
+	return scanBookmark(row)
+}
+
+func scanBookmarks(rows *sql.Rows) []*Bookmark {
+	var bookmarks []*Bookmark
+	for rows.Next() {
+		var bookmark Bookmark
+		err := rows.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		bookmarks = append(bookmarks, &bookmark)
+	}
+	return bookmarks
+}
+
+func scanBookmark(row *sql.Row) *Bookmark {
+	var bookmark Bookmark
+	err := row.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &bookmark
+}
+
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	var rows *sql.Rows
 	var err error
@@ -440,6 +495,50 @@ func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
 	return tx.Commit()
 }
 
+func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
+
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(submitBookmark, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+
+	return tx.Commit()
+}
+
+func (m *Manager) UpdateBookmark(bookmark *Bookmark) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	res, err := tx.Exec(updateBookmark, bookmark.Id, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID)
+	if err != nil {
+		return err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
 func (m *Manager) GetServiceById(serviceId int) *Service {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)
@@ -486,6 +585,29 @@ func (m *Manager) GetScheduleDaysByScheduleID(scheduleId int) []*ScheduleDay {
 		log.Printf("%v\n", err)
 	}
 	return scanScheduleDays(rows)
+}
+
+func (m *Manager) DeleteBookmarkByID(bookmarkId int) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(deleteBookmarkByIDSql, bookmarkId)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+
+	return tx.Commit()
+
 }
 
 func scanScheduleDays(rows *sql.Rows) []*ScheduleDay {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/docs"
+	"github.com/sheltertechsf/sheltertech-go/internal/bookmarks"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
@@ -73,6 +74,7 @@ func main() {
 	servicesManager := services.New(dbManager)
 	resourcesManager := resources.New(dbManager)
 	usersManager := users.New(dbManager, jwtKeyfunc)
+	bookmarksManager := bookmarks.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -111,6 +113,12 @@ func main() {
 	r.Get("/api/users/current", usersManager.GetCurrent)
 
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
+
+	r.Get("/api/bookmarks", bookmarksManager.Get)
+	r.Get("/api/bookmarks/{id}", bookmarksManager.GetByID)
+	r.Post("/api/bookmarks", bookmarksManager.Submit)
+	r.Put("/api/bookmarks/{id}", bookmarksManager.Update)
+	r.Delete("/api/bookmarks/{id}", bookmarksManager.DeleteByID)
 
 	docs.SwaggerInfo.Title = "Swagger Example API"
 	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
