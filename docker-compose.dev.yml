@@ -3,8 +3,8 @@ version: "3.5"
 services:
   sheltertech-go:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: Dockerfile.dev
     environment:
       DB_HOST: db
       DB_PORT: 5432
@@ -13,6 +13,8 @@ services:
       AUTH0_DOMAIN: "dev-nykixf8szsm220fi.us.auth0.com"
     networks:
       - askdarcel
+    volumes:
+      - ./:/app
     ports:
       - "3001:3001"
       - "3002:3002"
