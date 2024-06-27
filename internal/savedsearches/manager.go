@@ -79,7 +79,10 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	savedSearch := &SavedSearch{}
 	err := json.Unmarshal(body, savedSearch)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		log.Print(err)
+		writeStatus(w, http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	var dbEligibilityIds []int
