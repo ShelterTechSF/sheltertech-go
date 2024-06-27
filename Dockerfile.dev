@@ -1,0 +1,7 @@
+FROM golang:1.22
+
+WORKDIR /app
+
+EXPOSE 3001
+
+CMD [ "/app/tmp/sheltertech-go" ]
