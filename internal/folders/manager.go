@@ -84,8 +84,7 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	if dbFolder == nil {
 		// This really shouldn't happen, since we just created it.
 		writeStatus(w, http.StatusInternalServerError)
-	} else {
-		writeJson(w, FromDBType(dbFolder))
+		return
 	}
 
 	writeStatus(w, http.StatusCreated)
