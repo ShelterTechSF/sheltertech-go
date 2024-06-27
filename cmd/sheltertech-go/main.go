@@ -12,6 +12,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
+	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
@@ -75,6 +76,7 @@ func main() {
 	resourcesManager := resources.New(dbManager)
 	usersManager := users.New(dbManager, jwtKeyfunc)
 	bookmarksManager := bookmarks.New(dbManager)
+	savedSearchesManager := savedsearches.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -119,6 +121,12 @@ func main() {
 	r.Post("/api/bookmarks", bookmarksManager.Submit)
 	r.Put("/api/bookmarks/{id}", bookmarksManager.Update)
 	r.Delete("/api/bookmarks/{id}", bookmarksManager.DeleteByID)
+
+	r.Get("/api/saved_searches", savedSearchesManager.Get)
+	r.Post("/api/saved_searches", savedSearchesManager.Post)
+	r.Get("/api/saved_searches/{id}", savedSearchesManager.GetByID)
+	// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
+	r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
 
 	docs.SwaggerInfo.Title = "Swagger Example API"
 	docs.SwaggerInfo.Description = "This is a sample server Petstore server."

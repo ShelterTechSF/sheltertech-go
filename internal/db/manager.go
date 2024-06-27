@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 type Manager struct {
@@ -96,6 +96,36 @@ func (m *Manager) GetSubCategoriesByID(categoryId int) []*Category {
 func (m *Manager) GetCategoryByID(categoryId int) *Category {
 	row := m.DB.QueryRow(categoriesByIDSql, categoryId)
 	return scanCategory(row)
+}
+
+func (m *Manager) GetCategoriesByIDs(ids []int) []*Category {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(categoriesByIDsSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(pq.Array(ids))
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanCategories(rows)
+}
+
+func (m *Manager) GetCategoriesByNames(names []string) []*Category {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(categoriesByNamesSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(pq.Array(names))
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanCategories(rows)
 }
 
 func (m *Manager) GetCategoriesByServiceID(serviceId int) []*Category {
@@ -268,7 +298,37 @@ func scanPhones(rows *sql.Rows) []*Phone {
 	return phones
 }
 
-func (m *Manager) GetEligibitiesByServiceID(serviceId int) []*Eligibility {
+func (m *Manager) GetEligibilitiesByIDs(ids []int) []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(eligibilitiesByIDsSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(pq.Array(ids))
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+}
+
+func (m *Manager) GetEligibilitiesByNames(names []string) []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(eligibilitiesByNamesSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(pq.Array(names))
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+}
+
+func (m *Manager) GetEligibilitiesByServiceID(serviceId int) []*Eligibility {
 	var rows *sql.Rows
 	var err error
 	rows, err = m.DB.Query(eligibilitiesByServiceIDSql, serviceId)
@@ -710,6 +770,86 @@ func (m *Manager) DeleteFolderById(folderId int) error {
 	}
 
 	res, err := tx.Exec(deleteFolder, folderId)
+	if err != nil {
+		return err
+	}
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		defer tx.Rollback()
+		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
+	}
+	return tx.Commit()
+}
+
+func scanSavedSearch(row *sql.Row) *SavedSearch {
+	var savedSearch SavedSearch
+	err := row.Scan(&savedSearch.Id, &savedSearch.UserId, &savedSearch.Name, &savedSearch.Search)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		default:
+			panic(err)
+		}
+	}
+	return &savedSearch
+}
+
+func (m *Manager) GetSavedSearchById(savedSearchId int) *SavedSearch {
+	row := m.DB.QueryRow(savedSearchByIDSql, savedSearchId)
+	return scanSavedSearch(row)
+}
+
+func scanSavedSearches(rows *sql.Rows) []*SavedSearch {
+	var savedSearches []*SavedSearch
+	for rows.Next() {
+		var savedSearch SavedSearch
+		err := rows.Scan(&savedSearch.Id, &savedSearch.UserId, &savedSearch.Name, &savedSearch.Search)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		savedSearches = append(savedSearches, &savedSearch)
+	}
+	return savedSearches
+}
+
+func (m *Manager) GetSavedSearches(userId int) []*SavedSearch {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(savedSearchesByUserIDSql, userId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanSavedSearches(rows)
+}
+
+func (m *Manager) CreateSavedSearch(savedSearch *SavedSearch) (int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return -1, err
+	}
+	row := tx.QueryRow(createSavedSearchSql, savedSearch.UserId, savedSearch.Name, savedSearch.Search)
+	var id int
+	err = row.Scan(&id)
+	if err != nil {
+		return -1, err
+	}
+	return id, tx.Commit()
+}
+
+func (m *Manager) DeleteSavedSearchById(id int) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	res, err := tx.Exec(deleteSavedSearchSql, id)
 	if err != nil {
 		return err
 	}
