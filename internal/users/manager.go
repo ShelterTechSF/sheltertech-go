@@ -27,6 +27,7 @@ func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 func (m *Manager) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	dbUser, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		writeJson(w, ApiError{err.Error()})
 		return
 	}
