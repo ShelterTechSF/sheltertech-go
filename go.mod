@@ -4,7 +4,7 @@ go 1.22
 
 toolchain go1.22.1
 
-require github.com/go-chi/chi/v5 v5.0.14
+require github.com/go-chi/chi/v5 v5.1.0
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.3.3
