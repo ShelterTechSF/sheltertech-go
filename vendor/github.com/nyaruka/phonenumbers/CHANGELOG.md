@@ -1,3 +1,18 @@
+v1.4.0 (2024-07-15)
+-------------------------
+ * Update GetLengthOfGeographicalAreaCode to match recent libphonenumber changes
+ * Update metadata
+ * Update deps
+
+v1.3.6 (2024-05-27)
+-------------------------
+ * Update metadata
+ * Use https for git fetch
+
+v1.3.5 (2024-05-08)
+-------------------------
+ * Update metadata
+
 v1.3.4 (2024-03-14)
 -------------------------
  * Update metadata
