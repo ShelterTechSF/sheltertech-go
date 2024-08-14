@@ -1,7 +1,8 @@
-FROM golang:1.22
-
+FROM golang:alpine AS builder
 WORKDIR /app
+ADD . /app
+RUN go build -o /sheltertech-go ./cmd/sheltertech-go
 
-EXPOSE 3001
-
-CMD [ "/app/tmp/sheltertech-go" ]
+FROM golang:alpine
+COPY --from=builder /sheltertech-go /sheltertech-go
+CMD ["/sheltertech-go"]
