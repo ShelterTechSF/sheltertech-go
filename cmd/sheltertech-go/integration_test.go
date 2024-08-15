@@ -23,6 +23,7 @@ import (
 
 const categoryUrl = "http://localhost:3001/api/categories"
 const serviceUrl = "http://localhost:3001/api/services"
+const bookmarkUrl = "http://localhost:3001/api/bookmarks"
 
 func TestGetCategoriesFeatured(t *testing.T) {
 	startServer()
@@ -113,6 +114,33 @@ func TestGetServiceByID(t *testing.T) {
 
 	assert.Equal(t, serviceResponse.Service.Id, serviceId, "Service Id is a match")
 }
+
+func TestUnauthorized(t *testing.T) {
+	t.Skip("skipping until this is supported in dev")
+	startServer()
+
+	res, err := http.Get(bookmarkUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusUnauthorized, res.StatusCode)
+}
+
+func TestAuthorized(t *testing.T) {
+	t.Skip("skipping until this is supported in dev")
+	startServer()
+
+	req, err := http.NewRequest(http.MethodGet, bookmarkUrl, nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer k")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusOK, res.StatusCode)
+}
+
 func TestPostServicesChangeRequest(t *testing.T) {
 	startServer()
 
@@ -176,6 +204,7 @@ func startServer() {
 	viper.SetDefault("DB_PORT", "5432")
 	viper.SetDefault("DB_NAME", "askdarcel_development")
 	viper.SetDefault("DB_PASS", "")
+	viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
 	go main()
 	time.Sleep(time.Second)
 }

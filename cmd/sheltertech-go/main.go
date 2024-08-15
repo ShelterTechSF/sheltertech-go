@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/docs"
+	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/bookmarks"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
@@ -57,7 +58,7 @@ func main() {
 	dbPass := viper.GetString("DB_PASS")
 	serveDocs := viper.GetBool("SERVE_DOCS")
 	auth0Domain := viper.GetString("AUTH0_DOMAIN")
-
+	enableJwtVerification := viper.GetBool("ENABLE_JWT_VERIFICATION")
 	var jwtKeyfunc keyfunc.Keyfunc
 	if auth0Domain != "" {
 		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
@@ -96,37 +97,43 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(sentryHandler.Handle)
 
-	r.Get("/api/categories", categoriesManager.Get)
-	r.Get("/api/categories/{id}", categoriesManager.GetByID)
-	r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
-	r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
-	r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
+	r.Group(func(r chi.Router) {
+		if enableJwtVerification {
+			r.Use(auth.EnsureValidToken())
+		}
+		r.Get("/api/folders", foldersManager.Get)
+		r.Post("/api/folders", foldersManager.Post)
+		r.Get("/api/folders/{id}", foldersManager.GetByID)
+		r.Put("/api/folders/{id}", foldersManager.Put)
+		r.Delete("/api/folders/{id}", foldersManager.Delete)
 
-	// no user auth in folders yet
-	r.Get("/api/folders", foldersManager.Get)
-	r.Post("/api/folders", foldersManager.Post)
-	r.Get("/api/folders/{id}", foldersManager.GetByID)
-	r.Put("/api/folders/{id}", foldersManager.Put)
-	r.Delete("/api/folders/{id}", foldersManager.Delete)
+		r.Get("/api/bookmarks", bookmarksManager.Get)
+		r.Get("/api/bookmarks/{id}", bookmarksManager.GetByID)
+		r.Post("/api/bookmarks", bookmarksManager.Submit)
+		r.Put("/api/bookmarks/{id}", bookmarksManager.Update)
+		r.Delete("/api/bookmarks/{id}", bookmarksManager.DeleteByID)
 
-	r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
-	r.Get("/api/services/{id}", servicesManager.GetByID)
-	r.Get("/api/resources/{id}", resourcesManager.GetByID)
-	r.Get("/api/users/current", usersManager.GetCurrent)
+		r.Get("/api/saved_searches", savedSearchesManager.Get)
+		r.Post("/api/saved_searches", savedSearchesManager.Post)
+		r.Get("/api/saved_searches/{id}", savedSearchesManager.GetByID)
+		// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
+		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
+	})
 
-	r.Get("/metrics", promhttp.Handler().ServeHTTP)
+	r.Group(func(r chi.Router) {
+		r.Get("/api/categories", categoriesManager.Get)
+		r.Get("/api/categories/{id}", categoriesManager.GetByID)
+		r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
+		r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
+		r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
-	r.Get("/api/bookmarks", bookmarksManager.Get)
-	r.Get("/api/bookmarks/{id}", bookmarksManager.GetByID)
-	r.Post("/api/bookmarks", bookmarksManager.Submit)
-	r.Put("/api/bookmarks/{id}", bookmarksManager.Update)
-	r.Delete("/api/bookmarks/{id}", bookmarksManager.DeleteByID)
+		r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
+		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Get("/api/resources/{id}", resourcesManager.GetByID)
+		r.Get("/api/users/current", usersManager.GetCurrent)
 
-	r.Get("/api/saved_searches", savedSearchesManager.Get)
-	r.Post("/api/saved_searches", savedSearchesManager.Post)
-	r.Get("/api/saved_searches/{id}", savedSearchesManager.GetByID)
-	// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
-	r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
+		r.Get("/metrics", promhttp.Handler().ServeHTTP)
+	})
 
 	docs.SwaggerInfo.Title = "Swagger Example API"
 	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
