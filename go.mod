@@ -6,7 +6,7 @@ toolchain go1.22.1
 
 require github.com/go-chi/chi/v5 v5.1.0
 
-require github.com/auth0/go-jwt-middleware/v2 v2.2.0
+require github.com/auth0/go-jwt-middleware/v2 v2.2.1
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.3.3
