@@ -7,8 +7,8 @@ github.com/MicahParks/jwkset
 # github.com/MicahParks/keyfunc/v3 v3.3.3
 ## explicit; go 1.21
 github.com/MicahParks/keyfunc/v3
-# github.com/auth0/go-jwt-middleware/v2 v2.2.1
-## explicit; go 1.19
+# github.com/auth0/go-jwt-middleware/v2 v2.2.2
+## explicit; go 1.22
 github.com/auth0/go-jwt-middleware/v2
 github.com/auth0/go-jwt-middleware/v2/internal/oidc
 github.com/auth0/go-jwt-middleware/v2/jwks
