@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -163,6 +164,42 @@ func TestPostServicesChangeRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
+}
+
+func TestGetBookmarksBadRequest(t *testing.T) {
+	startServer()
+
+	res, err := http.Get(bookmarkUrl + "?user_id=a")
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	serviceResponse := new(common.Error)
+	err = json.Unmarshal(body, serviceResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, serviceResponse.StatusCode, http.StatusBadRequest, "Response contains a 400")
+	assert.NotEmpty(t, serviceResponse.Error, "Response has some error message")
+}
+
+func TestGetBookmarkByIDError(t *testing.T) {
+	startServer()
+
+	res, err := http.Get(bookmarkUrl + "/0")
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	serviceResponse := new(common.Error)
+	err = json.Unmarshal(body, serviceResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, serviceResponse.StatusCode, http.StatusInternalServerError, "Response contains a 400")
+	assert.Equal(t, serviceResponse.Error, common.InternalServerErrorMessage)
 }
 
 func TestSwaggerDocs(t *testing.T) {

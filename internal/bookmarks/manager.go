@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 
 	"github.com/go-chi/chi/v5"
@@ -30,10 +31,26 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	userId := r.URL.Query().Get("user_id")
 
 	if userId != "" {
-		iUserId, _ := strconv.Atoi(userId)
-		dbBookmarks = m.DbClient.GetBookmarksByUserID(iUserId)
+		iUserId, err := strconv.Atoi(userId)
+		if err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		dbBookmarks, err = m.DbClient.GetBookmarksByUserID(iUserId)
+		if err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
 	} else {
-		dbBookmarks = m.DbClient.GetBookmarks()
+		var err error
+		dbBookmarks, err = m.DbClient.GetBookmarks()
+		if err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
 	}
 	response := Bookmarks{
 		Bookmarks: FromDBTypeArray(dbBookmarks),
@@ -46,9 +63,16 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	dbBookmark := m.DbClient.GetBookmarkByID(id)
+	dbBookmark, err := m.DbClient.GetBookmarkByID(id)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
 
 	response := FromDBType(dbBookmark)
 
@@ -63,7 +87,9 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	bookmark := &Bookmark{}
 	err := json.Unmarshal(body, bookmark)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	dbBookmark := &db.Bookmark{
@@ -77,11 +103,11 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	err = m.DbClient.SubmitBookmark(dbBookmark)
 	if err != nil {
 		log.Print(err)
-		writeStatus(w, http.StatusInternalServerError)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
 	}
 
 	writeStatus(w, http.StatusCreated)
-
 }
 
 func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +118,9 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	bookmark := &Bookmark{}
 	err := json.Unmarshal(body, bookmark)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	dbBookmark := &db.Bookmark{
@@ -106,8 +134,9 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 
 	err = m.DbClient.UpdateBookmark(dbBookmark)
 	if err != nil {
-		log.Print(err)
-		writeStatus(w, http.StatusInternalServerError)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
 	}
 
 	writeStatus(w, http.StatusCreated)
@@ -119,11 +148,14 @@ func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 	bookmarkId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	err = m.DbClient.DeleteBookmarkByID(bookmarkId)
 	if err != nil {
 		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 	}
 
 }
