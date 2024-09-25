@@ -151,3 +151,12 @@ func main() {
 
 	http.ListenAndServe(":3001", r)
 }
+
+func setIntegrationTestEnv() {
+	viper.SetDefault("DB_USER", "postgres")
+	viper.SetDefault("DB_HOST", "localhost")
+	viper.SetDefault("DB_PORT", "5432")
+	viper.SetDefault("DB_NAME", "askdarcel_development")
+	viper.SetDefault("DB_PASS", "")
+	viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
+}
