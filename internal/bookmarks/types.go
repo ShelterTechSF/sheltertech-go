@@ -9,6 +9,7 @@ type Bookmark struct {
 	ServiceID  *int `json:"service_id"`
 	ResourceID *int `json:"resource_id"`
 	UserID     *int `json:"user_id"`
+	Name      string `json:"name"`
 }
 
 type Bookmarks struct {
@@ -23,6 +24,7 @@ func FromDBType(dbBookmark *db.Bookmark) *Bookmark {
 		ResourceID: dbBookmark.ResourceID,
 		UserID:     dbBookmark.UserID,
 		FolderID:   dbBookmark.FolderID,
+		Name:       dbBookmark.Name,
 	}
 	return bookmark
 }

@@ -14,27 +14,26 @@ type Bookmark struct {
 	ServiceID  *int
 	ResourceID *int
 	UserID     *int
+	Name	   string
 	CreatedAt  sql.NullTime
 	UpdatedAt  sql.NullTime
 }
 
 const findBookmarksSql = `
-SELECT id, "order", user_id, folder_id, service_id, resource_id from public.bookmarks`
+SELECT id, "order", user_id, folder_id, service_id, resource_id, name from public.bookmarks`
 
 const findBookmarksByUserIDSql = `
-SELECT id, "order", user_id, folder_id, service_id, resource_id from public.bookmarks 
-WHERE user_id=$1`
+SELECT id, "order", user_id, folder_id, service_id, resource_id, name from public.bookmarks WHERE user_id=$1`
 
 const findBookmarksByIDSql = `
-SELECT id, "order", user_id, folder_id, service_id, resource_id from public.bookmarks 
-WHERE id=$1`
+SELECT id, "order", user_id, folder_id, service_id, resource_id, name from public.bookmarks WHERE id=$1`
 
 const submitBookmark = `
-INSERT INTO public.bookmarks ("order", user_id, folder_id, resource_id, service_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, now(), now())`
+INSERT INTO public.bookmarks ("order", user_id, folder_id, resource_id, service_id, name, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, now(), now())`
 
 const updateBookmark = `
-UPDATE public.bookmarks SET "order" = $2, user_id = $3, folder_id= $4, resource_id = $5, service_id = $6 where id = $1`
+UPDATE public.bookmarks SET "order" = $2, user_id = $3, folder_id= $4, resource_id = $5, service_id = $6, name = $7 where id = $1`
 
 const deleteBookmarkByIDSql = `
 DELETE FROM public.bookmarks WHERE id = $1
@@ -77,7 +76,7 @@ func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(submitBookmark, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID)
+	res, err := tx.Exec(submitBookmark, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID, bookmark.Name)
 	if err != nil {
 		return err
 	}
@@ -99,7 +98,7 @@ func (m *Manager) UpdateBookmark(bookmark *Bookmark) error {
 	if err != nil {
 		return err
 	}
-	res, err := tx.Exec(updateBookmark, bookmark.Id, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID)
+	res, err := tx.Exec(updateBookmark, bookmark.Id, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID, bookmark.Name)
 	if err != nil {
 		return err
 	}
@@ -140,7 +139,7 @@ func scanBookmarks(rows *sql.Rows) []*Bookmark {
 	var bookmarks []*Bookmark
 	for rows.Next() {
 		var bookmark Bookmark
-		err := rows.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID)
+		err := rows.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID, &bookmark.Name)
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
@@ -153,6 +152,6 @@ func scanBookmarks(rows *sql.Rows) []*Bookmark {
 
 func scanBookmark(row *sql.Row) (*Bookmark, error) {
 	var bookmark Bookmark
-	err := row.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID)
+	err := row.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID, &bookmark.Name)
 	return &bookmark, err
 }
