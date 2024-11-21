@@ -98,6 +98,7 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 		ServiceID:  bookmark.ServiceID,
 		ResourceID: bookmark.ResourceID,
 		UserID:     bookmark.UserID,
+		Name:       bookmark.Name,
 	}
 
 	err = m.DbClient.SubmitBookmark(dbBookmark)
@@ -130,6 +131,7 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 		ServiceID:  bookmark.ServiceID,
 		ResourceID: bookmark.ResourceID,
 		UserID:     bookmark.UserID,
+		Name:       bookmark.Name,
 	}
 
 	err = m.DbClient.UpdateBookmark(dbBookmark)

@@ -187,6 +187,7 @@ CREATE TABLE public.bookmarks (
     identifier character varying,
     date_value timestamp without time zone,
     id_value integer,
+    name character varying,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
