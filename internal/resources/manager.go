@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
@@ -53,6 +54,18 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		Resource: response,
 	}
 	writeJson(w, resourceResponse)
+}
+
+func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
+	count, err := m.DbClient.GetResourcesCount()
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write([]byte(strconv.Itoa(count)))
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {

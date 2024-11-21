@@ -130,6 +130,7 @@ func main() {
 		r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
+		r.Get("/api/resources/count", resourcesManager.GetCount)
 		r.Get("/api/users/current", usersManager.GetCurrent)
 
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
