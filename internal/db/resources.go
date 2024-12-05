@@ -34,9 +34,26 @@ FROM public.resources
 WHERE id = $1
 `
 
+const resourceCount = `
+SELECT count(1)
+FROM public.resources
+WHERE status = 1
+`
+
 func (m *Manager) GetResourceById(resourceId int) *Resource {
 	row := m.DB.QueryRow(resourceByIDSql, resourceId)
 	return scanResource(row)
+}
+
+func (m *Manager) GetResourcesCount() (int, error) {
+	row := m.DB.QueryRow(resourceCount)
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+
 }
 
 func scanResource(row *sql.Row) *Resource {
