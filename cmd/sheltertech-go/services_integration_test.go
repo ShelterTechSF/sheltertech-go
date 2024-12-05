@@ -44,6 +44,13 @@ func TestGetServiceByID(t *testing.T) {
 	assert.Equal(t, serviceResponse.Service.Id, serviceId, "Service Id is a match")
 }
 
+func TestGetServiceByIDWithInvalidID(t *testing.T) {
+	serviceId := "foo"
+
+	res, _ := http.Get(serviceUrl + "/" + serviceId)
+	assert.Equal(t, res.StatusCode, http.StatusBadRequest, "Invalid service ID returns bad request")
+}
+
 func TestPostServicesChangeRequest(t *testing.T) {
 	url := "http://localhost:3001/api/services/1/change_request"
 
