@@ -4,7 +4,7 @@ go 1.22
 
 toolchain go1.22.1
 
-require github.com/go-chi/chi/v5 v5.1.0
+require github.com/go-chi/chi/v5 v5.2.0
 
 require github.com/auth0/go-jwt-middleware/v2 v2.2.2
 
