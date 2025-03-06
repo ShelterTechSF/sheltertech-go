@@ -14,7 +14,7 @@ type Bookmark struct {
 	ServiceID  *int
 	ResourceID *int
 	UserID     *int
-	Name	   string
+	Name       string
 	CreatedAt  sql.NullTime
 	UpdatedAt  sql.NullTime
 }
