@@ -3,13 +3,13 @@ package bookmarks
 import "github.com/sheltertechsf/sheltertech-go/internal/db"
 
 type Bookmark struct {
-	Id         int  `json:"id"`
-	Order      int  `json:"order"`
-	FolderID   *int `json:"folder_id"`
-	ServiceID  *int `json:"service_id"`
-	ResourceID *int `json:"resource_id"`
-	UserID     *int `json:"user_id"`
-	Name      string `json:"name"`
+	Id         int    `json:"id"`
+	Order      int    `json:"order"`
+	FolderID   *int   `json:"folder_id"`
+	ServiceID  *int   `json:"service_id"`
+	ResourceID *int   `json:"resource_id"`
+	UserID     *int   `json:"user_id"`
+	Name       string `json:"name"`
 }
 
 type Bookmarks struct {
