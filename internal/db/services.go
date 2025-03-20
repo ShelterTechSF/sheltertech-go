@@ -48,7 +48,7 @@ FROM public.services
 WHERE resource_id = $1 and status = 1
 `
 
-func (m *Manager) GetServiceById(serviceId int) *Service {
+func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)
 }
@@ -78,17 +78,8 @@ func scanServices(rows *sql.Rows) []*Service {
 	return services
 }
 
-func scanService(row *sql.Row) *Service {
+func scanService(row *sql.Row) (*Service, error) {
 	var service Service
 	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		default:
-			panic(err)
-		}
-	}
-	return &service
+	return &service, err
 }
