@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
@@ -34,7 +35,12 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	var service *db.Service
 	switch changeRequest.Type {
 	case "ServiceChangeRequest":
-		service = m.DbClient.GetServiceById(changeRequest.ObjectID)
+		service, err = m.DbClient.GetServiceById(changeRequest.ObjectID)
+			if err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return	
+	}
 		break
 	}
 	if err != nil || service == nil {

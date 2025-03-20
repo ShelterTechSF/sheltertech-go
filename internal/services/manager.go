@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
@@ -18,6 +17,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"github.com/sheltertechsf/sheltertech-go/internal/common"	
 )
 
 type Manager struct {
@@ -44,8 +44,15 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return		
 	}
-	dbService := m.DbClient.GetServiceById(serviceId)
+	dbService, err := m.DbClient.GetServiceById(serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return		
+	}
 	response := FromDBType(dbService)
 	response.Categories = categories.FromDBTypeArray(m.DbClient.GetCategoriesByServiceID(serviceId))
 	response.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByServiceID(serviceId))
@@ -76,7 +83,9 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
