@@ -10,6 +10,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/bookmarks"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
+	"github.com/sheltertechsf/sheltertech-go/internal/datathon"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
@@ -78,6 +79,7 @@ func main() {
 	usersManager := users.New(dbManager, jwtKeyfunc)
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
+	datathonManager := datathon.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -132,7 +134,8 @@ func main() {
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
 		r.Get("/api/users/current", usersManager.GetCurrent)
-
+		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
+		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
 	})
 
