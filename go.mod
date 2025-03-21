@@ -12,7 +12,7 @@ require (
 	github.com/MicahParks/keyfunc/v3 v3.3.5
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/gin-gonic/gin v1.9.1
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/phonenumbers v1.5.0
 	github.com/prometheus/client_golang v1.20.5
