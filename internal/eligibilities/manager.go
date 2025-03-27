@@ -19,12 +19,13 @@ func New(dbManager *db.Manager) *Manager {
 
 // Get all eligibilities
 //
-//	@Summary		Get Eligibilities
-//	@Description	Get all eligibilities sorted by name in ascending order (filtered by category id if one is provided in a param)
-//	@Tags			elgibilities
-//	@Produce		json
-//	@Success		200	{array}	eligibilities.Eligibility
-//	@Router			/resources [get]
+//	@Summary        Get Eligibilities
+//	@Description    Get all eligibilities sorted by name in ascending order, with optional filtering by category.
+//	@Tags           eligibilities
+//	@Produce        json
+//	@Param          category_id query integer false "Filter eligibilities by category ID"
+//	@Success        200 {array} eligibilities.Eligibility
+//	@Router         /eligibilities [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {}
 
 // Get eligibility by ID
