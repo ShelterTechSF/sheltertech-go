@@ -20,7 +20,7 @@ func New(dbManager *db.Manager) *Manager {
 // Get all eligibilities
 //
 //	@Summary		Get Eligibilities
-//	@Description	Get all eligibilities sorted by name in ascending order.
+//	@Description	Get all eligibilities sorted by name in ascending order (filtered by category id if one is provided in a param)
 //	@Tags			elgibilities
 //	@Produce		json
 //	@Success		200	{array}	eligibilities.Eligibility
