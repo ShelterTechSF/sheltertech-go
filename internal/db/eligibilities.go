@@ -3,9 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"github.com/lib/pq"
 	"log"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Eligibility struct {
@@ -16,6 +17,25 @@ type Eligibility struct {
 	UpdatedAt   time.Time
 }
 
+const eligibilitiesSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+`
+const eligibilitiesByCategoryIDSql = `
+SELECT e.id, e.name, e.feature_rank 
+FROM public.eligibilities e
+WHERE e.id IN (
+    SELECT DISTINCT es.eligibility_id
+    FROM public.eligibilities_services es
+    WHERE es.service_id IN (
+        SELECT cs.service_id
+        FROM public.categories_services cs
+		WHERE cs.category_id = $1
+	)
+)
+ORDER BY 
+   e.name ASC;
+`
 const eligibilitiesByIDsSql = `
 SELECT e.id, e.name, e.feature_rank
 FROM public.eligibilities e
@@ -34,6 +54,38 @@ FROM public.eligibilities e
 LEFT JOIN public.eligibilities_services es on e.id = es.eligibility_id
 WHERE es.service_id = $1
 `
+
+func (m *Manager) GetEligibilities() []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(eligibilitiesSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query()
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+
+}
+
+func (m *Manager) GetEligibilitiesByCategoryId(categoryId *int) []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(eligibilitiesByCategoryIDSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(*categoryId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+
+}
 
 func (m *Manager) GetEligibilitiesByIDs(ids []int) []*Eligibility {
 	var rows *sql.Rows

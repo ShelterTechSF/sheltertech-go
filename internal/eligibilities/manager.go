@@ -1,7 +1,11 @@
 package eligibilities
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
@@ -23,10 +27,33 @@ func New(dbManager *db.Manager) *Manager {
 //	@Description    Get all eligibilities sorted by name in ascending order, with optional filtering by category.
 //	@Tags           eligibilities
 //	@Produce        json
-//	@Param          category_id query integer false "Filter eligibilities by category ID"
+//	@Param          categoryId query integer false "Filter eligibilities by category ID"
 //	@Success        200 {array} eligibilities.Eligibility
 //	@Router         /eligibilities [get]
-func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {}
+func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
+	var eligibilities []*db.Eligibility
+	var categoryId *int
+	if categoyIdStr := r.URL.Query().Get("category_id"); categoyIdStr != "" {
+
+		categoryIdInt, err := strconv.Atoi(categoyIdStr)
+
+		if err != nil {
+			log.Printf("%v", err)
+
+		}
+		categoryId = &categoryIdInt
+
+		eligibilities = m.DbClient.GetEligibilitiesByCategoryId(categoryId)
+
+	} else {
+		eligibilities = m.DbClient.GetEligibilities()
+	}
+	response := Eligibilities{
+		Eligibilities: FromEligibilitiesDBTypeArray(eligibilities),
+	}
+	writeJson(w, response)
+
+}
 
 // Get eligibility by ID
 //
@@ -101,3 +128,16 @@ func handleUpdateErrors(e error) {}
 //	@Return         map[int]int "Map of eligibility ID to service count"
 //	@Return         map[int]int "Map of eligibility ID to resource count"
 func computeCounts(eligibilityIds int) {}
+
+func writeJson(w http.ResponseWriter, object interface{}) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(output)
+	if err != nil {
+		panic(err)
+	}
+}

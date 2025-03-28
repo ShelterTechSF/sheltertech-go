@@ -7,6 +7,9 @@ type Eligibility struct {
 	Id          int     `json:"id"`
 	FeatureRank *int    `json:"feature_rank"`
 }
+type Eligibilities struct {
+	Eligibilities []*Eligibility `json:"eligibilities"`
+}
 
 func FromEligibilityDBType(dbEligibility *db.Eligibility) *Eligibility {
 	eligibility := &Eligibility{
