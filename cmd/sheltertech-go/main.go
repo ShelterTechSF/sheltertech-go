@@ -12,6 +12,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/datathon"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
@@ -80,7 +81,7 @@ func main() {
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
 	datathonManager := datathon.New(dbManager)
-
+	eligibilityManager := eligibilities.New((dbManager))
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
 		EnableTracing: true,
@@ -137,6 +138,8 @@ func main() {
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
+
+		r.Get("/api/eligibilities", eligibilityManager.Get)
 	})
 
 	docs.SwaggerInfo.Title = "Swagger Example API"

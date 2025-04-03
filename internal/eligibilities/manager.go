@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
@@ -31,28 +32,40 @@ func New(dbManager *db.Manager) *Manager {
 //	@Success        200 {array} eligibilities.Eligibility
 //	@Router         /eligibilities [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
+	// Check for unexpected query parameters
+	// Add valid params here
+	validParams := map[string]bool{"category_id": true}
+
+	for param := range r.URL.Query() {
+		if !validParams[param] {
+			errMsg := fmt.Sprintf("Unexpected query parameter: %s", param)
+			log.Printf("%v", errMsg)
+			common.WriteErrorJson(w, http.StatusBadRequest, errMsg)
+			return
+		}
+	}
+
 	var eligibilities []*db.Eligibility
 	var categoryId *int
-	if categoyIdStr := r.URL.Query().Get("category_id"); categoyIdStr != "" {
-
-		categoryIdInt, err := strconv.Atoi(categoyIdStr)
+	if categoryIdStr := r.URL.Query().Get("category_id"); categoryIdStr != "" {
+		categoryIdInt, err := strconv.Atoi(categoryIdStr)
 
 		if err != nil {
 			log.Printf("%v", err)
-
+			common.WriteErrorJson(w, http.StatusUnprocessableEntity, "Enter a valid Category ID")
+			return
 		}
 		categoryId = &categoryIdInt
-
 		eligibilities = m.DbClient.GetEligibilitiesByCategoryId(categoryId)
 
 	} else {
 		eligibilities = m.DbClient.GetEligibilities()
+
 	}
 	response := Eligibilities{
 		Eligibilities: FromEligibilitiesDBTypeArray(eligibilities),
 	}
 	writeJson(w, response)
-
 }
 
 // Get eligibility by ID
@@ -132,7 +145,9 @@ func computeCounts(eligibilityIds int) {}
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
