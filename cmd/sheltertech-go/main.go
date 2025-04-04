@@ -140,6 +140,7 @@ func main() {
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 		r.Get("/api/eligibilities", eligibilityManager.Get)
+		r.Get("/api/eligibilities/{id}", eligibilityManager.GetEligibilityById)
 	})
 
 	docs.SwaggerInfo.Title = "Swagger Example API"

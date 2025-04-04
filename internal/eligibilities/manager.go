@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
@@ -76,9 +77,34 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Produce        json
 //	@Param          id path integer true "Eligibility ID"
 //	@Success        200 {object} eligibilities.Eligibility
-//	@Failure        404 {object} error
+//	@Failure        400 {object} error "Invalid eligibility ID format"
+//	@Failure        404 {object} error "Eligibility not found"
+//	@Failure        500 {object} error "Internal server error"
 //	@Router         /eligibilities/{id} [get]
-func (m *Manager) GetEligibilityById(w http.ResponseWriter, r *http.Request) {}
+func (m *Manager) GetEligibilityById(w http.ResponseWriter, r *http.Request) {
+	// Get the ID from the URL parameters
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid eligibility ID format")
+		return
+	}
+
+	// Call the DB client function with a slice containing just the one ID
+	eligibilities := m.DbClient.GetEligibilitiesByIDs([]int{id})
+
+	// Check if we got any results
+	if len(eligibilities) == 0 {
+		common.WriteErrorJson(w, http.StatusNotFound, "Eligibility not found")
+		return
+	}
+
+	// Convert from DB type and return the first (and only) result
+	response := FromEligibilityDBType(eligibilities[0])
+
+	writeJson(w, response)
+}
 
 // Update eligibility
 //
