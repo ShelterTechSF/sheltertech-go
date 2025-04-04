@@ -162,8 +162,55 @@ func (m *Manager) GetFeaturedEligibilities(w http.ResponseWriter, r *http.Reques
 //	@Param          id query integer false "Parent eligibility ID"
 //	@Param          name query string false "Parent eligibility name"
 //	@Success        200 {array} eligibilities.Eligibility
+//	@Failure        400 {object} error "Bad request - unexpected query parameter or missing required parameters"
+//	@Failure        422 {object} error "Unprocessable Entity - invalid parent eligibility ID format"
 //	@Router         /eligibilities/subeligibilities [get]
-func (m *Manager) GetSubEligibilities(w http.ResponseWriter, r *http.Request) {}
+func (m *Manager) GetSubEligibilities(w http.ResponseWriter, r *http.Request) {
+	// Check for unexpected query parameters
+	validParams := map[string]bool{"id": true, "name": true}
+
+	for param := range r.URL.Query() {
+		if !validParams[param] {
+			errMsg := fmt.Sprintf("Unexpected query parameter: %s", param)
+			log.Printf("%v", errMsg)
+			common.WriteErrorJson(w, http.StatusBadRequest, errMsg)
+			return
+		}
+	}
+
+	var eligibilities []*db.Eligibility
+
+	// Check if a name parameter was provided
+	if parentName := r.URL.Query().Get("name"); parentName != "" {
+		eligibilities = m.DbClient.GetSubEligibilitiesByParentName(parentName)
+	} else if parentIDStr := r.URL.Query().Get("id"); parentIDStr != "" {
+		// Parse the parent ID
+		parentID, err := strconv.Atoi(parentIDStr)
+		if err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusUnprocessableEntity, "Enter a valid parent eligibility ID")
+			return
+		}
+		eligibilities = m.DbClient.GetSubEligibilitiesByParentID(parentID)
+	} else {
+		// Neither name nor ID was provided
+		common.WriteErrorJson(w, http.StatusBadRequest, "Either name or id parameter is required")
+		return
+	}
+
+	// If no eligibilities were found, return an empty array
+	if eligibilities == nil {
+		eligibilities = []*db.Eligibility{}
+	}
+
+	// Create response object with the subeligibilities
+	response := Eligibilities{
+		Eligibilities: FromEligibilitiesDBTypeArray(eligibilities),
+	}
+
+	// Write response as JSON
+	writeJson(w, response)
+}
 
 // Compute service and resource counts
 //

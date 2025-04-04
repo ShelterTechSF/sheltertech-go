@@ -61,6 +61,31 @@ FROM public.eligibilities e
 WHERE e.feature_rank IS NOT NULL
 ORDER BY e.feature_rank ASC
 `
+const subEligibilitiesByParentNameSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+WHERE e.id IN (
+    SELECT er.child_id 
+    FROM public.eligibility_relationships er
+    WHERE er.parent_id = (
+        SELECT id 
+        FROM public.eligibilities 
+        WHERE name = $1
+    )
+)
+ORDER BY e.name ASC
+`
+
+const subEligibilitiesByParentIDSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+WHERE e.id IN (
+    SELECT er.child_id 
+    FROM public.eligibility_relationships er
+    WHERE er.parent_id = $1
+)
+ORDER BY e.name ASC
+`
 
 func (m *Manager) GetEligibilities() []*Eligibility {
 	var rows *sql.Rows
@@ -118,6 +143,36 @@ func (m *Manager) GetFeaturedEligibilities() []*Eligibility {
 		return nil
 	}
 	rows, err = stmt.Query()
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+}
+
+func (m *Manager) GetSubEligibilitiesByParentName(parentName string) []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(subEligibilitiesByParentNameSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(parentName)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+}
+
+func (m *Manager) GetSubEligibilitiesByParentID(parentID int) []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(subEligibilitiesByParentIDSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query(parentID)
 	if err != nil {
 		log.Printf("%v\n", err)
 	}
