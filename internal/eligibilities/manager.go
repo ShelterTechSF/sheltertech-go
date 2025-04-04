@@ -133,7 +133,25 @@ func (m *Manager) UpdateEligibilityById(w http.ResponseWriter, r *http.Request) 
 //	@Success        200 {object} object "Object containing array of eligibilities with counts"
 //	@Success        200 {array} eligibilities.Eligibility "Eligibilities array with additional service_count and resource_count fields"
 //	@Router         /eligibilities/featured [get]
-func (m *Manager) GetFeaturedEligibilities(w http.ResponseWriter, r *http.Request) {}
+
+func (m *Manager) GetFeaturedEligibilities(w http.ResponseWriter, r *http.Request) {
+	// Get featured eligibilities (those with non-null feature_rank)
+	// Already sorted by feature_rank in ascending order from the query
+	eligibilities := m.DbClient.GetFeaturedEligibilities()
+
+	// If no featured eligibilities were found, return an empty array
+	if eligibilities == nil {
+		eligibilities = []*db.Eligibility{}
+	}
+
+	// Create response object
+	response := Eligibilities{
+		Eligibilities: FromEligibilitiesDBTypeArray(eligibilities),
+	}
+
+	// Write response as JSON
+	writeJson(w, response)
+}
 
 // Get subeligibilities
 //
@@ -146,17 +164,6 @@ func (m *Manager) GetFeaturedEligibilities(w http.ResponseWriter, r *http.Reques
 //	@Success        200 {array} eligibilities.Eligibility
 //	@Router         /eligibilities/subeligibilities [get]
 func (m *Manager) GetSubEligibilities(w http.ResponseWriter, r *http.Request) {}
-
-// Handle update errors
-//
-//	@Summary        Internal - Handle Update Errors
-//	@Description    Private method to handle different types of errors during eligibility updates.
-//	@Tags           internal
-//	@Param          error body object true "Error object to process"
-//	@Failure        404 {object} error "Eligibility not found"
-//	@Failure        400 {object} error "Duplicate name or validation error"
-//	@Failure        500 {object} error "Internal server error"
-func handleUpdateErrors(e error) {}
 
 // Compute service and resource counts
 //

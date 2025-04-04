@@ -55,6 +55,13 @@ LEFT JOIN public.eligibilities_services es on e.id = es.eligibility_id
 WHERE es.service_id = $1
 `
 
+const featuredEligibilitiesSql = `
+SELECT e.id, e.name, e.feature_rank
+FROM public.eligibilities e
+WHERE e.feature_rank IS NOT NULL
+ORDER BY e.feature_rank ASC
+`
+
 func (m *Manager) GetEligibilities() []*Eligibility {
 	var rows *sql.Rows
 	var err error
@@ -96,6 +103,21 @@ func (m *Manager) GetEligibilitiesByIDs(ids []int) []*Eligibility {
 		return nil
 	}
 	rows, err = stmt.Query(pq.Array(ids))
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanEligibilities(rows)
+}
+
+func (m *Manager) GetFeaturedEligibilities() []*Eligibility {
+	var rows *sql.Rows
+	var err error
+	stmt, err := m.DB.Prepare(featuredEligibilitiesSql)
+	if err != nil {
+		log.Printf("Prepare failed: %v\n", err)
+		return nil
+	}
+	rows, err = stmt.Query()
 	if err != nil {
 		log.Printf("%v\n", err)
 	}
