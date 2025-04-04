@@ -87,6 +87,15 @@ WHERE e.id IN (
 ORDER BY e.name ASC
 `
 
+const updateEligibilitySql = `
+UPDATE public.eligibilities
+SET name = COALESCE($1, name),
+    feature_rank = COALESCE($2, feature_rank),
+    updated_at = NOW()
+WHERE id = $3
+RETURNING id, name, feature_rank
+`
+
 func (m *Manager) GetEligibilities() []*Eligibility {
 	var rows *sql.Rows
 	var err error
@@ -177,6 +186,35 @@ func (m *Manager) GetSubEligibilitiesByParentID(parentID int) []*Eligibility {
 		log.Printf("%v\n", err)
 	}
 	return scanEligibilities(rows)
+}
+
+func (m *Manager) UpdateEligibility(id int, name *string, featureRank *int) (*Eligibility, error) {
+	var eligibility Eligibility
+	var nameParam, featureRankParam interface{}
+
+	// Set parameters for the query
+	nameParam = nil
+	if name != nil {
+		nameParam = *name
+	}
+
+	featureRankParam = nil
+	if featureRank != nil {
+		featureRankParam = *featureRank
+	}
+
+	// Execute the query
+	row := m.DB.QueryRow(updateEligibilitySql, nameParam, featureRankParam, id)
+	err := row.Scan(&eligibility.Id, &eligibility.Name, &eligibility.FeatureRank)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("eligibility with ID %d not found", id)
+		}
+		return nil, err
+	}
+
+	return &eligibility, nil
 }
 
 func (m *Manager) GetEligibilitiesByNames(names []string) []*Eligibility {

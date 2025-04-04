@@ -11,6 +11,11 @@ type Eligibilities struct {
 	Eligibilities []*Eligibility `json:"eligibilities"`
 }
 
+type EligibilityUpdateRequest struct {
+	Name        *string `json:"name,omitempty"`
+	FeatureRank *int    `json:"feature_rank,omitempty"`
+}
+
 func FromEligibilityDBType(dbEligibility *db.Eligibility) *Eligibility {
 	eligibility := &Eligibility{
 		Id: dbEligibility.Id,

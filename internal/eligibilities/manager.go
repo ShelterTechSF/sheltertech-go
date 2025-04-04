@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
@@ -122,7 +123,50 @@ func (m *Manager) GetEligibilityById(w http.ResponseWriter, r *http.Request) {
 //	@Failure        404 {object} error "Eligibility not found"
 //	@Failure        500 {object} error "Internal server error"
 //	@Router         /eligibilities/{id} [put]
-func (m *Manager) UpdateEligibilityById(w http.ResponseWriter, r *http.Request) {}
+func (m *Manager) UpdateEligibilityById(w http.ResponseWriter, r *http.Request) {
+	// Get the ID from the URL parameters
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid eligibility ID format")
+		return
+	}
+
+	// Parse request body
+	var updateReq EligibilityUpdateRequest
+	err = json.NewDecoder(r.Body).Decode(&updateReq)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Update the eligibility
+	updatedEligibility, err := m.DbClient.UpdateEligibility(id, updateReq.Name, updateReq.FeatureRank)
+	if err != nil {
+		log.Printf("%v", err)
+
+		// Handle different types of errors
+		if strings.Contains(err.Error(), "not found") {
+			common.WriteErrorJson(w, http.StatusNotFound, fmt.Sprintf("Eligibility with ID %d not found", id))
+			return
+		} else if strings.Contains(err.Error(), "duplicate key") {
+			common.WriteErrorJson(w, http.StatusBadRequest, "An eligibility with this name already exists")
+			return
+		} else if strings.Contains(err.Error(), "violates") {
+			common.WriteErrorJson(w, http.StatusBadRequest, "Invalid data: constraint violation")
+			return
+		} else {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
+	}
+
+	// Return the updated eligibility
+	response := FromEligibilityDBType(updatedEligibility)
+	writeJson(w, response)
+}
 
 // Get featured eligibilities
 //
@@ -211,16 +255,6 @@ func (m *Manager) GetSubEligibilities(w http.ResponseWriter, r *http.Request) {
 	// Write response as JSON
 	writeJson(w, response)
 }
-
-// Compute service and resource counts
-//
-//	@Summary        Internal - Compute Counts
-//	@Description    Private method to calculate the number of services and resources for a list of eligibility IDs.
-//	@Tags           internal
-//	@Param          eligibilityIds body array true "Array of eligibility IDs"
-//	@Return         map[int]int "Map of eligibility ID to service count"
-//	@Return         map[int]int "Map of eligibility ID to resource count"
-func computeCounts(eligibilityIds int) {}
 
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)

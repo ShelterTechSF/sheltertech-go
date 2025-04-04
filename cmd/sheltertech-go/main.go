@@ -141,6 +141,7 @@ func main() {
 
 		r.Get("/api/eligibilities", eligibilityManager.Get)
 		r.Get("/api/eligibilities/{id}", eligibilityManager.GetEligibilityById)
+		r.Put("/api/eligibilities/{id}", eligibilityManager.UpdateEligibilityById)
 		r.Get("/api/eligibilities/featured", eligibilityManager.GetFeaturedEligibilities)
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 
