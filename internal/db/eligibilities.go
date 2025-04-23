@@ -20,6 +20,8 @@ type Eligibility struct {
 const eligibilitiesSql = `
 SELECT e.id, e.name, e.feature_rank
 FROM public.eligibilities e
+ORDER BY 
+   e.name ASC;
 `
 const eligibilitiesByCategoryIDSql = `
 SELECT e.id, e.name, e.feature_rank 
