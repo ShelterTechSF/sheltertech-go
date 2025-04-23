@@ -169,3 +169,58 @@ func TestGetEligibilities(t *testing.T) {
 		}
 	})
 }
+
+func TestGetEligibilityByID(t *testing.T) {
+	// First, get a list of all eligibilities to find a valid ID to test with
+	res, err := http.Get(eligibilityUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	eligibilitiesResponse := new(eligibilities.Eligibilities)
+	err = json.Unmarshal(body, eligibilitiesResponse)
+	require.NoError(t, err)
+	require.NotEmpty(t, eligibilitiesResponse.Eligibilities, "Nothing found. Check database connection and baseUrl")
+
+	// Get a valid ID from the first eligibility in the list
+	validID := eligibilitiesResponse.Eligibilities[0].Id
+
+	// Test cases using subtests
+	t.Run("Valid ID", func(t *testing.T) {
+		// Test with a valid ID
+		res, err = http.Get(eligibilityUrl + "/" + fmt.Sprintf("%d", validID))
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		body, err = io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		eligibilityResponse := new(eligibilities.Eligibility)
+		err = json.Unmarshal(body, eligibilityResponse)
+		require.NoError(t, err)
+
+		assert.Equal(t, validID, eligibilityResponse.Id, "Eligibility Id should match the requested ID")
+		assert.NotNil(t, eligibilityResponse.Name, "Eligibility Name should not be nil")
+	})
+
+	t.Run("Invalid ID Format", func(t *testing.T) {
+		// Test with an invalid ID format (non-numeric)
+		res, err = http.Get(eligibilityUrl + "/invalid")
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should return 400 Bad Request for invalid ID format")
+	})
+
+	t.Run("Non-existent ID", func(t *testing.T) {
+		// Test with a non-existent ID (assuming 9999 doesn't exist)
+		nonExistentID := 9999
+		res, err = http.Get(eligibilityUrl + "/" + fmt.Sprintf("%d", nonExistentID))
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, res.StatusCode, "Should return 404 Not Found for non-existent ID")
+	})
+}
