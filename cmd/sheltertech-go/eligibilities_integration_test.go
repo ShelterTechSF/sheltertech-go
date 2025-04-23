@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -393,4 +395,237 @@ func TestGetSubEligibilities(t *testing.T) {
 		assert.NotNil(t, subEligibilitiesResponse.Eligibilities,
 			"Response should contain an eligibilities array (even if empty)")
 	})
+}
+
+func TestUpdateEligibilityById(t *testing.T) {
+	// First, get a valid eligibility ID to test with
+	res, err := http.Get(eligibilityUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	eligibilitiesResponse := new(eligibilities.Eligibilities)
+	err = json.Unmarshal(body, eligibilitiesResponse)
+	require.NoError(t, err)
+	require.NotEmpty(t, eligibilitiesResponse.Eligibilities, "No eligibilities found for testing")
+
+	// Get a valid ID from the response
+	validID := eligibilitiesResponse.Eligibilities[0].Id
+
+	// Test with invalid ID format
+	t.Run("Invalid ID Format", func(t *testing.T) {
+		updateUrl := eligibilityUrl + "/invalid"
+
+		// Create update request
+		updateData := map[string]interface{}{
+			"name":         "Updated Name",
+			"feature_rank": 10,
+		}
+
+		jsonData, err := json.Marshal(updateData)
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("PUT", updateUrl, bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode,
+			"Should return 400 Bad Request for invalid ID format")
+	})
+
+	// Test with invalid JSON body
+	t.Run("Invalid Request Body", func(t *testing.T) {
+		updateUrl := fmt.Sprintf("%s/%d", eligibilityUrl, validID)
+
+		// Create invalid JSON
+		invalidJSON := []byte("{invalid json")
+
+		req, err := http.NewRequest("PUT", updateUrl, bytes.NewBuffer(invalidJSON))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode,
+			"Should return 400 Bad Request for invalid JSON")
+	})
+
+	// Test with non-existent ID
+	t.Run("Non-existent ID", func(t *testing.T) {
+		// Using a very high ID that likely doesn't exist
+		nonExistentID := 9999
+		updateUrl := fmt.Sprintf("%s/%d", eligibilityUrl, nonExistentID)
+
+		// Create update request
+		updateData := map[string]interface{}{
+			"name": "Updated Name",
+		}
+
+		jsonData, err := json.Marshal(updateData)
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("PUT", updateUrl, bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, res.StatusCode,
+			"Should return 404 Not Found for non-existent ID")
+	})
+
+	// Test successful update - update name
+	t.Run("Update Name", func(t *testing.T) {
+		updateUrl := fmt.Sprintf("%s/%d", eligibilityUrl, validID)
+
+		// Get the original eligibility first to check the change
+		req, err := http.NewRequest("GET", updateUrl, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		originalEligibility := new(eligibilities.Eligibility)
+		err = json.Unmarshal(body, originalEligibility)
+		require.NoError(t, err)
+
+		// Create a unique name for testing (to avoid duplicate name error)
+		newName := fmt.Sprintf("Test Eligibility %d", time.Now().UnixNano())
+
+		// Create update request for name only
+		updateData := map[string]interface{}{
+			"name": newName,
+		}
+
+		jsonData, err := json.Marshal(updateData)
+		require.NoError(t, err)
+
+		req, err = http.NewRequest("PUT", updateUrl, bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Should return 200 OK for successful update")
+
+		body, err = io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		updatedEligibility := new(eligibilities.Eligibility)
+		err = json.Unmarshal(body, updatedEligibility)
+		require.NoError(t, err)
+
+		assert.Equal(t, validID, updatedEligibility.Id, "ID should remain the same")
+		assert.Equal(t, newName, *updatedEligibility.Name, "Name should be updated")
+
+		// Revert back to original (clean up)
+		if originalEligibility.Name != nil {
+			updateData = map[string]interface{}{
+				"name": *originalEligibility.Name,
+			}
+
+			jsonData, err = json.Marshal(updateData)
+			require.NoError(t, err)
+
+			req, err = http.NewRequest("PUT", updateUrl, bytes.NewBuffer(jsonData))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			res, err = http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			res.Body.Close()
+		}
+	})
+
+	// Test successful update - update feature_rank
+	t.Run("Update Feature Rank", func(t *testing.T) {
+		updateUrl := fmt.Sprintf("%s/%d", eligibilityUrl, validID)
+
+		// Get the original eligibility first to check the change
+		req, err := http.NewRequest("GET", updateUrl, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		originalEligibility := new(eligibilities.Eligibility)
+		err = json.Unmarshal(body, originalEligibility)
+		require.NoError(t, err)
+
+		// Create a new feature rank (different from the original)
+		var newRank int
+		if originalEligibility.FeatureRank == nil {
+			newRank = 100
+		} else {
+			newRank = *originalEligibility.FeatureRank + 1
+		}
+
+		// Create update request for feature_rank only
+		updateData := map[string]interface{}{
+			"feature_rank": newRank,
+		}
+
+		jsonData, err := json.Marshal(updateData)
+		require.NoError(t, err)
+
+		req, err = http.NewRequest("PUT", updateUrl, bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Should return 200 OK for successful update")
+
+		body, err = io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		updatedEligibility := new(eligibilities.Eligibility)
+		err = json.Unmarshal(body, updatedEligibility)
+		require.NoError(t, err)
+
+		assert.Equal(t, validID, updatedEligibility.Id, "ID should remain the same")
+		assert.NotNil(t, updatedEligibility.FeatureRank, "Feature rank should not be nil")
+		assert.Equal(t, newRank, *updatedEligibility.FeatureRank, "Feature rank should be updated")
+
+		// Revert back to original (clean up)
+		updateData = map[string]interface{}{
+			"feature_rank": originalEligibility.FeatureRank,
+		}
+
+		jsonData, err = json.Marshal(updateData)
+		require.NoError(t, err)
+
+		req, err = http.NewRequest("PUT", updateUrl, bytes.NewBuffer(jsonData))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		res.Body.Close()
+	})
+
+	// Duplicate name test is difficult in integration testing without knowing all existing names
+	// Could be added if needed, but requires more knowledge about the test data
 }
