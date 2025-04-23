@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -288,4 +289,108 @@ func TestGetEligibilitiesFeatured(t *testing.T) {
 		}
 		assert.True(t, found, fmt.Sprintf("Eligibility with ID %d should be in the featured list", eligibility.Id))
 	}
+}
+
+func TestGetSubEligibilities(t *testing.T) {
+	baseUrl := eligibilityUrl + "/subeligibilities"
+
+	// Test without parameters - should get a 400 error
+	t.Run("No Parameters", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode,
+			"Should return 400 when neither name nor id is provided")
+	})
+
+	// Test with invalid parameter - should get a 400 error
+	t.Run("Invalid Parameter", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"?invalid=param", nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode,
+			"Should return 400 when an unexpected query parameter is provided")
+	})
+
+	// Test with invalid ID format - should get a 422 error
+	t.Run("Invalid ID Format", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"?id=notanumber", nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode,
+			"Should return 422 when ID is not a valid number")
+	})
+
+	// Test with valid ID
+	t.Run("Valid ID", func(t *testing.T) {
+		// Use a known parent eligibility ID
+		parentID := 1
+
+		queryUrl := fmt.Sprintf("%s?id=%d", baseUrl, parentID)
+		req, err := http.NewRequest("GET", queryUrl, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode,
+			"Should return 200 OK for valid ID parameter")
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		// Parse response
+		subEligibilitiesResponse := new(eligibilities.Eligibilities)
+		err = json.Unmarshal(body, subEligibilitiesResponse)
+		require.NoError(t, err)
+
+		// Verify response structure is valid
+		assert.NotNil(t, subEligibilitiesResponse.Eligibilities,
+			"Response should contain an eligibilities array (even if empty)")
+	})
+
+	// Test with valid name
+	t.Run("Valid Name", func(t *testing.T) {
+		// Use a known parent eligibility name
+		parentName := "Seniors (55+ years old)"
+
+		// URL encode the name to handle spaces and special characters
+		encodedName := url.QueryEscape(parentName)
+
+		queryUrl := fmt.Sprintf("%s?name=%s", baseUrl, encodedName)
+		req, err := http.NewRequest("GET", queryUrl, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode,
+			"Should return 200 OK for valid name parameter")
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		// Parse response
+		subEligibilitiesResponse := new(eligibilities.Eligibilities)
+		err = json.Unmarshal(body, subEligibilitiesResponse)
+		require.NoError(t, err)
+
+		// Verify response structure is valid
+		assert.NotNil(t, subEligibilitiesResponse.Eligibilities,
+			"Response should contain an eligibilities array (even if empty)")
+	})
 }
