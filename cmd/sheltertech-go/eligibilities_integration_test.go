@@ -224,3 +224,68 @@ func TestGetEligibilityByID(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, res.StatusCode, "Should return 404 Not Found for non-existent ID")
 	})
 }
+
+func TestGetEligibilitiesFeatured(t *testing.T) {
+	url := eligibilityUrl + "/featured"
+
+	req, err := http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Expected 200 OK status code")
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	// Parse the response using the same struct defined in the package
+	response := new(eligibilities.Eligibilities)
+	err = json.Unmarshal(body, response)
+	require.NoError(t, err)
+
+	// Verify we have eligibilities
+	assert.True(t, len(response.Eligibilities) > 0, "Should return at least one featured eligibility")
+
+	// Verify all returned eligibilities have a non-nil feature_rank
+	for _, eligibility := range response.Eligibilities {
+		assert.NotNil(t, eligibility.FeatureRank, "All featured eligibilities should have a feature_rank")
+	}
+
+	// Verify they are sorted by feature_rank
+	if len(response.Eligibilities) > 1 {
+		for i := 0; i < len(response.Eligibilities)-1; i++ {
+			// Handle nil pointers (shouldn't happen as we've checked above, but safer)
+			rank1 := 0
+			if response.Eligibilities[i].FeatureRank != nil {
+				rank1 = *response.Eligibilities[i].FeatureRank
+			}
+
+			rank2 := 0
+			if response.Eligibilities[i+1].FeatureRank != nil {
+				rank2 = *response.Eligibilities[i+1].FeatureRank
+			}
+
+			assert.True(t, rank1 <= rank2,
+				"Featured eligibilities should be ordered by feature_rank")
+		}
+	}
+
+	// Based on the data you provided, verify that only eligibilities with
+	// non-null feature_rank values are returned
+	// If the data in the db changes this test may break
+	knownFeaturedEligibilityIds := []int{1, 2, 3, 4, 5, 6} // From your example data
+
+	// Ensure all eligibilities in the response have their IDs in the known featured list
+	for _, eligibility := range response.Eligibilities {
+		found := false
+		for _, id := range knownFeaturedEligibilityIds {
+			if eligibility.Id == id {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, fmt.Sprintf("Eligibility with ID %d should be in the featured list", eligibility.Id))
+	}
+}
