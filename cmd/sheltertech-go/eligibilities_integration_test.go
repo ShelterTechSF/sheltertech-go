@@ -1,3 +1,8 @@
+//go:build integration
+// +build integration
+
+// go test -tags=integration
+
 package main
 
 import (
