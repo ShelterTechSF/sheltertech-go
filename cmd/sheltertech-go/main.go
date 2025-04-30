@@ -13,6 +13,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/datathon"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
+	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
@@ -80,6 +81,7 @@ func main() {
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
 	datathonManager := datathon.New(dbManager)
+	newsArticlesManager := newsarticles.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -137,6 +139,12 @@ func main() {
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
+
+		r.Post("/api/news_articles", newsArticlesManager.Create)
+		r.Get("/api/news_articles", newsArticlesManager.Get)
+		r.Put("/api/news_articles/{id}", newsArticlesManager.Update)
+		r.Delete("/api/news_articles/{id}", newsArticlesManager.Delete)
+
 	})
 
 	docs.SwaggerInfo.Title = "Swagger Example API"
