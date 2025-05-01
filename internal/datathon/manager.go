@@ -51,6 +51,7 @@ func writeCsv(w http.ResponseWriter, dataset []*Record) {
 	for _, record := range dataset {
 		records = append(records, []string{record.ServiceId, record.ServiceName, record.ResourceId, record.ResourceName, record.ResourceWebsite, record.ServiceEmail, record.ServiceUpdatedAt})
 	}
+	w.Header().Set("Content-Type", "text/csv")
 	wr := csv.NewWriter(w)
 	if err := wr.WriteAll(records); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
