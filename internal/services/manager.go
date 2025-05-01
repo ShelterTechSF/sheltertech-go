@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/documents"
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
@@ -17,7 +18,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"github.com/sheltertechsf/sheltertech-go/internal/common"	
 )
 
 type Manager struct {
@@ -45,13 +45,13 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-		return		
+		return
 	}
 	dbService, err := m.DbClient.GetServiceById(serviceId)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-		return		
+		return
 	}
 	response := FromDBType(dbService)
 	response.Categories = categories.FromDBTypeArray(m.DbClient.GetCategoriesByServiceID(serviceId))
