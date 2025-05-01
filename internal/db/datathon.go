@@ -31,7 +31,7 @@ WHERE (s.id IN
          FROM public.categories_services a
          LEFT JOIN public.services b ON a.service_id = b.id
          WHERE a.category_id IN
-           (SELECT id
+           (SELECT child_id
             FROM public.category_relationships
             WHERE parent_id IN (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012))
           AND b.status = 1))
@@ -53,7 +53,7 @@ WHERE (s.id NOT IN
          FROM public.categories_services a
          LEFT JOIN public.services b ON a.service_id = b.id
          WHERE a.category_id IN
-           (SELECT id
+           (SELECT child_id
             FROM public.category_relationships
             WHERE parent_id IN (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012))
           AND b.status = 1))
