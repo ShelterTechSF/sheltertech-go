@@ -12,6 +12,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/datathon"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
@@ -83,6 +84,7 @@ func main() {
 	datathonManager := datathon.New(dbManager)
 	newsArticlesManager := newsarticles.New(dbManager)
 
+	eligibilityManager := eligibilities.New((dbManager))
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
 		EnableTracing: true,
@@ -144,6 +146,11 @@ func main() {
 		r.Get("/api/news_articles", newsArticlesManager.Get)
 		r.Put("/api/news_articles/{id}", newsArticlesManager.Update)
 		r.Delete("/api/news_articles/{id}", newsArticlesManager.Delete)
+		r.Get("/api/eligibilities", eligibilityManager.Get)
+		r.Get("/api/eligibilities/{id}", eligibilityManager.GetEligibilityById)
+		r.Put("/api/eligibilities/{id}", eligibilityManager.UpdateEligibilityById)
+		r.Get("/api/eligibilities/featured", eligibilityManager.GetFeaturedEligibilities)
+		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 
 	})
 

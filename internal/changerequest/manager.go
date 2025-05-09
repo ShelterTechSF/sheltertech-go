@@ -36,11 +36,11 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	switch changeRequest.Type {
 	case "ServiceChangeRequest":
 		service, err = m.DbClient.GetServiceById(changeRequest.ObjectID)
-			if err != nil {
+		if err != nil {
 			log.Printf("%v", err)
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-		return	
-	}
+			return
+		}
 		break
 	}
 	if err != nil || service == nil {
