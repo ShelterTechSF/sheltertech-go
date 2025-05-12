@@ -3,7 +3,6 @@ package phonenumbers
 import (
 	"golang.org/x/exp/slices"
 
-	"github.com/nyaruka/phonenumbers/gen"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -37,7 +36,7 @@ func ShortNumberMetadataCollection() (*PhoneMetadataCollection, error) {
 		return currShortNumberMetadataColl, nil
 	}
 
-	rawBytes, err := decodeUnzipString(gen.ShortNumberData)
+	rawBytes, err := decodeUnzip(shortNumberData)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +182,7 @@ func matchesPossibleNumberAndNationalNumber(number string, numberDesc *PhoneNumb
 	if len(numberDesc.PossibleLength) > 0 && !numberDesc.hasPossibleLength(int32(len(number))) {
 		return false
 	}
-	return MatchNationalNumber(number, *numberDesc, false)
+	return MatchNationalNumber(number, numberDesc, false)
 }
 
 // In these countries, if extra digits are added to an emergency number, it no longer connects
@@ -207,7 +206,7 @@ func matchesEmergencyNumber(number string, regionCode string, allowPrefixMatch b
 	normalizedNumber := NormalizeDigitsOnly(possibleNumber)
 
 	allowPrefixMatchForRegion := allowPrefixMatch && !slices.Contains(REGIONS_WHERE_EMERGENCY_NUMBERS_MUST_BE_EXACT, regionCode)
-	return MatchNationalNumber(normalizedNumber, *phoneMetadata.GetEmergency(), allowPrefixMatchForRegion)
+	return MatchNationalNumber(normalizedNumber, phoneMetadata.GetEmergency(), allowPrefixMatchForRegion)
 }
 
 // Returns true if the given number exactly matches an emergency service number in the given
