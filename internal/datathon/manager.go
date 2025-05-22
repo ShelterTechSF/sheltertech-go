@@ -46,10 +46,10 @@ func (m *Manager) GetDatathonDataset(w http.ResponseWriter, r *http.Request) {
 
 func writeCsv(w http.ResponseWriter, dataset []*Record) {
 	records := [][]string{
-		{"service_id", "service_name", "resource_id", "resource_name", "resource_website", "service_email", "service_updated_at"}, // Header
+		{"service_id", "service_name", "resource_id", "resource_name", "resource_website", "service_edit_url", "service_updated_at"}, // Header
 	}
 	for _, record := range dataset {
-		records = append(records, []string{record.ServiceId, record.ServiceName, record.ResourceId, record.ResourceName, record.ResourceWebsite, record.ServiceEmail, record.ServiceUpdatedAt})
+		records = append(records, []string{record.ServiceId, record.ServiceName, record.ResourceId, record.ResourceName, record.ResourceWebsite, "https://sfserviceguide.org/organizations/" + record.ResourceId + "/edit", record.ServiceUpdatedAt})
 	}
 	w.Header().Set("Content-Type", "text/csv")
 	wr := csv.NewWriter(w)
