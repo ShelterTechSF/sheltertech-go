@@ -38,8 +38,5 @@ func FromDBType(dbContentCurationData *db.DatathonData) *Record {
 	if dbContentCurationData.ResourceWebsite.Valid {
 		contentCurationData.ResourceWebsite = dbContentCurationData.ResourceWebsite.String
 	}
-	if dbContentCurationData.ServiceEmail.Valid {
-		contentCurationData.ServiceEmail = dbContentCurationData.ServiceEmail.String
-	}
 	return contentCurationData
 }
