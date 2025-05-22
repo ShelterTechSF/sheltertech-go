@@ -15,6 +15,8 @@ type DatathonData struct {
 	ServiceUpdatedAt time.Time
 }
 
+// dischageNavigatorWhiteLabelCategories are (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012,2000001,2000002,2000003,2000004,2000005,2000006)
+
 const contentCurationData = `
 SELECT s.id AS service_id,
        s.name AS service_name,
@@ -31,7 +33,7 @@ WHERE (s.id IN
          WHERE a.category_id IN
            (SELECT child_id
             FROM public.category_relationships
-            WHERE parent_id IN (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012))
+            WHERE parent_id IN (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012,2000001,2000002,2000003,2000004,2000005,2000006))
           AND b.status = 1))
  AND s.status = 1 ORDER BY s.resource_id
 `
@@ -52,7 +54,7 @@ WHERE (s.id NOT IN
          WHERE a.category_id IN
            (SELECT child_id
             FROM public.category_relationships
-            WHERE parent_id IN (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012))
+            WHERE parent_id IN (1000001,1000002,1000003,1000004,1000005,1000006,1000007,1000008,1000009,1000010,1000011,1000012,2000001,2000002,2000003,2000004,2000005,2000006))
           AND b.status = 1))
  AND s.status = 1 ORDER BY s.resource_id
 `
