@@ -10,7 +10,7 @@ require github.com/auth0/go-jwt-middleware/v2 v2.2.2
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.3.11
-	github.com/getsentry/sentry-go v0.31.1
+	github.com/getsentry/sentry-go v0.33.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/lib/pq v1.10.9
