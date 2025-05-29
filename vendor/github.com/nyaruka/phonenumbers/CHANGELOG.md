@@ -1,3 +1,22 @@
+v1.6.3 (2025-05-22)
+-------------------------
+ * Update metadata
+
+v1.6.2 (2025-05-22)
+-------------------------
+ * Update isNumberGeographical to consider GEO_MOBILE_COUNTRIES
+
+v1.6.1 (2025-04-23)
+-------------------------
+ * Update metadata
+
+v1.6.0 (2025-03-20)
+-------------------------
+ * Fix copying mutex in number desc
+ * Update dependencies
+ * Bump supported go versions
+ * Optimize package initialization
+
 v1.5.0 (2025-01-18)
 -------------------------
  * Add shortnumber emergency functions
