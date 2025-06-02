@@ -4,7 +4,7 @@ github.com/KyleBanks/depth
 # github.com/MicahParks/jwkset v0.8.0
 ## explicit; go 1.21
 github.com/MicahParks/jwkset
-# github.com/MicahParks/keyfunc/v3 v3.3.11
+# github.com/MicahParks/keyfunc/v3 v3.4.0
 ## explicit; go 1.21
 github.com/MicahParks/keyfunc/v3
 # github.com/auth0/go-jwt-middleware/v2 v2.2.2
