@@ -18,6 +18,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
+	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/getsentry/sentry-go"
@@ -82,6 +83,7 @@ func main() {
 	savedSearchesManager := savedsearches.New(dbManager)
 	datathonManager := datathon.New(dbManager)
 	eligibilityManager := eligibilities.New((dbManager))
+	phonesManager := phones.New(dbManager)
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
 		EnableTracing: true,
@@ -121,6 +123,8 @@ func main() {
 		r.Get("/api/saved_searches/{id}", savedSearchesManager.GetByID)
 		// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
 		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
+
+		r.Delete("/api/phones/{id}", phonesManager.Delete)
 	})
 
 	r.Group(func(r chi.Router) {
