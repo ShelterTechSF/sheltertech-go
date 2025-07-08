@@ -27,7 +27,7 @@ func New(dbManager *db.Manager) *Manager {
 //	@Tags			phones
 //	@Accept			json
 //	@Produce		None
-//	@Success		200
+//	@Success		204 No Content
 //	@Router			/phones [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
     idStr := chi.URLParam(r, "id")
@@ -36,6 +36,16 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Invalid phone ID", http.StatusBadRequest)
         return
     }
+
+    phone, err := m.DbClient.GetPhoneByID(id)
+    if err != nil {
+        http.Error(w, "Database error", http.StatusInternalServerError)
+        return
+    }
+	if phone == nil {
+		http.Error(w, "404: Phone not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
 
     err = m.DbClient.DeletePhoneByID(id)
     if err != nil {
