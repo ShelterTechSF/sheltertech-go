@@ -90,3 +90,30 @@ func TestGetCategoryByID(t *testing.T) {
 
 	assert.Equal(t, categoryResponse.Id, categoryId, "Category Id is a match")
 }
+
+func TestGetCategoryCounts(t *testing.T) {
+	req, err := http.NewRequest("GET", categoryUrl+"/counts", nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	var categoryCountsResponse []categories.CategoryCountDTO
+	err = json.Unmarshal(body, &categoryCountsResponse)
+	require.NoError(t, err)
+
+	// Verify that we got some data back
+	assert.Greater(t, len(categoryCountsResponse), 0, "Should return at least one category count")
+
+	// Verify that at least one category has some services
+	hasServices := false
+	for _, count := range categoryCountsResponse {
+		if count.Services > 0 {
+			hasServices = true
+			break
+		}
+	}
+	assert.True(t, hasServices, "At least one category should have services")
+}

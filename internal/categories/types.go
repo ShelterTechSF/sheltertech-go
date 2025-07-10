@@ -15,8 +15,8 @@ type Categories struct {
 
 type CategoryCountDTO struct {
 	Name      string `json:"name"`
-	Services  int    `json:services`
-	Resources int    `json:resources`
+	Services  int    `json:"services"`
+	Resources int    `json:"resources"`
 }
 
 func FromDBType(dbCategory *db.Category) *Category {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
@@ -50,29 +51,51 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
-	dtos := make(map[string]CategoryCountDTO)
+	// Get all categories first
+	allCategories := m.DbClient.GetCategories(nil)
 
+	// Create a map to store service and resource counts
+	countsMap := make(map[string]CategoryCountDTO)
+
+	// Initialize all categories with 0 counts
+	for _, category := range allCategories {
+		countsMap[category.Name] = CategoryCountDTO{
+			Name:      category.Name,
+			Services:  0,
+			Resources: 0,
+		}
+	}
+
+	// Add service counts
 	serviceCounts := m.DbClient.GetCategoryServiceCounts()
 	for _, serviceCount := range serviceCounts {
-		dto := CategoryCountDTO{}
-		dto.Name = serviceCount.CategoryName
-		dto.Services = serviceCount.Count
-		dtos[serviceCount.CategoryName] = dto
+		if dto, exists := countsMap[serviceCount.CategoryName]; exists {
+			dto.Services = serviceCount.Count
+			countsMap[serviceCount.CategoryName] = dto
+		}
 	}
 
+	// Add resource counts
 	resourceCounts := m.DbClient.GetCategoryResourceCounts()
 	for _, resourceCount := range resourceCounts {
-		dto, ok := dtos[resourceCount.CategoryName]
-		if ok {
+		if dto, exists := countsMap[resourceCount.CategoryName]; exists {
 			dto.Resources = resourceCount.Count
-		} else {
-			var dto CategoryCountDTO
-			dto.Name = resourceCount.CategoryName
-			dto.Services = resourceCount.Count
+			countsMap[resourceCount.CategoryName] = dto
 		}
-		dtos[resourceCount.CategoryName] = dto
 	}
-	writeJson(w, dtos)
+
+	// Convert to array and sort by name (alphabetical order)
+	var response []CategoryCountDTO
+	for _, dto := range countsMap {
+		response = append(response, dto)
+	}
+
+	// Sort by name to match Rails API order
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Name < response[j].Name
+	})
+
+	writeJson(w, response)
 }
 
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
