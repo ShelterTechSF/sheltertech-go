@@ -30,28 +30,28 @@ func New(dbManager *db.Manager) *Manager {
 //	@Success		204 No Content
 //	@Router			/phones [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
-    idStr := chi.URLParam(r, "id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        http.Error(w, "Invalid phone ID", http.StatusBadRequest)
-        return
-    }
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid phone ID", http.StatusBadRequest)
+		return
+	}
 
-    phone, err := m.DbClient.GetPhoneByID(id)
-    if err != nil {
-        http.Error(w, "Database error", http.StatusInternalServerError)
-        return
-    }
+	phone, err := m.DbClient.GetPhoneByID(id)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 	if phone == nil {
 		http.Error(w, "404: Phone not found for ID: "+idStr, http.StatusNotFound)
 		return
 	}
 
-    err = m.DbClient.DeletePhoneByID(id)
-    if err != nil {
-        http.Error(w, "Failed to delete phone", http.StatusInternalServerError)
-        return
-    }
+	err = m.DbClient.DeletePhoneByID(id)
+	if err != nil {
+		http.Error(w, "Failed to delete phone", http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }
