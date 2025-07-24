@@ -84,9 +84,9 @@ func TestGetCategoryByID(t *testing.T) {
 	body, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	categoryResponse := new(categories.Category)
+	categoryResponse := new(categories.CategoryWrapper)
 	err = json.Unmarshal(body, categoryResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, categoryResponse.Id, categoryId, "Category Id is a match")
+	assert.Equal(t, categoryResponse.Category.Id, categoryId, "Category Id is a match")
 }
