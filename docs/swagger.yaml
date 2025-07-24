@@ -1,5 +1,32 @@
 basePath: /api/v1
 definitions:
+  addresses.Address:
+    properties:
+      address_1:
+        type: string
+      address_2:
+        type: string
+      address_3:
+        type: string
+      address_4:
+        type: string
+      attention:
+        type: string
+      city:
+        type: string
+      id:
+        type: integer
+      latitude:
+        type: string
+      longitude:
+        type: string
+      name:
+        type: string
+      postal_code:
+        type: string
+      state_province:
+        type: string
+    type: object
   categories.Categories:
     properties:
       categories:
@@ -17,6 +44,350 @@ definitions:
         type: string
       top_level:
         type: boolean
+    type: object
+  documents.Document:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  eligibilities.Eligibility:
+    properties:
+      feature_rank:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  folders.Folder:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      order:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  folders.Folders:
+    properties:
+      folders:
+        items:
+          $ref: '#/definitions/folders.Folder'
+        type: array
+    type: object
+  instructions.Instruction:
+    properties:
+      id:
+        type: integer
+      instruction:
+        type: string
+    type: object
+  notes.Note:
+    properties:
+      id:
+        type: integer
+      note:
+        type: string
+    type: object
+  phones.Phone:
+    properties:
+      country_code:
+        type: string
+      extension:
+        type: string
+      id:
+        type: integer
+      number:
+        type: string
+      service_type:
+        type: string
+    type: object
+  programs.Program:
+    properties:
+      alternate_name:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  resources.Resource:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/addresses.Address'
+        type: array
+      alternate_name:
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/categories.Category'
+        type: array
+      certified:
+        type: boolean
+      certified_at:
+        type: string
+      email:
+        type: string
+      featured:
+        type: boolean
+      id:
+        type: integer
+      internal_note:
+        type: string
+      legal_status:
+        type: string
+      long_description:
+        type: string
+      name:
+        type: string
+      notes:
+        items:
+          $ref: '#/definitions/notes.Note'
+        type: array
+      phones:
+        items:
+          $ref: '#/definitions/phones.Phone'
+        type: array
+      schedule:
+        $ref: '#/definitions/schedules.Schedule'
+      services:
+        items:
+          $ref: '#/definitions/resources.ResourceService'
+        type: array
+      short_description:
+        type: string
+      source_attribution:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      verified_at:
+        type: string
+      website:
+        type: string
+    type: object
+  resources.ResourceService:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/addresses.Address'
+        type: array
+      alternate_name:
+        type: string
+      application_process:
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/categories.Category'
+        type: array
+      certified:
+        type: boolean
+      certified_at:
+        type: string
+      documents:
+        items:
+          $ref: '#/definitions/documents.Document'
+        type: array
+      eligibilities:
+        items:
+          $ref: '#/definitions/eligibilities.Eligibility'
+        type: array
+      eligibility:
+        type: string
+      email:
+        type: string
+      featured:
+        type: boolean
+      fee:
+        type: string
+      id:
+        type: integer
+      instructions:
+        items:
+          $ref: '#/definitions/instructions.Instruction'
+        type: array
+      internal_note:
+        type: string
+      interpretation_services:
+        type: string
+      long_description:
+        type: string
+      name:
+        type: string
+      notes:
+        items:
+          $ref: '#/definitions/notes.Note'
+        type: array
+      required_documents:
+        type: string
+      schedule:
+        $ref: '#/definitions/schedules.Schedule'
+      short_description:
+        type: string
+      source_attribution:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+      verified_at:
+        type: string
+      wait_time:
+        type: string
+    type: object
+  savedsearches.SavedSearch:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      search:
+        $ref: '#/definitions/savedsearches.SavedSearchQuery'
+      user_id:
+        type: integer
+    type: object
+  savedsearches.SavedSearchQuery:
+    properties:
+      categories:
+        items:
+          type: string
+        type: array
+      eligibilities:
+        items:
+          type: string
+        type: array
+      lat:
+        type: number
+      lng:
+        type: number
+      query:
+        type: string
+    type: object
+  savedsearches.SavedSearches:
+    properties:
+      saved_searches:
+        items:
+          $ref: '#/definitions/savedsearches.SavedSearch'
+        type: array
+    type: object
+  schedules.Schedule:
+    properties:
+      hours_known:
+        type: boolean
+      id:
+        type: integer
+      schedule_days:
+        items:
+          $ref: '#/definitions/schedules.ScheduleDay'
+        type: array
+    type: object
+  schedules.ScheduleDay:
+    properties:
+      close_day:
+        type: string
+      close_time:
+        type: string
+      closes_at:
+        type: integer
+      day:
+        type: string
+      id:
+        type: integer
+      open_day:
+        type: string
+      open_time:
+        type: string
+      opens_at:
+        type: integer
+    type: object
+  services.Service:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/addresses.Address'
+        type: array
+      alternate_name:
+        type: string
+      application_process:
+        type: string
+      categories:
+        items:
+          $ref: '#/definitions/categories.Category'
+        type: array
+      certified:
+        type: boolean
+      certified_at:
+        type: string
+      documents:
+        items:
+          $ref: '#/definitions/documents.Document'
+        type: array
+      eligibilities:
+        items:
+          $ref: '#/definitions/eligibilities.Eligibility'
+        type: array
+      eligibility:
+        type: string
+      email:
+        type: string
+      featured:
+        type: boolean
+      fee:
+        type: string
+      id:
+        type: integer
+      instructions:
+        items:
+          $ref: '#/definitions/instructions.Instruction'
+        type: array
+      internal_note:
+        type: string
+      interpretation_services:
+        type: string
+      long_description:
+        type: string
+      name:
+        type: string
+      notes:
+        items:
+          $ref: '#/definitions/notes.Note'
+        type: array
+      program:
+        $ref: '#/definitions/programs.Program'
+      required_documents:
+        type: string
+      resource:
+        $ref: '#/definitions/resources.Resource'
+      schedule:
+        $ref: '#/definitions/schedules.Schedule'
+      short_description:
+        type: string
+      source_attribution:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+      verified_at:
+        type: string
+      wait_time:
+        type: string
     type: object
 externalDocs:
   description: OpenAPI
@@ -52,6 +423,299 @@ paths:
       summary: Get Categories
       tags:
       - categories
+  /datathon/content_curation_dataset:
+    get:
+      description: gives a csv of the content curation dataset
+      responses: {}
+      summary: Get Content Curation Dataset
+      tags:
+      - datathon
+  /datathon/datathon_dataset:
+    get:
+      description: gives a csv of the datathon dataset
+      responses: {}
+      summary: Get Datathon Dataset
+      tags:
+      - datathon
+  /eligibilities:
+    get:
+      description: Get all eligibilities sorted by name in ascending order, with optional
+        filtering by category.
+      parameters:
+      - description: Filter eligibilities by category ID
+        in: query
+        name: categoryId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/eligibilities.Eligibility'
+            type: array
+      summary: Get Eligibilities
+      tags:
+      - eligibilities
+  /eligibilities/{id}:
+    get:
+      description: Get a specific eligibility by its ID.
+      parameters:
+      - description: Eligibility ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/eligibilities.Eligibility'
+        "400":
+          description: Invalid eligibility ID format
+          schema: {}
+        "404":
+          description: Eligibility not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Get Eligibility
+      tags:
+      - eligibilities
+    put:
+      consumes:
+      - application/json
+      description: Update an existing eligibility's name or feature rank.
+      parameters:
+      - description: Eligibility ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Eligibility update parameters
+        in: body
+        name: body
+        schema:
+          type: object
+      - description: New name for this eligibility
+        in: body
+        name: name
+        schema:
+          type: string
+      - description: New feature rank for this eligibility (can be null)
+        in: body
+        name: feature_rank
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/eligibilities.Eligibility'
+        "400":
+          description: Invalid request or duplicate name
+          schema: {}
+        "404":
+          description: Eligibility not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Update Eligibility
+      tags:
+      - eligibilities
+  /eligibilities/subeligibilities:
+    get:
+      description: Returns child eligibilities for a parent eligibility, identified
+        either by ID or name.
+      parameters:
+      - description: Parent eligibility ID
+        in: query
+        name: id
+        type: integer
+      - description: Parent eligibility name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/eligibilities.Eligibility'
+            type: array
+        "400":
+          description: Bad request - unexpected query parameter or missing required
+            parameters
+          schema: {}
+        "422":
+          description: Unprocessable Entity - invalid parent eligibility ID format
+          schema: {}
+      summary: Get Subeligibilities
+      tags:
+      - eligibilities
+  /folders:
+    get:
+      consumes:
+      - application/json
+      description: get folders for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/folders.Folders'
+            type: array
+      summary: Get Folders for current User
+      tags:
+      - folders
+    post:
+      consumes:
+      - application/json
+      description: new folder for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/folders.Folder'
+      summary: Create Folder for current User
+      tags:
+      - folders
+  /folders/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete a folder for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/folders.Folder'
+      summary: Delete folder by ID
+      tags:
+      - folders
+    get:
+      consumes:
+      - application/json
+      description: get current folder for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/folders.Folder'
+      summary: Get folder by ID
+      tags:
+      - folders
+    put:
+      consumes:
+      - application/json
+      description: update a folder for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/folders.Folder'
+      summary: Update folder by ID
+      tags:
+      - folders
+  /resources/{id}:
+    get:
+      consumes:
+      - application/json
+      description: gets a single service by resource ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/resources.Resource'
+            type: array
+      summary: Get Resource
+      tags:
+      - resources
+  /saved_searches:
+    get:
+      consumes:
+      - application/json
+      description: get saved searches for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/savedsearches.SavedSearch'
+            type: array
+      summary: Get Saved Search for current User
+      tags:
+      - saved_searches
+    post:
+      consumes:
+      - application/json
+      description: new saved search for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/savedsearches.SavedSearch'
+      summary: Create SavedSearch for current User
+      tags:
+      - saved_searches
+  /saved_searches/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete a saved search for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/savedsearches.SavedSearch'
+      summary: Delete saved search by ID
+      tags:
+      - saved_searches
+  /services/{id}:
+    get:
+      consumes:
+      - application/json
+      description: gets a single service by service ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/services.Service'
+            type: array
+      summary: Get Service
+      tags:
+      - services
 securityDefinitions:
   BasicAuth:
     type: basic
