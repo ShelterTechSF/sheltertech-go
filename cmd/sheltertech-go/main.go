@@ -22,13 +22,11 @@ import (
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
-	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 //	@title			Swagger Example API
@@ -58,7 +56,6 @@ func main() {
 	dbPort := viper.GetString("DB_PORT")
 	dbName := viper.GetString("DB_NAME")
 	dbPass := viper.GetString("DB_PASS")
-	serveDocs := viper.GetBool("SERVE_DOCS")
 	auth0Domain := viper.GetString("AUTH0_DOMAIN")
 	enableJwtVerification := viper.GetBool("ENABLE_JWT_VERIFICATION")
 	var jwtKeyfunc keyfunc.Keyfunc
@@ -94,6 +91,12 @@ func main() {
 	}
 
 	sentryHandler := sentryhttp.New(sentryhttp.Options{})
+	docs.SwaggerInfo.Title = "Swagger Example API"
+	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "petstore.swagger.io"
+	docs.SwaggerInfo.BasePath = "/v2"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
 	r := chi.NewRouter()
 	r.Use(prometheusMiddleware)
@@ -124,6 +127,7 @@ func main() {
 	})
 
 	r.Group(func(r chi.Router) {
+		r.Mount("/api/swagger", httpSwagger.WrapHandler)
 		r.Get("/api/categories", categoriesManager.Get)
 		r.Get("/api/categories/{id}", categoriesManager.GetByID)
 		r.Get("/api/categories/subcategories/{id}", categoriesManager.GetSubCategoriesByID)
@@ -146,20 +150,6 @@ func main() {
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 
 	})
-
-	docs.SwaggerInfo.Title = "Swagger Example API"
-	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
-	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = "petstore.swagger.io"
-	docs.SwaggerInfo.BasePath = "/v2"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"}
-
-	if serveDocs {
-		gin.SetMode(gin.ReleaseMode)
-		rg := gin.Default()
-		rg.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-		go rg.Run(":3002")
-	}
 
 	http.ListenAndServe(":3001", r)
 }
