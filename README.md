@@ -16,6 +16,10 @@ To test, you just need to provide the `v2` path param in front of any existing A
 ```
 curl -s localhost:8080/api/v2/categories | jq
 ```
+To hit Go endpoints locally:
+```
+curl -s localhost:3001/api/categories | jq
+```
 
 ## Implementation
 
