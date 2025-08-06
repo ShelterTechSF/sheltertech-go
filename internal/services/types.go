@@ -49,6 +49,15 @@ type Service struct {
 	Resource      *resources.Resource          `json:"resource"`
 	Program       *programs.Program            `json:"program"`
 }
+type GoogleConfig struct {
+	TranslateCredential string
+}
+
+type PDFCrowdConfig struct {
+	Enabled bool
+	User    string
+	Key     string
+}
 
 func FromDBType(dbService *db.Service) *Service {
 	service := &Service{
