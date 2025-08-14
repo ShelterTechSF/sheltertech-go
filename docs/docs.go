@@ -50,9 +50,487 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/datathon/content_curation_dataset": {
+            "get": {
+                "description": "gives a csv of the content curation dataset",
+                "tags": [
+                    "datathon"
+                ],
+                "summary": "Get Content Curation Dataset",
+                "responses": {}
+            }
+        },
+        "/datathon/datathon_dataset": {
+            "get": {
+                "description": "gives a csv of the datathon dataset",
+                "tags": [
+                    "datathon"
+                ],
+                "summary": "Get Datathon Dataset",
+                "responses": {}
+            }
+        },
+        "/eligibilities": {
+            "get": {
+                "description": "Get all eligibilities sorted by name in ascending order, with optional filtering by category.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "eligibilities"
+                ],
+                "summary": "Get Eligibilities",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter eligibilities by category ID",
+                        "name": "categoryId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/eligibilities.Eligibility"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/eligibilities/subeligibilities": {
+            "get": {
+                "description": "Returns child eligibilities for a parent eligibility, identified either by ID or name.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "eligibilities"
+                ],
+                "summary": "Get Subeligibilities",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Parent eligibility ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Parent eligibility name",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/eligibilities.Eligibility"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - unexpected query parameter or missing required parameters",
+                        "schema": {}
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity - invalid parent eligibility ID format",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/eligibilities/{id}": {
+            "get": {
+                "description": "Get a specific eligibility by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "eligibilities"
+                ],
+                "summary": "Get Eligibility",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Eligibility ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/eligibilities.Eligibility"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid eligibility ID format",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Eligibility not found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {}
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing eligibility's name or feature rank.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "eligibilities"
+                ],
+                "summary": "Update Eligibility",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Eligibility ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Eligibility update parameters",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    {
+                        "description": "New name for this eligibility",
+                        "name": "name",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "New feature rank for this eligibility (can be null)",
+                        "name": "feature_rank",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/eligibilities.Eligibility"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or duplicate name",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Eligibility not found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/folders": {
+            "get": {
+                "description": "get folders for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Get Folders for current User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/folders.Folders"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "new folder for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Create Folder for current User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/folders.Folder"
+                        }
+                    }
+                }
+            }
+        },
+        "/folders/{id}": {
+            "get": {
+                "description": "get current folder for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Get folder by ID",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/folders.Folder"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "update a folder for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Update folder by ID",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/folders.Folder"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete a folder for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "folders"
+                ],
+                "summary": "Delete folder by ID",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/folders.Folder"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/{id}": {
+            "get": {
+                "description": "gets a single service by resource ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resources"
+                ],
+                "summary": "Get Resource",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/resources.Resource"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/saved_searches": {
+            "get": {
+                "description": "get saved searches for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "saved_searches"
+                ],
+                "summary": "Get Saved Search for current User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/savedsearches.SavedSearch"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "new saved search for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "saved_searches"
+                ],
+                "summary": "Create SavedSearch for current User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/savedsearches.SavedSearch"
+                        }
+                    }
+                }
+            }
+        },
+        "/saved_searches/{id}": {
+            "delete": {
+                "description": "delete a saved search for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "saved_searches"
+                ],
+                "summary": "Delete saved search by ID",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/savedsearches.SavedSearch"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/{id}": {
+            "get": {
+                "description": "gets a single service by service ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Get Service",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/services.Service"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "addresses.Address": {
+            "type": "object",
+            "properties": {
+                "address_1": {
+                    "type": "string"
+                },
+                "address_2": {
+                    "type": "string"
+                },
+                "address_3": {
+                    "type": "string"
+                },
+                "address_4": {
+                    "type": "string"
+                },
+                "attention": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "latitude": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "postal_code": {
+                    "type": "string"
+                },
+                "state_province": {
+                    "type": "string"
+                }
+            }
+        },
         "categories.Categories": {
             "type": "object",
             "properties": {
@@ -78,6 +556,530 @@ const docTemplate = `{
                 },
                 "top_level": {
                     "type": "boolean"
+                }
+            }
+        },
+        "documents.Document": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "eligibilities.Eligibility": {
+            "type": "object",
+            "properties": {
+                "feature_rank": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "folders.Folder": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "folders.Folders": {
+            "type": "object",
+            "properties": {
+                "folders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/folders.Folder"
+                    }
+                }
+            }
+        },
+        "instructions.Instruction": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "instruction": {
+                    "type": "string"
+                }
+            }
+        },
+        "notes.Note": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
+        "phones.Phone": {
+            "type": "object",
+            "properties": {
+                "country_code": {
+                    "type": "string"
+                },
+                "extension": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "number": {
+                    "type": "string"
+                },
+                "service_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "programs.Program": {
+            "type": "object",
+            "properties": {
+                "alternate_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "resources.Resource": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/addresses.Address"
+                    }
+                },
+                "alternate_name": {
+                    "type": "string"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/categories.Category"
+                    }
+                },
+                "certified": {
+                    "type": "boolean"
+                },
+                "certified_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "featured": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "internal_note": {
+                    "type": "string"
+                },
+                "legal_status": {
+                    "type": "string"
+                },
+                "long_description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/notes.Note"
+                    }
+                },
+                "phones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/phones.Phone"
+                    }
+                },
+                "schedule": {
+                    "$ref": "#/definitions/schedules.Schedule"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/resources.ResourceService"
+                    }
+                },
+                "short_description": {
+                    "type": "string"
+                },
+                "source_attribution": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "verified_at": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "resources.ResourceService": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/addresses.Address"
+                    }
+                },
+                "alternate_name": {
+                    "type": "string"
+                },
+                "application_process": {
+                    "type": "string"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/categories.Category"
+                    }
+                },
+                "certified": {
+                    "type": "boolean"
+                },
+                "certified_at": {
+                    "type": "string"
+                },
+                "documents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/documents.Document"
+                    }
+                },
+                "eligibilities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/eligibilities.Eligibility"
+                    }
+                },
+                "eligibility": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "featured": {
+                    "type": "boolean"
+                },
+                "fee": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instructions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/instructions.Instruction"
+                    }
+                },
+                "internal_note": {
+                    "type": "string"
+                },
+                "interpretation_services": {
+                    "type": "string"
+                },
+                "long_description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/notes.Note"
+                    }
+                },
+                "required_documents": {
+                    "type": "string"
+                },
+                "schedule": {
+                    "$ref": "#/definitions/schedules.Schedule"
+                },
+                "short_description": {
+                    "type": "string"
+                },
+                "source_attribution": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "verified_at": {
+                    "type": "string"
+                },
+                "wait_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "savedsearches.SavedSearch": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "search": {
+                    "$ref": "#/definitions/savedsearches.SavedSearchQuery"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "savedsearches.SavedSearchQuery": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "eligibilities": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lng": {
+                    "type": "number"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "savedsearches.SavedSearches": {
+            "type": "object",
+            "properties": {
+                "saved_searches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/savedsearches.SavedSearch"
+                    }
+                }
+            }
+        },
+        "schedules.Schedule": {
+            "type": "object",
+            "properties": {
+                "hours_known": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "schedule_days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schedules.ScheduleDay"
+                    }
+                }
+            }
+        },
+        "schedules.ScheduleDay": {
+            "type": "object",
+            "properties": {
+                "close_day": {
+                    "type": "string"
+                },
+                "close_time": {
+                    "type": "string"
+                },
+                "closes_at": {
+                    "type": "integer"
+                },
+                "day": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "open_day": {
+                    "type": "string"
+                },
+                "open_time": {
+                    "type": "string"
+                },
+                "opens_at": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.Service": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/addresses.Address"
+                    }
+                },
+                "alternate_name": {
+                    "type": "string"
+                },
+                "application_process": {
+                    "type": "string"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/categories.Category"
+                    }
+                },
+                "certified": {
+                    "type": "boolean"
+                },
+                "certified_at": {
+                    "type": "string"
+                },
+                "documents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/documents.Document"
+                    }
+                },
+                "eligibilities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/eligibilities.Eligibility"
+                    }
+                },
+                "eligibility": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "featured": {
+                    "type": "boolean"
+                },
+                "fee": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instructions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/instructions.Instruction"
+                    }
+                },
+                "internal_note": {
+                    "type": "string"
+                },
+                "interpretation_services": {
+                    "type": "string"
+                },
+                "long_description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/notes.Note"
+                    }
+                },
+                "program": {
+                    "$ref": "#/definitions/programs.Program"
+                },
+                "required_documents": {
+                    "type": "string"
+                },
+                "resource": {
+                    "$ref": "#/definitions/resources.Resource"
+                },
+                "schedule": {
+                    "$ref": "#/definitions/schedules.Schedule"
+                },
+                "short_description": {
+                    "type": "string"
+                },
+                "source_attribution": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "verified_at": {
+                    "type": "string"
+                },
+                "wait_time": {
+                    "type": "string"
                 }
             }
         }
