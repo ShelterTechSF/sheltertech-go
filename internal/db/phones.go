@@ -28,6 +28,24 @@ func (m *Manager) GetPhonesByResourceID(resourceId int) []*Phone {
 	return scanPhones(rows)
 }
 
+func (m *Manager) DeletePhoneByID(id int) error {
+	_, err := m.DB.Exec("DELETE FROM public.phones WHERE id = $1", id)
+	return err
+}
+
+func (m *Manager) GetPhoneByID(id int) (*Phone, error) {
+	row := m.DB.QueryRow("SELECT id, number, service_type FROM public.phones WHERE id = $1", id)
+	var phone Phone
+	err := row.Scan(&phone.Id, &phone.Number, &phone.ServiceType)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &phone, nil
+}
+
 func scanPhones(rows *sql.Rows) []*Phone {
 	var phones []*Phone
 	for rows.Next() {
