@@ -11,8 +11,9 @@ services:
       DB_NAME: askdarcel_development
       DB_USER: postgres
       AUTH0_DOMAIN: "dev-nykixf8szsm220fi.us.auth0.com"
-    env_file:
-      - .env  
+      PDF_CROWD_API_KEY:
+      PDF_CROWD_USERNAME:
+      TRANSLATE_CREDENTIALS:
     networks:
       - askdarcel
     volumes:
