@@ -7,11 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
-	"cloud.google.com/go/translate"
 	"github.com/go-chi/chi/v5"
-	"github.com/pdfcrowd/pdfcrowd-go"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
@@ -25,13 +22,14 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
 	"golang.org/x/text/language"
-	"google.golang.org/api/option"
 )
 
 type Manager struct {
-	DbClient       *db.Manager
-	GoogleConfig   GoogleConfig
-	PDFCrowdConfig PDFCrowdConfig
+	DbClient         *db.Manager      // ← Same
+	TranslateService TranslateService // ← NEW: Injectable service
+	PDFService       PDFService       // ← NEW: Injectable service
+	GoogleConfig     GoogleConfig     // ← Same
+	PDFCrowdConfig   PDFCrowdConfig   // ← Same
 }
 
 func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, pdfCrowdApiKey string) *Manager {
@@ -45,12 +43,28 @@ func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, p
 		Key:     pdfCrowdApiKey,
 	}
 
-	manager := &Manager{
-		DbClient:       dbManager,
-		GoogleConfig:   googleConfig,
-		PDFCrowdConfig: pdfCrowdConfig,
+	return NewWithDependencies( // ← NEW: Calls other constructor
+		dbManager,
+		NewGoogleTranslateService(translateCredentials),                              // ← NEW: Creates real service
+		NewPDFCrowdService(pdfCrowdConfig.Enabled, pdfCrowdUsername, pdfCrowdApiKey), // ← NEW: Creates real service
+		googleConfig,
+		pdfCrowdConfig,
+	)
+}
+func NewWithDependencies(
+	dbManager *db.Manager,
+	translateService TranslateService, // ← NEW: Accepts interface
+	pdfService PDFService, // ← NEW: Accepts interface
+	googleConfig GoogleConfig,
+	pdfCrowdConfig PDFCrowdConfig,
+) *Manager {
+	return &Manager{
+		DbClient:         dbManager,        // ← Same as before
+		TranslateService: translateService, // ← NEW: Injected service
+		PDFService:       pdfService,       // ← NEW: Injected service
+		GoogleConfig:     googleConfig,     // ← Same as before
+		PDFCrowdConfig:   pdfCrowdConfig,   // ← Same as before
 	}
-	return manager
 }
 
 // GetByID Get a service by ID
@@ -194,7 +208,7 @@ func (m *Manager) processHTML(html, targetLanguage string) (string, error) {
 
 // translateHTML performs the translation of HTML content
 func (m *Manager) translateHTML(html, targetLanguage string) (string, error) {
-	// Supported languages
+	// Supported languages map
 	supportedLanguages := map[string]bool{
 		"en": true, "es": true, "tl": true,
 		"zh-TW": true, "vi": true, "ar": true, "ru": true,
@@ -205,14 +219,10 @@ func (m *Manager) translateHTML(html, targetLanguage string) (string, error) {
 		return "", fmt.Errorf("unsupported language: %s", targetLanguage)
 	}
 
-	// Create translate client
-	ctx := context.Background()
-	credentialsBytes := []byte(m.GoogleConfig.TranslateCredential)
-	client, err := translate.NewClient(ctx, option.WithCredentialsJSON(credentialsBytes))
-	if err != nil {
-		return "", fmt.Errorf("failed to create translate client: %v", err)
+	// Check if translation service is available
+	if m.TranslateService == nil {
+		return "", fmt.Errorf("translation service not available")
 	}
-	defer client.Close()
 
 	// Parse target language
 	target, err := language.Parse(targetLanguage)
@@ -220,19 +230,16 @@ func (m *Manager) translateHTML(html, targetLanguage string) (string, error) {
 		return "", fmt.Errorf("invalid language code: %v", err)
 	}
 
-	// Perform translation
-	translations, err := client.Translate(ctx, []string{html}, target, nil)
+	// Use injected translation service
+	ctx := context.Background()
+	translations, err := m.TranslateService.Translate(ctx, []string{html}, target)
 	if err != nil {
-		// Mimic ResourceExhaustedError handling
-		if strings.Contains(err.Error(), "quota") || strings.Contains(err.Error(), "limit") {
-			return "", fmt.Errorf("translation quota exceeded")
-		}
-		return "", fmt.Errorf("translation failed: %v", err)
+		return "", err
 	}
 
 	// Return translated text
 	if len(translations) > 0 {
-		return translations[0].Text, nil
+		return translations[0], nil
 	}
 
 	return "", fmt.Errorf("no translation returned")
@@ -240,24 +247,13 @@ func (m *Manager) translateHTML(html, targetLanguage string) (string, error) {
 
 // htmlToPDF converts HTML to PDF using PDFCrowd credentials
 func (m *Manager) htmlToPDF(html string) ([]byte, error) {
-	// Check if PDF generation is enabled
-	if !m.PDFCrowdConfig.Enabled {
-		return nil, fmt.Errorf("dynamic PDF generation is not enabled")
+	// Check if PDF service is available
+	if m.PDFService == nil {
+		return nil, fmt.Errorf("PDF service not available")
 	}
 
-	// Create PDFCrowd client
-	client := pdfcrowd.NewHtmlToPdfClient(m.PDFCrowdConfig.User, m.PDFCrowdConfig.Key)
-
-	// Set page margins (0.2in on all sides)
-	client.SetPageMargins("0.2in", "0.2in", "0.2in", "0.2in")
-
-	// Convert HTML to PDF
-	pdfBytes, err := client.ConvertString(html)
-	if err != nil {
-		return nil, fmt.Errorf("PDF conversion failed: %v", err)
-	}
-
-	return pdfBytes, nil
+	// Use injected PDF service
+	return m.PDFService.ConvertToPDF(html)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
