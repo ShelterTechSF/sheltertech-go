@@ -182,7 +182,7 @@ func (m *Manager) ConvertHtmlToPdf(w http.ResponseWriter, r *http.Request) {
 // processHTML handles potential translation
 func (m *Manager) processHTML(html, targetLanguage string) (string, error) {
 	// Supported languages
-	supportedLanguages := []string{"en", "es", "tl", "zh-TW", "vi", "ar", "ru"}
+	supportedLanguages := []string{"es", "tl", "zh-TW", "vi", "ar", "ru"}
 
 	// Check if translation is needed
 	languageSupported := false
