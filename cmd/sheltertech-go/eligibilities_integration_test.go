@@ -504,7 +504,7 @@ func TestUpdateEligibilityById(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		originalEligibility := new(eligibilities.Eligibility)
+		originalEligibility := new(eligibilities.EligibilityWrapper)
 		err = json.Unmarshal(body, originalEligibility)
 		require.NoError(t, err)
 
@@ -532,7 +532,7 @@ func TestUpdateEligibilityById(t *testing.T) {
 		body, err = io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		updatedEligibility := new(eligibilities.Eligibility)
+		updatedEligibility := new(eligibilities.EligibilityWrapper)
 		err = json.Unmarshal(body, updatedEligibility)
 		require.NoError(t, err)
 
@@ -540,9 +540,9 @@ func TestUpdateEligibilityById(t *testing.T) {
 		assert.Equal(t, newName, *updatedEligibility.Eligibility.Name, "Name should be updated")
 
 		// Revert back to original (clean up)
-		if originalEligibility.Name != nil {
+		if originalEligibility.Eligibility.Name != nil {
 			updateData = map[string]interface{}{
-				"name": *originalEligibility.Name,
+				"name": *originalEligibility.Eligibility.Name,
 			}
 
 			jsonData, err = json.Marshal(updateData)
@@ -573,16 +573,16 @@ func TestUpdateEligibilityById(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		originalEligibility := new(eligibilities.Eligibility)
+		originalEligibility := new(eligibilities.EligibilityWrapper)
 		err = json.Unmarshal(body, originalEligibility)
 		require.NoError(t, err)
 
 		// Create a new feature rank (different from the original)
 		var newRank int
-		if originalEligibility.FeatureRank == nil {
+		if originalEligibility.Eligibility.FeatureRank == nil {
 			newRank = 100
 		} else {
-			newRank = *originalEligibility.FeatureRank + 1
+			newRank = *originalEligibility.Eligibility.FeatureRank + 1
 		}
 
 		// Create update request for feature_rank only
@@ -606,17 +606,17 @@ func TestUpdateEligibilityById(t *testing.T) {
 		body, err = io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		updatedEligibility := new(eligibilities.Eligibility)
+		updatedEligibility := new(eligibilities.EligibilityWrapper)
 		err = json.Unmarshal(body, updatedEligibility)
 		require.NoError(t, err)
 
-		assert.Equal(t, validID, updatedEligibility.Id, "ID should remain the same")
-		assert.NotNil(t, updatedEligibility.FeatureRank, "Feature rank should not be nil")
-		assert.Equal(t, newRank, *updatedEligibility.FeatureRank, "Feature rank should be updated")
+		assert.Equal(t, validID, updatedEligibility.Eligibility.Id, "ID should remain the same")
+		assert.NotNil(t, updatedEligibility.Eligibility.FeatureRank, "Feature rank should not be nil")
+		assert.Equal(t, newRank, *updatedEligibility.Eligibility.FeatureRank, "Feature rank should be updated")
 
 		// Revert back to original (clean up)
 		updateData = map[string]interface{}{
-			"feature_rank": originalEligibility.FeatureRank,
+			"feature_rank": originalEligibility.Eligibility.FeatureRank,
 		}
 
 		jsonData, err = json.Marshal(updateData)
