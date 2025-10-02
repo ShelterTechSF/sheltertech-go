@@ -205,12 +205,12 @@ func TestGetEligibilityByID(t *testing.T) {
 		body, err = io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		eligibilityResponse := new(eligibilities.Eligibility)
+		eligibilityResponse := new(eligibilities.EligibilityWrapper)
 		err = json.Unmarshal(body, eligibilityResponse)
 		require.NoError(t, err)
 
-		assert.Equal(t, validID, eligibilityResponse.Id, "Eligibility Id should match the requested ID")
-		assert.NotNil(t, eligibilityResponse.Name, "Eligibility Name should not be nil")
+		assert.Equal(t, validID, eligibilityResponse.Eligibility.Id, "Eligibility Id should match the requested ID")
+		assert.NotNil(t, eligibilityResponse.Eligibility.Name, "Eligibility Name should not be nil")
 	})
 
 	t.Run("Invalid ID Format", func(t *testing.T) {
@@ -536,8 +536,8 @@ func TestUpdateEligibilityById(t *testing.T) {
 		err = json.Unmarshal(body, updatedEligibility)
 		require.NoError(t, err)
 
-		assert.Equal(t, validID, updatedEligibility.Id, "ID should remain the same")
-		assert.Equal(t, newName, *updatedEligibility.Name, "Name should be updated")
+		assert.Equal(t, validID, updatedEligibility.Eligibility.Id, "ID should remain the same")
+		assert.Equal(t, newName, *updatedEligibility.Eligibility.Name, "Name should be updated")
 
 		// Revert back to original (clean up)
 		if originalEligibility.Name != nil {
