@@ -1,3 +1,36 @@
+v1.6.6 (2025-10-10)
+-------------------------
+ * Merge pull request #211 from nyaruka/update_metadata
+ * Update test for DE format number size
+ * Update metadata
+
+v1.6.5 (2025-08-11)
+-------------------------
+ * Update metadata
+
+v1.6.4 (2025-07-22)
+-------------------------
+ * Update metadata
+
+v1.6.3 (2025-05-22)
+-------------------------
+ * Update metadata
+
+v1.6.2 (2025-05-22)
+-------------------------
+ * Update isNumberGeographical to consider GEO_MOBILE_COUNTRIES
+
+v1.6.1 (2025-04-23)
+-------------------------
+ * Update metadata
+
+v1.6.0 (2025-03-20)
+-------------------------
+ * Fix copying mutex in number desc
+ * Update dependencies
+ * Bump supported go versions
+ * Optimize package initialization
+
 v1.5.0 (2025-01-18)
 -------------------------
  * Add shortnumber emergency functions
