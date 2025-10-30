@@ -280,22 +280,8 @@ func TestGetEligibilitiesFeatured(t *testing.T) {
 		}
 	}
 
-	// Based on the data you provided, verify that only eligibilities with
-	// non-null feature_rank values are returned
-	// If the data in the db changes this test may break
-	knownFeaturedEligibilityIds := []int{1, 2, 3, 4, 5, 6} // From your example data
-
-	// Ensure all eligibilities in the response have their IDs in the known featured list
-	for _, eligibility := range response.Eligibilities {
-		found := false
-		for _, id := range knownFeaturedEligibilityIds {
-			if eligibility.Id == id {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found, fmt.Sprintf("Eligibility with ID %d should be in the featured list", eligibility.Id))
-	}
+	// Note: Do not assert specific IDs; seed data may vary across environments.
+	// We already validated non-nil feature_rank and sorting above.
 }
 
 func TestGetSubEligibilities(t *testing.T) {

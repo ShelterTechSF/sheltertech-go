@@ -91,6 +91,42 @@ func TestGetCategoryByID(t *testing.T) {
 	assert.Equal(t, categoryResponse.Category.Id, categoryId, "Category Id is a match")
 }
 
+func TestGetSubCategoriesByID(t *testing.T) {
+	// First, get a category to use its ID
+	res, err := http.Get(categoryUrl)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	categoriesResponse := new(categories.Categories)
+	err = json.Unmarshal(body, categoriesResponse)
+	require.NoError(t, err)
+	require.NotEmpty(t, categoriesResponse.Categories, "Nothing found. Check database connection and baseUrl")
+
+	categoryId := categoriesResponse.Categories[0].Id
+
+	// Now test the subcategories endpoint
+	url := categoryUrl + "/subcategories/" + fmt.Sprintf("%d", categoryId)
+	req, err := http.NewRequest("GET", url, nil)
+	require.NoError(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	body, err = ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	var subCategoriesResponse categories.Categories
+	err = json.Unmarshal(body, &subCategoriesResponse)
+	require.NoError(t, err)
+
+	// Verify we get a response (could be empty array if no subcategories)
+	assert.NotNil(t, subCategoriesResponse.Categories, "Should return subcategories array")
+}
+
 func TestGetCategoryCounts(t *testing.T) {
 	req, err := http.NewRequest("GET", categoryUrl+"/counts", nil)
 	require.NoError(t, err)
