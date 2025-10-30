@@ -39,7 +39,7 @@ jobs:
 
   publish-latest:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/migrate-to-gcp' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
