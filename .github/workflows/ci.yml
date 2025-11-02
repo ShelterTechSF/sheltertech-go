@@ -44,6 +44,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
+      - name: Verify GCP secret is accessible
+        run: |
+          if [ -z "${{ secrets.GCP_ARTIFACT_REGISTRY_KEY }}" ]; then
+            echo "ERROR: GCP_ARTIFACT_REGISTRY_KEY secret is empty or not accessible"
+            exit 1
+          fi
+          echo "GCP secret is accessible (length: $(echo -n '${{ secrets.GCP_ARTIFACT_REGISTRY_KEY }}' | wc -c) characters)"
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
