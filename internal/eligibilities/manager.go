@@ -102,7 +102,9 @@ func (m *Manager) GetEligibilityById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert from DB type and return the first (and only) result
-	response := FromEligibilityDBType(eligibilities[0])
+	response := EligibilityWrapper{
+		Eligibility: FromEligibilityDBType(eligibilities[0]),
+	}
 
 	writeJson(w, response)
 }
@@ -164,7 +166,9 @@ func (m *Manager) UpdateEligibilityById(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Return the updated eligibility
-	response := FromEligibilityDBType(updatedEligibility)
+	response := EligibilityWrapper{
+		Eligibility: FromEligibilityDBType(updatedEligibility),
+	}
 	writeJson(w, response)
 }
 

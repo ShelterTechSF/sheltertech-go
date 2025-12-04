@@ -7,6 +7,11 @@ type Eligibility struct {
 	Id          int     `json:"id"`
 	FeatureRank *int    `json:"feature_rank"`
 }
+
+type EligibilityWrapper struct {
+	Eligibility *Eligibility `json:"eligibility"`
+}
+
 type Eligibilities struct {
 	Eligibilities []*Eligibility `json:"eligibilities"`
 }
