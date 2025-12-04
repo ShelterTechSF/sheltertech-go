@@ -14,8 +14,8 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
-	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
+	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
@@ -60,6 +60,9 @@ func main() {
 	dbPass := viper.GetString("DB_PASS")
 	auth0Domain := viper.GetString("AUTH0_DOMAIN")
 	enableJwtVerification := viper.GetBool("ENABLE_JWT_VERIFICATION")
+	googleTranslateCredentials := viper.GetString("TRANSLATE_CREDENTIALS")
+	pdfCrowdUsername := viper.GetString("PDF_CROWD_USERNAME")
+	pdfCrowdApiKey := viper.GetString("PDF_CROWD_API_KEY")
 	var jwtKeyfunc keyfunc.Keyfunc
 	if auth0Domain != "" {
 		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
@@ -74,7 +77,7 @@ func main() {
 	categoriesManager := categories.New(dbManager)
 	changeRequestManager := changerequest.New(dbManager)
 	foldersManager := folders.New(dbManager)
-	servicesManager := services.New(dbManager)
+	servicesManager := services.New(dbManager, googleTranslateCredentials, pdfCrowdUsername, pdfCrowdApiKey)
 	resourcesManager := resources.New(dbManager)
 	usersManager := users.New(dbManager, jwtKeyfunc)
 	bookmarksManager := bookmarks.New(dbManager)
@@ -143,6 +146,8 @@ func main() {
 
 		r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
+
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
 		r.Get("/api/users/current", usersManager.GetCurrent)
