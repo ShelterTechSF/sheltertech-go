@@ -14,8 +14,8 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
-	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
+	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
@@ -166,10 +166,23 @@ func main() {
 }
 
 func setIntegrationTestEnv() {
-	viper.SetDefault("DB_USER", "postgres")
-	viper.SetDefault("DB_HOST", "localhost")
-	viper.SetDefault("DB_PORT", "5432")
-	viper.SetDefault("DB_NAME", "askdarcel_development")
-	viper.SetDefault("DB_PASS", "")
-	viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
+	// Only set defaults if environment variables are not already set
+	if !viper.IsSet("DB_USER") {
+		viper.SetDefault("DB_USER", "postgres")
+	}
+	if !viper.IsSet("DB_HOST") {
+		viper.SetDefault("DB_HOST", "localhost")
+	}
+	if !viper.IsSet("DB_PORT") {
+		viper.SetDefault("DB_PORT", "5432")
+	}
+	if !viper.IsSet("DB_NAME") {
+		viper.SetDefault("DB_NAME", "askdarcel_development")
+	}
+	if !viper.IsSet("DB_PASS") {
+		viper.SetDefault("DB_PASS", "")
+	}
+	if !viper.IsSet("AUTH0_DOMAIN") {
+		viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
+	}
 }
