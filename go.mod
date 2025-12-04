@@ -16,7 +16,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.5
 )
