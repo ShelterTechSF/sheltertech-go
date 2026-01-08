@@ -2,9 +2,9 @@ name: testsuite
 
 on:
   push:
-    branches: [ main, migrate-to-gcp ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, migrate-to-gcp ]
+    branches: [ main ]
 
 env:
   GCP_REPO: us-west2-docker.pkg.dev/askdarcel-184805/sheltertech/sheltertech-go
@@ -39,7 +39,7 @@ jobs:
 
   publish-latest:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/migrate-to-gcp' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
