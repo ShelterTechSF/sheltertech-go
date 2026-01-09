@@ -4,30 +4,22 @@ This doc essentially captures all the tables present in the backend. Some juncti
 This DB essentially represent the postgres backed ruby on rails app that we are migrating away from.
 [🔗 The Full Database ERD (Entity-Relationship Diagram) on Lucidchart here](https://lucid.app/lucidchart/b166b5fe-dff4-4ece-b252-04afbdd22973/edit?viewport_loc=-1454%2C0_0&invitationId=inv_40d82f1f-b1ec-4af6-8e57-b04bf71b7ca4)
 
-## User Management and Access Control
-### User Accounts and Authentication
-1. Users
-2. Admins
-3. Groups
-4. User Groups
-5. Permissions
-6. Group Permissions
-
 ## Resource and Service Management
 ### Core Resource Entities
 1. Resources
 2. Services
-3. Programs
-4. Volunteers
+### Associated Documentation, Notes and instructions for Resources and services
+1. Documents
+2. Notes
+3. Instructions
+
 
 ### Resource Metadata and Classification
 1. Categories
 2. Keywords
 3. Category Relationships
-4. Categories Resources
-5. Categories Services
-6. Keywords Resources
-7. Keywords Services
+4. Categories Resources(JT)
+5. Categories Services(JT)
 
 ## Administrative Management
 1. Change Requests
@@ -38,8 +30,11 @@ This DB essentially represent the postgres backed ruby on rails app that we are 
 1. Contacts
 2. Phones
 3. Addresses
-4. Texting Recipients
-5. Textings
+
+## Textings
+### Tables related to a feature that allows a user to have a particular resource or service's URL texted to them.
+1. Texting Recipients
+2. Textings
 
 ## Operational Details
 ### Scheduling and Availability
@@ -48,39 +43,56 @@ This DB essentially represent the postgres backed ruby on rails app that we are 
 
 ### Eligibility and Access
 1. Eligibilities
-2. Eligibilities Services
+2. Eligibilities Services (JT)
 3. Eligibility Relationships
 
-## Documentation and Information
-### Informational Resources
-1. Documents
-2. News Articles
-3. Notes
-4. Instructions
+## Informational Resources
+1. News Articles
 
-## Feedback and Interaction
-### User Feedback Mechanisms
-1. Feedbacks
-2. Reviews
-3. Saved Searches
+## Algolia support tables 
+(Linguistic and Semantic Support)
+1. Synonym Groups
+2. Synonyms
 
-
-## Linguistic and Semantic Support
-### Language and Synonym Management
-1. Languages
-2. Synonym Groups
-3. Synonyms
-
-## Organizational and Funding Context
-### Organizational Metadata
-1. Fundings
-2. Sites
-3. Resources Sites
+## WhiteLabel sites support 
+1. Sites
+2. Resources Sites
 
 ## Bookmarking and Organization
 ### User Organization Tools
 1. Bookmarks
 2. Folders
+3. Saved Searches
+
+## User Management and Access Control
+### User Accounts and Authentication
+1. Users
+2. Admins
+3. Groups
+4. User Groups (JT)
+5. Permissions
+6. Group Permissions
+
+## Deprecated Tables
+Legacy Tables that are not actively being used or hold no data.
+### Resource related Entities
+1. Programs
+2. Volunteers
+
+### Meta
+### Resource Metadata and Classification
+1. Keywords Resources
+2. Keywords Services
+
+### User Feedback Mechanisms
+~~1. Feedbacks~~
+2. Reviews ( Never Used)
+
+### Language and Synonym Management
+~~1. Languages~~
+
+### Organizational Metadata
+~~1. Fundings~~
 
 ### FAQ
 #### 1. What are Schedules and Schedule days ?
@@ -88,6 +100,9 @@ Schedules function as container objects to which individual schedule days are at
 
 #### 2. What exactly does textings do or represent ? 
 These represent text messages (a.k.a. SMS) sent through the third party provider we use named Textellent. There's a feature on our website where a user can view a service and then click a button to have the URL for that service sent to them via text message. Many people who are experiencing homelessness are either not tech savvy (due to being older) or do not have constant access to the internet, but most have phones and can receive SMS messages anywhere, so it is often better for them to be sent things via SMS than via email
+
+Striked out tables  means they are intended to be deleted. 
+Tables marked with (JT) indiicate that they are join tables
 
 ## TABLE DEFINITIONS
 This is not runnable sql but does give an idea as to how the tables look like with their constraints
