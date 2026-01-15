@@ -131,6 +131,7 @@ func main() {
 		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
 
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
+		r.Post("/api/phones/{id}/change_requests", changeRequestManager.Submit)
 	})
 
 	r.Group(func(r chi.Router) {

@@ -33,6 +33,7 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var service *db.Service
+	var phone *db.Phone
 	switch changeRequest.Type {
 	case "ServiceChangeRequest":
 		service, err = m.DbClient.GetServiceById(changeRequest.ObjectID)
@@ -41,9 +42,15 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		break
+	case "PhoneChangeRequest":
+		phone, err = m.DbClient.GetPhoneByID(changeRequest.ObjectID)
+		if err != nil {
+			log.Printf("Phone Change Request Error: %v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
-	if err != nil || service == nil {
+	if err != nil || (service == nil && phone == nil) {
 		writeStatus(w, http.StatusInternalServerError)
 	}
 
@@ -53,6 +60,7 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 		Status:     changeRequest.Status,
 		Action:     changeRequest.Action,
 		ResourceId: int(service.ResourceId.Int32),
+		// Should it be phone.ResourceId if it's a phone change request
 	}
 
 	err = m.DbClient.SubmitChangeRequest(dBChangeRequest)
