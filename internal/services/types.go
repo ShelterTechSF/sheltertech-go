@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
@@ -11,6 +13,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/programs"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+	"golang.org/x/text/language"
 )
 
 type ServiceResponse struct {
@@ -48,6 +51,27 @@ type Service struct {
 	Documents     []*documents.Document        `json:"documents"`
 	Resource      *resources.Resource          `json:"resource"`
 	Program       *programs.Program            `json:"program"`
+}
+type GoogleConfig struct {
+	TranslateCredential string
+}
+
+type PDFCrowdConfig struct {
+	Enabled bool
+	User    string
+	Key     string
+}
+
+// TranslateService interface for translation functionality
+type TranslateService interface {
+	Translate(ctx context.Context, texts []string, targetLang language.Tag) ([]string, error)
+	// Close() method REMOVED - not needed since connections are short-lived
+}
+
+// PDFService interface for PDF generation functionality
+type PDFService interface {
+	ConvertToPDF(html string) ([]byte, error)
+	// No Close() method here either - same reasoning
 }
 
 func FromDBType(dbService *db.Service) *Service {
