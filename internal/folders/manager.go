@@ -3,12 +3,13 @@ package folders
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
@@ -105,6 +106,9 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		writeStatus(w, http.StatusBadRequest)
+		return
+
 	}
 	dbFolder := m.DbClient.GetFolderById(folderId)
 	if dbFolder == nil {
@@ -173,7 +177,7 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 		writeStatus(w, http.StatusInternalServerError)
 	}
 
-	writeStatus(w, http.StatusCreated)
+	writeStatus(w, http.StatusNoContent)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
