@@ -10,6 +10,7 @@ type Phone struct {
 	Id          int
 	Number      string
 	ServiceType string
+	ResourceId  int
 }
 
 const phonesByResourceIDSql = `
@@ -34,9 +35,9 @@ func (m *Manager) DeletePhoneByID(id int) error {
 }
 
 func (m *Manager) GetPhoneByID(id int) (*Phone, error) {
-	row := m.DB.QueryRow("SELECT id, number, service_type FROM public.phones WHERE id = $1", id)
+	row := m.DB.QueryRow("SELECT id, number, service_type, resource_id FROM public.phones WHERE id = $1", id)
 	var phone Phone
-	err := row.Scan(&phone.Id, &phone.Number, &phone.ServiceType)
+	err := row.Scan(&phone.Id, &phone.Number, &phone.ServiceType, &phone.ResourceId)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -44,6 +45,25 @@ func (m *Manager) GetPhoneByID(id int) (*Phone, error) {
 		return nil, err
 	}
 	return &phone, nil
+}
+
+func (m *Manager) UpdatePhone(id int, updates map[string]interface{}) error {
+	allowed := []string{"number", "service_type", "description"}
+	q, args := buildUpdateQuery("phones", "id", id, updates, allowed, true)
+	if q == "" {
+		return nil
+	}
+	_, err := m.DB.Exec(q, args...)
+	return err
+}
+
+func (m *Manager) InsertPhone(resourceID int, number, serviceType string) (int, error) {
+	var id int
+	err := m.DB.QueryRow(`
+INSERT INTO public.phones (number, service_type, resource_id, created_at, updated_at)
+VALUES ($1, $2, $3, now(), now())
+RETURNING id`, number, serviceType, resourceID).Scan(&id)
+	return id, err
 }
 
 func scanPhones(rows *sql.Rows) []*Phone {

@@ -83,3 +83,14 @@ func scanService(row *sql.Row) (*Service, error) {
 	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
 	return &service, err
 }
+
+var serviceUpdateAllowed = []string{"name", "long_description", "eligibility", "required_documents", "fee", "application_process", "email", "url", "wait_time", "alternate_name", "interpretation_services", "short_description"}
+
+func (m *Manager) UpdateService(id int, updates map[string]interface{}) error {
+	q, args := buildUpdateQuery("services", "id", id, updates, serviceUpdateAllowed, true)
+	if q == "" {
+		return nil
+	}
+	_, err := m.DB.Exec(q, args...)
+	return err
+}

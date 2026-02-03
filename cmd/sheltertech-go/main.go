@@ -145,10 +145,12 @@ func main() {
 		r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
 		r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
+		r.Post("/api/services/{id}/change_requests", changeRequestManager.CreateForService)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
+		r.Post("/api/resources/{id}/change_requests", changeRequestManager.CreateForResource)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
 		r.Get("/api/users/current", usersManager.GetCurrent)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
@@ -165,6 +167,11 @@ func main() {
 		r.Get("/api/eligibilities/featured", eligibilityManager.GetFeaturedEligibilities)
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 
+		r.Post("/api/addresses/{id}/change_requests", changeRequestManager.CreateForAddress)
+		r.Post("/api/phones/{id}/change_requests", changeRequestManager.CreateForPhone)
+		r.Post("/api/notes/{id}/change_requests", changeRequestManager.CreateForNote)
+		r.Post("/api/schedule_days/{id}/change_requests", changeRequestManager.CreateForScheduleDay)
+		r.Post("/api/change_requests", changeRequestManager.CreateGeneric)
 	})
 
 	http.ListenAndServe(":3001", r)

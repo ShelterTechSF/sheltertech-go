@@ -70,3 +70,19 @@ func scanResource(row *sql.Row) *Resource {
 	}
 	return &resource
 }
+
+var resourceUpdateAllowed = []string{"name", "short_description", "long_description", "website", "email", "status", "alternate_name", "legal_status"}
+
+func (m *Manager) UpdateResource(id int, updates map[string]interface{}) error {
+	q, args := buildUpdateQuery("resources", "id", id, updates, resourceUpdateAllowed, true)
+	if q == "" {
+		return nil
+	}
+	_, err := m.DB.Exec(q, args...)
+	return err
+}
+
+func (m *Manager) TouchResource(id int) error {
+	_, err := m.DB.Exec("UPDATE public.resources SET updated_at = now() WHERE id = $1", id)
+	return err
+}
