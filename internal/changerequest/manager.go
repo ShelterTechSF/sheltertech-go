@@ -2,12 +2,17 @@ package changerequest
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
-	"github.com/sheltertechsf/sheltertech-go/internal/common"
+	"github.com/go-chi/chi/v5"
+	"github.com/nyaruka/phonenumbers"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	fieldchanges "github.com/sheltertechsf/sheltertech-go/internal/field_changes"
 )
 
 type Manager struct {
@@ -21,57 +26,116 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
-func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
-
+func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
-
-	changeRequest := &ChangeRequest{}
-	err := json.Unmarshal(body, changeRequest)
+	body, _ := io.ReadAll(r.Body)
+	idStr := chi.URLParam(r, "id")
+	phoneId, err := strconv.Atoi(idStr)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		http.Error(w, "Invalid phone ID", http.StatusBadRequest)
+		return
 	}
 
-	var service *db.Service
-	var phone *db.Phone
-	switch changeRequest.Type {
-	case "ServiceChangeRequest":
-		service, err = m.DbClient.GetServiceById(changeRequest.ObjectID)
+	phone, err := m.DbClient.GetPhoneByID(phoneId)
+	if err != nil {
+		http.Error(w, "Phone not found", http.StatusBadRequest)
+		return
+	}
+
+	changeRequestPayload := &ChangeRequestPayload{}
+	err = json.Unmarshal(body, changeRequestPayload)
+	if err != nil {
+		log.Printf("Error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	number := changeRequestPayload.ChangeRequest.FieldChanges.Number
+	serviceType := changeRequestPayload.ChangeRequest.FieldChanges.ServiceType
+
+	dbChangeRequest, err := m.DbClient.InsertChangeRequest(&db.ChangeRequest{
+		Type:       "PhoneChangeRequest",
+		ObjectId:   phoneId,
+		Status:     0,
+		Action:     1,
+		ResourceId: phone.ResourceId,
+	})
+	if err != nil {
+		http.Error(w, "Error inserting change request", http.StatusInternalServerError)
+	}
+
+	var fieldChanges []*fieldchanges.FieldChange
+
+	if number != nil {
+		parsed, err := phonenumbers.Parse(strings.TrimSpace(*number), "US")
 		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			http.Error(w, "Error parsing phone number", http.StatusInternalServerError)
+		}
+		phone.Number = phonenumbers.Format(parsed, phonenumbers.E164)
+		numberFieldChange := &db.FieldChange{
+			FieldName:       "number",
+			FieldValue:      phone.Number,
+			ChangeRequestId: dbChangeRequest.Id,
+		}
+		err = m.DbClient.InsertFieldChange(*numberFieldChange)
+		if err != nil {
+			http.Error(w, "Error inserting number field change", http.StatusInternalServerError)
 			return
 		}
-	case "PhoneChangeRequest":
-		phone, err = m.DbClient.GetPhoneByID(changeRequest.ObjectID)
+		fieldChanges = append(
+			fieldChanges,
+			fieldchanges.FromDBType(numberFieldChange),
+		)
+	}
+	if serviceType != nil {
+		phone.ServiceType = *serviceType
+		servicedTypeFieldChange := &db.FieldChange{
+			FieldName:       "service_type",
+			FieldValue:      *serviceType,
+			ChangeRequestId: dbChangeRequest.Id,
+		}
+		err = m.DbClient.InsertFieldChange(*servicedTypeFieldChange)
 		if err != nil {
-			log.Printf("Phone Change Request Error: %v", err)
-			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			http.Error(w, "Error inserting field change", http.StatusInternalServerError)
 			return
 		}
-	}
-	if err != nil || (service == nil && phone == nil) {
-		writeStatus(w, http.StatusInternalServerError)
-	}
-
-	dBChangeRequest := &db.ChangeRequest{
-		Type:       changeRequest.Type,
-		ObjectId:   changeRequest.ObjectID,
-		Status:     changeRequest.Status,
-		Action:     changeRequest.Action,
-		ResourceId: int(service.ResourceId.Int32),
-		// Should it be phone.ResourceId if it's a phone change request
+		fieldChanges = append(
+			fieldChanges,
+			fieldchanges.FromDBType(servicedTypeFieldChange),
+		)
 	}
 
-	err = m.DbClient.SubmitChangeRequest(dBChangeRequest)
+	err = m.DbClient.UpdatePhone(phone)
 	if err != nil {
-		log.Print(err)
-		writeStatus(w, http.StatusInternalServerError)
+		log.Printf("Update phone error %v", err)
+		http.Error(w, "Error updating phone", http.StatusInternalServerError)
+		return
 	}
 
+	response := &PhoneChangeRequest{
+		PhoneChangeRequest: ChangeRequestResponse{
+			Id:           dbChangeRequest.Id,
+			Status:       "pending",
+			Type:         dbChangeRequest.Type,
+			ObjectID:     phone.Id,
+			FieldChanges: fieldChanges,
+		},
+	}
+	writeJson(w, response)
 	writeStatus(w, http.StatusCreated)
 }
 
 func writeStatus(w http.ResponseWriter, responseStatus int) {
 	w.WriteHeader(responseStatus)
+}
+
+func writeJson(w http.ResponseWriter, object interface{}) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(output)
+	if err != nil {
+		panic(err)
+	}
 }

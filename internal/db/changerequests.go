@@ -2,8 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 )
 
 type ChangeRequest struct {
@@ -17,26 +15,26 @@ type ChangeRequest struct {
 	UpdatedAt  sql.NullTime
 }
 
-const submitChangeRequest = `
+const insertChangeRequestSql = `
 INSERT INTO public.change_requests (type, object_id, status, action, resource_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, now(), now())`
+VALUES ($1, $2, $3, $4, $5, now(), now())
+RETURNING id`
 
-func (m *Manager) SubmitChangeRequest(changeRequest *ChangeRequest) error {
-	tx, err := m.DB.Begin()
+func (m *Manager) InsertChangeRequest(
+	changeRequest *ChangeRequest,
+) (*ChangeRequest, error) {
+	row := m.DB.QueryRow(
+		insertChangeRequestSql,
+		changeRequest.Type,
+		changeRequest.ObjectId,
+		changeRequest.Status,
+		changeRequest.Action,
+		changeRequest.ResourceId,
+	)
+	err := row.Scan(&changeRequest.Id)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	res, err := tx.Exec(submitChangeRequest, changeRequest.Type, changeRequest.ObjectId, changeRequest.Status, changeRequest.Action, changeRequest.ResourceId)
-	if err != nil {
-		return err
-	}
-	rowCount, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowCount != 1 {
-		defer tx.Rollback()
-		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
-	}
-	return tx.Commit()
+
+	return changeRequest, nil
 }

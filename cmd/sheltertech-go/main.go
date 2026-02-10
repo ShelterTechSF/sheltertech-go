@@ -81,9 +81,9 @@ func main() {
 	savedSearchesManager := savedsearches.New(dbManager)
 	datathonManager := datathon.New(dbManager)
 	newsArticlesManager := newsarticles.New(dbManager)
-
-	eligibilityManager := eligibilities.New((dbManager))
+	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
 		EnableTracing: true,
@@ -131,7 +131,7 @@ func main() {
 		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
 
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
-		r.Post("/api/phones/{id}/change_requests", changeRequestManager.Submit)
+		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -142,7 +142,6 @@ func main() {
 		r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 		r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
-		r.Post("/api/services/{id}/change_request", changeRequestManager.Submit)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
@@ -160,7 +159,6 @@ func main() {
 		r.Put("/api/eligibilities/{id}", eligibilityManager.UpdateEligibilityById)
 		r.Get("/api/eligibilities/featured", eligibilityManager.GetFeaturedEligibilities)
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
-
 	})
 
 	http.ListenAndServe(":3001", r)
