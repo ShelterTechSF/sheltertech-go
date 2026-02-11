@@ -6,14 +6,17 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -82,4 +85,33 @@ func TestDeletePhoneEndpoint(t *testing.T) {
 	}
 	expectedErrorMessage := fmt.Sprintf("404: Phone not found for ID: %d", phoneID) // Assuming this is the exact error msg
 	assert.Contains(t, string(body), expectedErrorMessage, "Response body should contain the 'not found' error message")
+}
+
+func TestCreatePhone(t *testing.T) {
+	url := "http://localhost:3001/api/change_request"
+	number := "321-321-3213"
+	serviceType := "Business"
+
+	changeRequest := changerequest.ChangeRequestPayload{
+		Type:             "phone",
+		ParentResourceID: 1,
+		ChangeRequest: changerequest.ChangeRequest{
+			Action: "insert",
+			FieldChanges: changerequest.ChangeRequestFields{
+				Number:      &number,
+				ServiceType: &serviceType,
+			},
+		},
+	}
+	body, err := json.Marshal(changeRequest)
+	require.NoError(t, err)
+	bytes := bytes.NewBuffer(body)
+
+	req, err := http.NewRequest("POST", url, bytes)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
 }
