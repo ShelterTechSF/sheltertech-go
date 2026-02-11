@@ -1,9 +1,5 @@
 package changerequest
 
-import (
-	fieldchanges "github.com/sheltertechsf/sheltertech-go/internal/field_changes"
-)
-
 type ChangeRequestPayload struct {
 	ChangeRequest    ChangeRequest `json:"change_request"`
 	ParentResourceID int           `json:"parent_resource_id"`
@@ -16,16 +12,21 @@ type ChangeRequest struct {
 }
 
 type ChangeRequestFields struct {
-	Number      *string `json:"number"`
-	ServiceType *string `json:"service_type"`
+	Number      *string `json:"number,omitempty"`
+	ServiceType *string `json:"service_type,omitempty"`
+}
+
+type FieldChange struct {
+	FieldName  string `json:"field_name"`
+	FieldValue string `json:"field_value"`
 }
 
 type ChangeRequestResponse struct {
-	Id           int                         `json:"id"`
-	Status       string                      `json:"status"`
-	Type         string                      `json:"type"`
-	ObjectID     int                         `json:"object_id"`
-	FieldChanges []*fieldchanges.FieldChange `json:"field_changes"`
+	Id           int           `json:"id"`
+	Status       string        `json:"status"`
+	Type         string        `json:"type"`
+	ObjectID     int           `json:"object_id"`
+	FieldChanges []FieldChange `json:"field_changes"`
 }
 
 type PhoneChangeRequest struct {

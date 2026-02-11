@@ -15,26 +15,11 @@ type ChangeRequest struct {
 	UpdatedAt  sql.NullTime
 }
 
+const insertFieldChangeSql = `
+INSERT INTO public.field_changes (field_name, field_value, change_request_id)
+VALUES ($1, $2, $3)`
+
 const insertChangeRequestSql = `
 INSERT INTO public.change_requests (type, object_id, status, action, resource_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, now(), now())
 RETURNING id`
-
-func (m *Manager) InsertChangeRequest(
-	changeRequest *ChangeRequest,
-) (*ChangeRequest, error) {
-	row := m.DB.QueryRow(
-		insertChangeRequestSql,
-		changeRequest.Type,
-		changeRequest.ObjectId,
-		changeRequest.Status,
-		changeRequest.Action,
-		changeRequest.ResourceId,
-	)
-	err := row.Scan(&changeRequest.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	return changeRequest, nil
-}

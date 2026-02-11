@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/phonenumbers"
+	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
-	fieldchanges "github.com/sheltertechsf/sheltertech-go/internal/field_changes"
 )
 
 type Manager struct {
@@ -26,9 +25,19 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
+func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	changeRequestPayload := unmarshalPayload(w, r)
+
+	switch changeRequestPayload.Type {
+	case "phones":
+		createPhone(w, m.DbClient, changeRequestPayload)
+	}
+}
+
 func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	body, _ := io.ReadAll(r.Body)
+	changeRequestPayload := unmarshalPayload(w, r)
 	idStr := chi.URLParam(r, "id")
 	phoneId, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -36,92 +45,118 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	phone, err := m.DbClient.GetPhoneByID(phoneId)
-	if err != nil {
-		http.Error(w, "Phone not found", http.StatusBadRequest)
-		return
-	}
+	fieldChanges := changeRequestPayload.ChangeRequest.FieldChanges
+	fieldChangesMap := make(map[string]interface{})
+	var fieldChangesResponse []FieldChange
 
-	changeRequestPayload := &ChangeRequestPayload{}
-	err = json.Unmarshal(body, changeRequestPayload)
-	if err != nil {
-		log.Printf("Error: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-	}
-
-	number := changeRequestPayload.ChangeRequest.FieldChanges.Number
-	serviceType := changeRequestPayload.ChangeRequest.FieldChanges.ServiceType
-
-	dbChangeRequest, err := m.DbClient.InsertChangeRequest(&db.ChangeRequest{
-		Type:       "PhoneChangeRequest",
-		ObjectId:   phoneId,
-		Status:     0,
-		Action:     1,
-		ResourceId: phone.ResourceId,
-	})
-	if err != nil {
-		http.Error(w, "Error inserting change request", http.StatusInternalServerError)
-	}
-
-	var fieldChanges []*fieldchanges.FieldChange
-
-	if number != nil {
-		parsed, err := phonenumbers.Parse(strings.TrimSpace(*number), "US")
+	if fieldChanges.Number != nil {
+		formatted, err := formatPhoneNumber(*fieldChanges.Number)
 		if err != nil {
-			http.Error(w, "Error parsing phone number", http.StatusInternalServerError)
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		}
-		phone.Number = phonenumbers.Format(parsed, phonenumbers.E164)
-		numberFieldChange := &db.FieldChange{
-			FieldName:       "number",
-			FieldValue:      phone.Number,
-			ChangeRequestId: dbChangeRequest.Id,
-		}
-		err = m.DbClient.InsertFieldChange(*numberFieldChange)
-		if err != nil {
-			http.Error(w, "Error inserting number field change", http.StatusInternalServerError)
-			return
-		}
-		fieldChanges = append(
-			fieldChanges,
-			fieldchanges.FromDBType(numberFieldChange),
-		)
+		fieldChangesMap["number"] = formatted
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
+			FieldName:  "number",
+			FieldValue: formatted,
+		})
 	}
-	if serviceType != nil {
-		phone.ServiceType = *serviceType
-		servicedTypeFieldChange := &db.FieldChange{
-			FieldName:       "service_type",
-			FieldValue:      *serviceType,
-			ChangeRequestId: dbChangeRequest.Id,
-		}
-		err = m.DbClient.InsertFieldChange(*servicedTypeFieldChange)
-		if err != nil {
-			http.Error(w, "Error inserting field change", http.StatusInternalServerError)
-			return
-		}
-		fieldChanges = append(
-			fieldChanges,
-			fieldchanges.FromDBType(servicedTypeFieldChange),
-		)
+	if fieldChanges.ServiceType != nil {
+		fieldChangesMap["service_type"] = *fieldChanges.ServiceType
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
+			FieldName:  "service_type",
+			FieldValue: *fieldChanges.ServiceType,
+		})
 	}
 
-	err = m.DbClient.UpdatePhone(phone)
+	changeRequestId, err := m.DbClient.UpdatePhone(phoneId, fieldChangesMap)
 	if err != nil {
-		log.Printf("Update phone error %v", err)
-		http.Error(w, "Error updating phone", http.StatusInternalServerError)
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
-			Id:           dbChangeRequest.Id,
+			Id:           *changeRequestId,
 			Status:       "pending",
-			Type:         dbChangeRequest.Type,
-			ObjectID:     phone.Id,
-			FieldChanges: fieldChanges,
+			Type:         "PhoneChangeRequest",
+			ObjectID:     phoneId,
+			FieldChanges: fieldChangesResponse,
 		},
 	}
+
 	writeJson(w, response)
 	writeStatus(w, http.StatusCreated)
+}
+
+func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+	fieldChanges := payload.ChangeRequest.FieldChanges
+	fieldChangesMap := make(map[string]interface{})
+	var fieldChangesResponse []FieldChange
+
+	if fieldChanges.Number == nil || fieldChanges.ServiceType == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Missing Required Fields")
+		return
+	}
+
+	formatted, err := formatPhoneNumber(*fieldChanges.Number)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	fieldChangesMap["number"] = formatted
+	fieldChangesResponse = append(fieldChangesResponse, FieldChange{
+		FieldName:  "number",
+		FieldValue: formatted,
+	})
+
+	fieldChangesMap["service_type"] = *fieldChanges.ServiceType
+	fieldChangesResponse = append(fieldChangesResponse, FieldChange{
+		FieldName:  "service_type",
+		FieldValue: *fieldChanges.ServiceType,
+	})
+
+	fieldChangesMap["resource_id"] = payload.ParentResourceID
+
+	changeRequestId, objectId, err := dbClient.InsertPhone(fieldChangesMap)
+
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &PhoneChangeRequest{
+		PhoneChangeRequest: ChangeRequestResponse{
+			Id:           *changeRequestId,
+			Status:       "pending",
+			Type:         "PhoneChangeRequest",
+			ObjectID:     *objectId,
+			FieldChanges: fieldChangesResponse,
+		},
+	}
+
+	writeJson(w, response)
+	writeStatus(w, http.StatusCreated)
+}
+
+func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {
+	body, _ := io.ReadAll(r.Body)
+	changeRequestPayload := &ChangeRequestPayload{}
+	err := json.Unmarshal(body, changeRequestPayload)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+	}
+
+	return *changeRequestPayload
+}
+
+func formatPhoneNumber(number string) (string, error) {
+	parsed, err := phonenumbers.Parse(strings.TrimSpace(number), "US")
+
+	if err != nil {
+		return "", err
+	}
+
+	return phonenumbers.Format(parsed, phonenumbers.E164), nil
 }
 
 func writeStatus(w http.ResponseWriter, responseStatus int) {

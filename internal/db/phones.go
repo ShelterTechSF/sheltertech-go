@@ -23,10 +23,6 @@ SELECT id, number, service_type, resource_id
 FROM public.phones
 WHERE id = $1`
 
-const updatePhoneSql = `
-UPDATE public.phones SET number = $1, service_type = $2
-WHERE id = $3`
-
 func (m *Manager) GetPhonesByResourceID(resourceId int) []*Phone {
 	var rows *sql.Rows
 	var err error
@@ -42,21 +38,120 @@ func (m *Manager) DeletePhoneByID(id int) error {
 	return err
 }
 
-func (m *Manager) UpdatePhone(phone *Phone) error {
-	_, err := m.DB.Exec(
-		updatePhoneSql,
-		phone.Number,
-		phone.ServiceType,
-		phone.Id,
-	)
+func (m *Manager) InsertPhone(fieldChanges map[string]interface{}) (*int, *int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
 
-	return err
+	allowed := []string{"number", "service_type", "resource_id"}
+	insertPhoneSql, args := buildInsertQuery("phones", fieldChanges, allowed)
+	var phoneId int
+
+	err = tx.QueryRow(insertPhoneSql, args...).Scan(&phoneId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var changeRequestId int
+	err = tx.QueryRow(
+		insertChangeRequestSql,
+		"PhoneChangeRequest",
+		phoneId,
+		0, // StatusPending
+		1, // ActionEdit
+		fieldChanges["resource_id"],
+	).Scan(&changeRequestId)
+
+	for key, value := range fieldChanges {
+		if key == "resource_id" {
+			continue
+		}
+		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &phoneId, &changeRequestId, nil
+}
+
+func (m *Manager) UpdatePhone(
+	phoneId int,
+	fieldChanges map[string]interface{},
+) (*int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Need to get resource_id from db since its not included with request payload
+	res := tx.QueryRow("SELECT resource_id FROM public.phones where id = $1", phoneId)
+	var resourceId int
+	err = res.Scan(&resourceId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Only update the phones row if there are field changes
+	if len(fieldChanges) != 0 {
+		allowed := []string{"number", "service_type"}
+		updatePhoneSql, args := buildUpdateQuery(
+			"phones",
+			"id",
+			phoneId,
+			fieldChanges,
+			allowed,
+		)
+
+		_, err = tx.Exec(updatePhoneSql, args...)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// change_requests row is inserted even if there are no field changes
+	var changeRequestId int
+	err = tx.QueryRow(
+		insertChangeRequestSql,
+		"PhoneChangeRequest",
+		phoneId,
+		0, // StatusPending
+		1, // ActionEdit
+		resourceId,
+	).Scan(&changeRequestId)
+
+	// insert field_changes row for each field change
+	for key, value := range fieldChanges {
+		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &changeRequestId, nil
 }
 
 func (m *Manager) GetPhoneByID(id int) (*Phone, error) {
-	row := m.DB.QueryRow(phoneByIDSql, id)
+	row := m.DB.QueryRow("SELECT id, number, service_type FROM public.phones WHERE id = $1", id)
 	var phone Phone
-	err := row.Scan(&phone.Id, &phone.Number, &phone.ServiceType, &phone.ResourceId)
+	err := row.Scan(&phone.Id, &phone.Number, &phone.ServiceType)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
