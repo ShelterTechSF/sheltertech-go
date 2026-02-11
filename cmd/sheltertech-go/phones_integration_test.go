@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"testing"
 
@@ -111,6 +112,7 @@ func TestCreatePhone(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
+	log.Printf("create phone response %v", res)
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
