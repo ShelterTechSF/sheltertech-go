@@ -1,6 +1,6 @@
 # sheltertech-go
 
-This repository contains the beginnings of a Golang implementation of  https://github.com/ShelterTechSF/askdarcel-api/
+This repository contains the beginnings of a Golang implementation of https://github.com/ShelterTechSF/askdarcel-api/
 
 ## Integrate with askdarcel-api and askdarcel-web stack
 
@@ -9,14 +9,19 @@ This repository requires running the docker-compose setup inside https://github.
 The docker-compose in this repository links to the same docker network `askdarcel` and connects to the database defined at https://github.com/ShelterTechSF/askdarcel-api/blob/master/docker-compose.yml#L4
 
 To start the server in the docker network connected to the existing askdarcel-web and askdarcel-api services
+
 ```
 make run
 ```
+
 To test, you just need to provide the `v2` path param in front of any existing API route for Rails API.
+
 ```
 curl -s localhost:8080/api/v2/categories | jq
 ```
+
 To hit Go endpoints locally:
+
 ```
 curl -s localhost:3001/api/categories | jq
 ```
@@ -24,6 +29,7 @@ curl -s localhost:3001/api/categories | jq
 ## Implementation
 
 Currently supports
+
 ```
 GET /api/categories
 GET /api/categories/{id}
@@ -32,10 +38,49 @@ GET /api/categories/featured
 ```
 
 ## Compare against Rails API
+
 You can make the same API calls against the Rails API on port 3000 and compare
+
 ```
-curl -s localhost:3000/categories | jq 
-curl -s localhost:3000/categories/150 | jq 
-curl -s localhost:3000/categories/subcategories/150 | jq 
-curl -s localhost:3000/categories/featured | jq 
+curl -s localhost:3000/categories | jq
+curl -s localhost:3000/categories/150 | jq
+curl -s localhost:3000/categories/subcategories/150 | jq
+curl -s localhost:3000/categories/featured | jq
+```
+
+## Integration tests
+
+Integration tests start the API in-process and require a Postgres instance on `localhost:5432`.
+
+Use:
+
+```
+make integration-test
+```
+
+The target now ensures the CI database container is up and ready before tests run.
+
+By default, DB host selection is automatic:
+
+- WSL: `host.docker.internal`
+- non-WSL Linux/macOS: `localhost`
+
+You can override the DB endpoint used by tests:
+
+```
+INTEGRATION_DB_HOST=localhost INTEGRATION_DB_PORT=5432 INTEGRATION_DB_USER=postgres INTEGRATION_DB_PASS= make integration-test
+```
+
+If you're on Windows + WSL and see auth failures, run:
+
+```
+make integration-debug
+```
+
+and verify the CI `db` container is the service your tests are reaching.
+
+If WSL `localhost` resolves to a different Postgres, point tests to Docker Desktop's forwarded endpoint, for example:
+
+```
+INTEGRATION_DB_HOST=host.docker.internal make integration-test
 ```

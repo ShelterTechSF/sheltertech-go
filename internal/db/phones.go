@@ -18,11 +18,6 @@ SELECT p.id, p.number, p.service_type
 FROM public.phones p
 WHERE p.resource_id = $1`
 
-const phoneByIDSql = `
-SELECT id, number, service_type, resource_id
-FROM public.phones
-WHERE id = $1`
-
 func (m *Manager) GetPhonesByResourceID(resourceId int) []*Phone {
 	var rows *sql.Rows
 	var err error
@@ -59,8 +54,8 @@ func (m *Manager) InsertPhone(fieldChanges map[string]interface{}) (*int, *int, 
 		insertChangeRequestSql,
 		"PhoneChangeRequest",
 		phoneId,
-		0, // StatusPending
-		1, // ActionEdit
+		StatusPending,
+		ActionEdit,
 		fieldChanges["resource_id"],
 	).Scan(&changeRequestId)
 
@@ -126,8 +121,8 @@ func (m *Manager) UpdatePhone(
 		insertChangeRequestSql,
 		"PhoneChangeRequest",
 		phoneId,
-		0, // StatusPending
-		1, // ActionEdit
+		StatusPending,
+		ActionEdit,
 		resourceId,
 	).Scan(&changeRequestId)
 

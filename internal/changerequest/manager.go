@@ -45,12 +45,12 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fieldChanges := changeRequestPayload.ChangeRequest.FieldChanges
+	phoneFields := unmarshalPhoneFields(w, changeRequestPayload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
 
-	if fieldChanges.Number != nil {
-		formatted, err := formatPhoneNumber(*fieldChanges.Number)
+	if phoneFields.Number != nil {
+		formatted, err := formatPhoneNumber(*phoneFields.Number)
 		if err != nil {
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		}
@@ -60,11 +60,11 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 			FieldValue: formatted,
 		})
 	}
-	if fieldChanges.ServiceType != nil {
-		fieldChangesMap["service_type"] = *fieldChanges.ServiceType
+	if phoneFields.ServiceType != nil {
+		fieldChangesMap["service_type"] = *phoneFields.ServiceType
 		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
 			FieldName:  "service_type",
-			FieldValue: *fieldChanges.ServiceType,
+			FieldValue: *phoneFields.ServiceType,
 		})
 	}
 
@@ -89,16 +89,16 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 }
 
 func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
-	fieldChanges := payload.ChangeRequest.FieldChanges
+	phoneFields := unmarshalPhoneFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
 
-	if fieldChanges.Number == nil || fieldChanges.ServiceType == nil {
+	if phoneFields.Number == nil || phoneFields.ServiceType == nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Missing Required Fields")
 		return
 	}
 
-	formatted, err := formatPhoneNumber(*fieldChanges.Number)
+	formatted, err := formatPhoneNumber(*phoneFields.Number)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		return
@@ -109,10 +109,10 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 		FieldValue: formatted,
 	})
 
-	fieldChangesMap["service_type"] = *fieldChanges.ServiceType
+	fieldChangesMap["service_type"] = *phoneFields.ServiceType
 	fieldChangesResponse = append(fieldChangesResponse, FieldChange{
 		FieldName:  "service_type",
-		FieldValue: *fieldChanges.ServiceType,
+		FieldValue: *phoneFields.ServiceType,
 	})
 
 	fieldChangesMap["resource_id"] = payload.ParentResourceID
@@ -136,6 +136,16 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 
 	writeJson(w, response)
 	writeStatus(w, http.StatusCreated)
+}
+
+func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
+	phoneFields := &PhoneFields{}
+	err := json.Unmarshal(fieldChanges, phoneFields)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+	}
+
+	return *phoneFields
 }
 
 func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {

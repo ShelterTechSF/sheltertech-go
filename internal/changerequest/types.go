@@ -1,5 +1,7 @@
 package changerequest
 
+import "encoding/json"
+
 type ChangeRequestPayload struct {
 	ChangeRequest    ChangeRequest `json:"change_request"`
 	ParentResourceID int           `json:"parent_resource_id"`
@@ -7,15 +9,9 @@ type ChangeRequestPayload struct {
 }
 
 type ChangeRequest struct {
-	Action       string              `json:"action"`
-	FieldChanges ChangeRequestFields `json:"field_changes"`
+	Action       string          `json:"action"`
+	FieldChanges json.RawMessage `json:"field_changes"`
 }
-
-type ChangeRequestFields struct {
-	Number      *string `json:"number,omitempty"`
-	ServiceType *string `json:"service_type,omitempty"`
-}
-
 type FieldChange struct {
 	FieldName  string `json:"field_name"`
 	FieldValue string `json:"field_value"`
@@ -31,4 +27,9 @@ type ChangeRequestResponse struct {
 
 type PhoneChangeRequest struct {
 	PhoneChangeRequest ChangeRequestResponse `json:"phone_change_request"`
+}
+
+type PhoneFields struct {
+	Number      *string `json:"number,omitempty"`
+	ServiceType *string `json:"service_type,omitempty"`
 }

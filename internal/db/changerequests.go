@@ -15,6 +15,15 @@ type ChangeRequest struct {
 	UpdatedAt  sql.NullTime
 }
 
+const (
+	StatusPending  = 0
+	StatusApproved = 1
+	StatusRejected = 2
+	ActionAdd      = 0
+	ActionEdit     = 1
+	ActionRemove   = 2
+)
+
 const insertFieldChangeSql = `
 INSERT INTO public.field_changes (field_name, field_value, change_request_id)
 VALUES ($1, $2, $3)`

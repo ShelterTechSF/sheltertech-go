@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sheltertechsf/sheltertech-go/internal/changerequest"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 )
 
@@ -50,24 +52,24 @@ func TestGetServiceByIDWithInvalidID(t *testing.T) {
 }
 
 // TODO: Update when migrating services change request endpoint
-// func TestPostServicesChangeRequest(t *testing.T) {
-// 	url := "http://localhost:3001/api/services/1/change_request"
+func TestPostServicesChangeRequest(t *testing.T) {
+	t.Skip()
+	url := "http://localhost:3001/api/services/1/change_request"
 
-// 	changeRequest := changerequest.ChangeRequest{
-// 		Type:     "ServiceChangeRequest",
-// 		ObjectID: 1,
-// 		Status:   1,
-// 		Action:   1,
-// 	}
-// 	body, err := json.Marshal(changeRequest)
-// 	require.NoError(t, err)
-// 	bytes := bytes.NewBuffer(body)
+	changeRequest := changerequest.ChangeRequestPayload{
+		Type:             "ServiceChangeRequest",
+		ParentResourceID: 1,
+		ChangeRequest:    changerequest.ChangeRequest{},
+	}
+	body, err := json.Marshal(changeRequest)
+	require.NoError(t, err)
+	bytes := bytes.NewBuffer(body)
 
-// 	req, err := http.NewRequest("POST", url, bytes)
-// 	require.NoError(t, err)
+	req, err := http.NewRequest("POST", url, bytes)
+	require.NoError(t, err)
 
-// 	res, err := http.DefaultClient.Do(req)
-// 	require.NoError(t, err)
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
-// 	assert.Equal(t, http.StatusCreated, res.StatusCode)
-// }
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
+}

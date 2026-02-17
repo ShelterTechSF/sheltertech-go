@@ -25,9 +25,6 @@ func buildUpdateQuery(table, idCol string, id int, updates map[string]interface{
 	}
 	setParts = append(setParts, "updated_at=now()")
 
-	if len(setParts) == 0 {
-		return "", nil
-	}
 	args = append(args, id)
 	query := fmt.Sprintf("UPDATE public.%s SET %s WHERE %s=$%d", table, strings.Join(setParts, ", "), idCol, pos)
 
@@ -56,9 +53,6 @@ func buildInsertQuery(table string, values map[string]interface{}, allowedColumn
 	}
 	colParts = append(colParts, "created_at, updated_at")
 	valParts = append(valParts, "now(), now()")
-	if len(colParts) == 0 {
-		return "", nil
-	}
 
 	cols := strings.Join(colParts, ", ")
 	vals := strings.Join(valParts, ", ")
