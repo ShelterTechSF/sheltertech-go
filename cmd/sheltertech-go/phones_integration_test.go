@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
 
@@ -99,7 +98,7 @@ func TestDeletePhoneEndpoint(t *testing.T) {
 	assert.Contains(t, string(body), expectedErrorMessage, "Response body should contain the 'not found' error message")
 }
 
-func TestCreatePhone(t *testing.T) {
+func TestCreatePhoneEndpoint(t *testing.T) {
 	url := "http://localhost:3001/api/change_requests"
 
 	changeRequest := changerequest.ChangeRequestPayload{
@@ -118,7 +117,29 @@ func TestCreatePhone(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
-	log.Printf("create phone response %v", res)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+func TestUpdatePhoneEndpoint(t *testing.T) {
+	phoneId := createTestPhone(t)
+	url := fmt.Sprintf("http://localhost:3001/api/phones/%v/change_requests", phoneId)
+
+	changeRequest := changerequest.ChangeRequestPayload{
+		ChangeRequest: changerequest.ChangeRequest{
+			Action:       "update",
+			FieldChanges: []byte(`{"number": "415-514-4321"}`),
+		},
+	}
+	body, err := json.Marshal(changeRequest)
+	require.NoError(t, err)
+	bytes := bytes.NewBuffer(body)
+
+	req, err := http.NewRequest("POST", url, bytes)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, res.StatusCode)
