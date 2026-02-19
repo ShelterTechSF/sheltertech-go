@@ -101,12 +101,24 @@ Schedules function as container objects to which individual schedule days are at
 #### 2. What exactly does textings do or represent ? 
 These represent text messages (a.k.a. SMS) sent through the third party provider we use named Textellent. There's a feature on our website where a user can view a service and then click a button to have the URL for that service sent to them via text message. Many people who are experiencing homelessness are either not tech savvy (due to being older) or do not have constant access to the internet, but most have phones and can receive SMS messages anywhere, so it is often better for them to be sent things via SMS than via email
 
-#### 2. What is certified column in resources table def ? 
+#### 3. What is certified column in resources table def ? 
 It is a depreacted field that was used when working with an earlier partner
 
 Striked out tables  means they are intended to be deleted. 
 Tables marked with (JT) indiicate that they are join tables
 
+### DEAD Tables
+
+1. Keywords ( 0 Entries)
+2. accessibilities ( 0 Entries)
+3. fundings ( 0 Entries )
+4. groups ( 0 entries) // possibly Strutural org related
+5. languages ( 0 Entries )
+6. contacts ( 0 Entries) --- The Phones table seems to be the palce where phone numbers are stored
+7. volunteer( 0 Entries) 
+8. categories_keywords (0 Entries)
+9.  keyword_resources ( 0 Entries)
+10. keyword_services ( 0 Entries)
 ## TABLE DEFINITIONS
 This is not runnable sql but does give an idea as to how the tables look like with their constraints
 ``` SQL
