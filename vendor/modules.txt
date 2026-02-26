@@ -35,6 +35,18 @@ github.com/MicahParks/jwkset
 # github.com/MicahParks/keyfunc/v3 v3.4.0
 ## explicit; go 1.21
 github.com/MicahParks/keyfunc/v3
+# github.com/algolia/algoliasearch-client-go/v3 v3.32.1
+## explicit; go 1.13
+github.com/algolia/algoliasearch-client-go/v3/algolia/call
+github.com/algolia/algoliasearch-client-go/v3/algolia/compression
+github.com/algolia/algoliasearch-client-go/v3/algolia/debug
+github.com/algolia/algoliasearch-client-go/v3/algolia/errs
+github.com/algolia/algoliasearch-client-go/v3/algolia/internal/opt
+github.com/algolia/algoliasearch-client-go/v3/algolia/iterator
+github.com/algolia/algoliasearch-client-go/v3/algolia/opt
+github.com/algolia/algoliasearch-client-go/v3/algolia/search
+github.com/algolia/algoliasearch-client-go/v3/algolia/transport
+github.com/algolia/algoliasearch-client-go/v3/algolia/wait
 # github.com/auth0/go-jwt-middleware/v2 v2.2.2
 ## explicit; go 1.22
 github.com/auth0/go-jwt-middleware/v2
