@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/docs"
+	"github.com/sheltertechsf/sheltertech-go/internal/algolia"
 	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/bookmarks"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
@@ -63,6 +64,9 @@ func main() {
 	googleTranslateCredentials := viper.GetString("TRANSLATE_CREDENTIALS")
 	pdfCrowdUsername := viper.GetString("PDF_CROWD_USERNAME")
 	pdfCrowdApiKey := viper.GetString("PDF_CROWD_API_KEY")
+	algoliaAppID := viper.GetString("ALGOLIA_APPLICATION_ID")
+	algoliaAPIKey := viper.GetString("ALGOLIA_API_KEY")
+	algoliaIndexPrefix := viper.GetString("ALGOLIA_INDEX_PREFIX")
 	var jwtKeyfunc keyfunc.Keyfunc
 	if auth0Domain != "" {
 		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
@@ -74,8 +78,9 @@ func main() {
 	}
 
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
+	searchService := algolia.NewSearchService(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix, dbManager)
 	categoriesManager := categories.New(dbManager)
-	changeRequestManager := changerequest.New(dbManager)
+	changeRequestManager := changerequest.New(dbManager, searchService)
 	foldersManager := folders.New(dbManager)
 	servicesManager := services.New(dbManager, googleTranslateCredentials, pdfCrowdUsername, pdfCrowdApiKey)
 	resourcesManager := resources.New(dbManager)
@@ -137,6 +142,7 @@ func main() {
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Patch("/api/change_requests/{id}/approve", changeRequestManager.Approve)
 	})
 
 	r.Group(func(r chi.Router) {

@@ -4,23 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/phonenumbers"
+	"github.com/sheltertechsf/sheltertech-go/internal/algolia"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient      *db.Manager
+	SearchService algolia.SearchService
 }
 
-func New(dbManager *db.Manager) *Manager {
+func New(dbManager *db.Manager, searchService algolia.SearchService) *Manager {
 	manager := &Manager{
-		DbClient: dbManager,
+		DbClient:      dbManager,
+		SearchService: searchService,
 	}
 	return manager
 }
@@ -31,7 +35,7 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 
 	switch changeRequestPayload.Type {
 	case "phones":
-		createPhone(w, m.DbClient, changeRequestPayload)
+		m.createPhone(w, changeRequestPayload)
 	}
 }
 
@@ -74,10 +78,12 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	m.approveAndReindex(*changeRequestId)
+
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
-			Status:       "pending",
+			Status:       "approved",
 			Type:         "PhoneChangeRequest",
 			ObjectID:     phoneId,
 			FieldChanges: fieldChangesResponse,
@@ -88,7 +94,7 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	writeStatus(w, http.StatusCreated)
 }
 
-func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createPhone(w http.ResponseWriter, payload ChangeRequestPayload) {
 	phoneFields := unmarshalPhoneFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
@@ -117,17 +123,19 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 
 	fieldChangesMap["resource_id"] = payload.ParentResourceID
 
-	changeRequestId, objectId, err := dbClient.InsertPhone(fieldChangesMap)
+	changeRequestId, objectId, err := m.DbClient.InsertPhone(fieldChangesMap)
 
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	m.approveAndReindex(*changeRequestId)
+
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
-			Status:       "pending",
+			Status:       "approved",
 			Type:         "PhoneChangeRequest",
 			ObjectID:     *objectId,
 			FieldChanges: fieldChangesResponse,
@@ -169,8 +177,69 @@ func formatPhoneNumber(number string) (string, error) {
 	return phonenumbers.Format(parsed, phonenumbers.E164), nil
 }
 
+func (m *Manager) approveAndReindex(changeRequestId int) {
+	approved, err := m.DbClient.ApproveChangeRequest(changeRequestId)
+	if err != nil {
+		log.Printf("Auto-approve failed for change request %d: %v", changeRequestId, err)
+		return
+	}
+	if approved.ResourceId.Valid {
+		resourceId := int(approved.ResourceId.Int32)
+		if err := m.SearchService.IndexResourceAndServices(resourceId); err != nil {
+			log.Printf("Algolia reindex failed for resource %d: %v", resourceId, err)
+		}
+	}
+}
+
 func writeStatus(w http.ResponseWriter, responseStatus int) {
 	w.WriteHeader(responseStatus)
+}
+
+func (m *Manager) Approve(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid change request ID")
+		return
+	}
+
+	cr, err := m.DbClient.GetChangeRequestByID(id)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if cr == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "Change request not found")
+		return
+	}
+	if cr.Status != db.StatusPending {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Change request is not pending")
+		return
+	}
+
+	approved, err := m.DbClient.ApproveChangeRequest(id)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if approved.ResourceId.Valid {
+		resourceId := int(approved.ResourceId.Int32)
+		if err := m.SearchService.IndexResourceAndServices(resourceId); err != nil {
+			log.Printf("Algolia reindex failed for resource %d: %v", resourceId, err)
+		}
+	}
+
+	response := &ApproveResponse{
+		ChangeRequest: ChangeRequestResponse{
+			Id:       approved.Id,
+			Status:   "approved",
+			Type:     approved.Type,
+			ObjectID: approved.ObjectId,
+		},
+	}
+
+	writeJson(w, response)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {

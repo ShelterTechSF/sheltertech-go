@@ -33,3 +33,7 @@ type PhoneFields struct {
 	Number      *string `json:"number,omitempty"`
 	ServiceType *string `json:"service_type,omitempty"`
 }
+
+type ApproveResponse struct {
+	ChangeRequest ChangeRequestResponse `json:"change_request"`
+}
