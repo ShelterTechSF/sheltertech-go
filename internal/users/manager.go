@@ -23,7 +23,16 @@ func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 	return manager
 }
 
-// Get the currently authenticated user
+// GetCurrent gets the currently authenticated user
+//
+//	@Summary		Get Current User
+//	@Description	get the currently authenticated user
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	users.User
+//	@Failure		400	{object}	users.ApiError
+//	@Router			/users/current [get]
 func (m *Manager) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	dbUser, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
 	if err != nil {

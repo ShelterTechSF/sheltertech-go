@@ -30,11 +30,12 @@ func New(dbManager *db.Manager) *Manager {
 // GetByID Get a resource by ID
 //
 //	@Summary		Get Resource
-//	@Description	gets a single service by resource ID
+//	@Description	gets a single resource by resource ID
 //	@Tags			resources
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	resources.Resource
+//	@Param			id	path		int	true	"Resource ID"
+//	@Success		200	{object}	resources.ResourceResponse
 //	@Router			/resources/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	resourceId, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -56,6 +57,15 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, resourceResponse)
 }
 
+// GetCount returns the total number of resources
+//
+//	@Summary		Get Resource Count
+//	@Description	get the total count of resources
+//	@Tags			resources
+//	@Produce		plain
+//	@Success		200	{string}	string	"Resource count"
+//	@Failure		500	{object}	common.Error
+//	@Router			/resources/count [get]
 func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	count, err := m.DbClient.GetResourcesCount()
 	if err != nil {

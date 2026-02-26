@@ -1,23 +1,220 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is a sample server celler server.",
-        "title": "Swagger Example API",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "description": "API for the ShelterTech SF Service Guide application.",
+        "title": "ShelterTech API",
+        "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8080",
-    "basePath": "/api/v1",
+    "host": "localhost:3001",
+    "basePath": "/api",
     "paths": {
+        "/bookmarks": {
+            "get": {
+                "description": "get all bookmarks, optionally filtered by user_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookmarks"
+                ],
+                "summary": "Get Bookmarks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter by user ID",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bookmarks.Bookmarks"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "create a new bookmark",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookmarks"
+                ],
+                "summary": "Create Bookmark",
+                "parameters": [
+                    {
+                        "description": "Bookmark object",
+                        "name": "bookmark",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookmarks.Bookmark"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/bookmarks/{id}": {
+            "get": {
+                "description": "get a single bookmark by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookmarks"
+                ],
+                "summary": "Get Bookmark by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Bookmark ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bookmarks.Bookmark"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "update an existing bookmark by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookmarks"
+                ],
+                "summary": "Update Bookmark",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Bookmark ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Bookmark object",
+                        "name": "bookmark",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookmarks.Bookmark"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete a bookmark by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookmarks"
+                ],
+                "summary": "Delete Bookmark",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Bookmark ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/categories": {
             "get": {
                 "description": "get all categories",
@@ -31,14 +228,166 @@
                     "categories"
                 ],
                 "summary": "Get Categories",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Filter to top-level categories only",
+                        "name": "top_level",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/categories.Categories"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/counts": {
+            "get": {
+                "description": "get service and resource counts for each category",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get Category Counts",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/categories.Categories"
+                                "$ref": "#/definitions/categories.CategoryCountDTO"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/featured": {
+            "get": {
+                "description": "get all featured categories",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get Featured Categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/categories.Categories"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/subcategories/{id}": {
+            "get": {
+                "description": "get subcategories for a given parent category ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get Subcategories by Category ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Parent Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/categories.Categories"
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{id}": {
+            "get": {
+                "description": "get a single category by its ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Get Category by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/categories.Category"
+                        }
+                    }
+                }
+            }
+        },
+        "/change_requests": {
+            "post": {
+                "description": "create a new change request (e.g. for phones)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "change_requests"
+                ],
+                "summary": "Create Change Request",
+                "parameters": [
+                    {
+                        "description": "Change request payload",
+                        "name": "change_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/changerequest.ChangeRequestPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/changerequest.PhoneChangeRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
                         }
                     }
                 }
@@ -47,21 +396,41 @@
         "/datathon/content_curation_dataset": {
             "get": {
                 "description": "gives a csv of the content curation dataset",
+                "produces": [
+                    "text/csv"
+                ],
                 "tags": [
                     "datathon"
                 ],
                 "summary": "Get Content Curation Dataset",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "CSV data",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/datathon/datathon_dataset": {
             "get": {
                 "description": "gives a csv of the datathon dataset",
+                "produces": [
+                    "text/csv"
+                ],
                 "tags": [
                     "datathon"
                 ],
                 "summary": "Get Datathon Dataset",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "CSV data",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/eligibilities": {
@@ -260,15 +629,24 @@
                     "folders"
                 ],
                 "summary": "Get Folders for current User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/folders.Folders"
-                            }
+                            "$ref": "#/definitions/folders.Folders"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request"
                     }
                 }
             },
@@ -284,12 +662,29 @@
                     "folders"
                 ],
                 "summary": "Create Folder for current User",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                "parameters": [
+                    {
+                        "description": "Folder object",
+                        "name": "folder",
+                        "in": "body",
+                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/folders.Folder"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/folders.Folder"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -307,12 +702,27 @@
                     "folders"
                 ],
                 "summary": "Get folder by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/folders.Folder"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
                     }
                 }
             },
@@ -328,12 +738,33 @@
                     "folders"
                 ],
                 "summary": "Update folder by ID",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Folder object",
+                        "name": "folder",
+                        "in": "body",
+                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/folders.Folder"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
                     }
                 }
             },
@@ -342,18 +773,301 @@
                 "consumes": [
                     "application/json"
                 ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "folders"
                 ],
                 "summary": "Delete folder by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/news_articles": {
+            "get": {
+                "description": "Get all news articles with optional filtering for active articles only",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "news_articles"
+                ],
+                "summary": "Get News Articles",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Filter for active news articles only",
+                        "name": "active",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/folders.Folder"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/newsarticles.NewsArticle"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new news article",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "news_articles"
+                ],
+                "summary": "Create News Article",
+                "parameters": [
+                    {
+                        "description": "News article data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/newsarticles.NewsArticleCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/newsarticles.NewsArticle"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/news_articles/{id}": {
+            "put": {
+                "description": "Update an existing news article",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "news_articles"
+                ],
+                "summary": "Update News Article",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "News Article ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "News article update data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/newsarticles.NewsArticleUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/newsarticles.NewsArticle"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "News article not found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {}
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete an existing news article",
+                "tags": [
+                    "news_articles"
+                ],
+                "summary": "Delete News Article",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "News Article ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Empty response on success",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid news article ID format",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "News article not found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/phones/{id}": {
+            "delete": {
+                "description": "delete a phone record by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "phones"
+                ],
+                "summary": "Delete Phone",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Phone ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/phones/{id}/change_requests": {
+            "post": {
+                "description": "create a change request to update phone fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "change_requests"
+                ],
+                "summary": "Update Phone Change Request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Phone ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Change request payload",
+                        "name": "change_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/changerequest.ChangeRequestPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/changerequest.PhoneChangeRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/count": {
+            "get": {
+                "description": "get the total count of resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "resources"
+                ],
+                "summary": "Get Resource Count",
+                "responses": {
+                    "200": {
+                        "description": "Resource count",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
                         }
                     }
                 }
@@ -361,7 +1075,7 @@
         },
         "/resources/{id}": {
             "get": {
-                "description": "gets a single service by resource ID",
+                "description": "gets a single resource by resource ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -372,14 +1086,20 @@
                     "resources"
                 ],
                 "summary": "Get Resource",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/resources.Resource"
-                            }
+                            "$ref": "#/definitions/resources.ResourceResponse"
                         }
                     }
                 }
@@ -397,16 +1117,25 @@
                 "tags": [
                     "saved_searches"
                 ],
-                "summary": "Get Saved Search for current User",
+                "summary": "Get Saved Searches for current User",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/savedsearches.SavedSearch"
-                            }
+                            "$ref": "#/definitions/savedsearches.SavedSearches"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request"
                     }
                 }
             },
@@ -422,19 +1151,36 @@
                     "saved_searches"
                 ],
                 "summary": "Create SavedSearch for current User",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                "parameters": [
+                    {
+                        "description": "Saved search object",
+                        "name": "saved_search",
+                        "in": "body",
+                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/savedsearches.SavedSearch"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/savedsearches.SavedSearch"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
                     }
                 }
             }
         },
         "/saved_searches/{id}": {
-            "delete": {
-                "description": "delete a saved search for user",
+            "get": {
+                "description": "get a saved search by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -444,12 +1190,101 @@
                 "tags": [
                     "saved_searches"
                 ],
-                "summary": "Delete saved search by ID",
+                "summary": "Get Saved Search by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Saved Search ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/savedsearches.SavedSearch"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete a saved search for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "saved_searches"
+                ],
+                "summary": "Delete saved search by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Saved Search ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/services/html_to_pdf": {
+            "post": {
+                "description": "Converts HTML to PDF, with optional translation",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Convert HTML to PDF",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "HTML content to convert",
+                        "name": "html",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Target language for translation",
+                        "name": "target_language",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generated PDF",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
                         }
                     }
                 }
@@ -468,14 +1303,55 @@
                     "services"
                 ],
                 "summary": "Get Service",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/services.Service"
-                            }
+                            "$ref": "#/definitions/services.ServiceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/common.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/current": {
+            "get": {
+                "description": "get the currently authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Current User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/users.ApiError"
                         }
                     }
                 }
@@ -524,6 +1400,43 @@
                 }
             }
         },
+        "bookmarks.Bookmark": {
+            "type": "object",
+            "properties": {
+                "folder_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "resource_id": {
+                    "type": "integer"
+                },
+                "service_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bookmarks.Bookmarks": {
+            "type": "object",
+            "properties": {
+                "bookmarks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bookmarks.Bookmark"
+                    }
+                }
+            }
+        },
         "categories.Categories": {
             "type": "object",
             "properties": {
@@ -549,6 +1462,76 @@
                 },
                 "top_level": {
                     "type": "boolean"
+                }
+            }
+        },
+        "categories.CategoryCountDTO": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "integer"
+                },
+                "services": {
+                    "type": "integer"
+                }
+            }
+        },
+        "changerequest.ChangeRequestPayload": {
+            "type": "object"
+        },
+        "changerequest.ChangeRequestResponse": {
+            "type": "object",
+            "properties": {
+                "field_changes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/changerequest.FieldChange"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "object_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "changerequest.FieldChange": {
+            "type": "object",
+            "properties": {
+                "field_name": {
+                    "type": "string"
+                },
+                "field_value": {
+                    "type": "string"
+                }
+            }
+        },
+        "changerequest.PhoneChangeRequest": {
+            "type": "object",
+            "properties": {
+                "phone_change_request": {
+                    "$ref": "#/definitions/changerequest.ChangeRequestResponse"
+                }
+            }
+        },
+        "common.Error": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
                 }
             }
         },
@@ -618,6 +1601,78 @@
                     "type": "integer"
                 },
                 "instruction": {
+                    "type": "string"
+                }
+            }
+        },
+        "newsarticles.NewsArticle": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "expiration_date": {
+                    "type": "string"
+                },
+                "headline": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "newsarticles.NewsArticleCreateRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "expiration_date": {
+                    "type": "string"
+                },
+                "headline": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "newsarticles.NewsArticleUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "expiration_date": {
+                    "type": "string"
+                },
+                "headline": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -753,6 +1808,14 @@
                 },
                 "website": {
                     "type": "string"
+                }
+            }
+        },
+        "resources.ResourceResponse": {
+            "type": "object",
+            "properties": {
+                "resource": {
+                    "$ref": "#/definitions/resources.Resource"
                 }
             }
         },
@@ -1075,15 +2138,39 @@
                     "type": "string"
                 }
             }
+        },
+        "services.ServiceResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "$ref": "#/definitions/services.Service"
+                }
+            }
+        },
+        "users.ApiError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "users.User": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organization": {
+                    "type": "string"
+                }
+            }
         }
-    },
-    "securityDefinitions": {
-        "BasicAuth": {
-            "type": "basic"
-        }
-    },
-    "externalDocs": {
-        "description": "OpenAPI",
-        "url": "https://swagger.io/resources/open-api/"
     }
 }

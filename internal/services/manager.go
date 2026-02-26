@@ -74,7 +74,9 @@ func NewWithDependencies(
 //	@Tags			services
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	services.Service
+//	@Param			id	path		int	true	"Service ID"
+//	@Success		200	{object}	services.ServiceResponse
+//	@Failure		400	{object}	common.Error
 //	@Router			/services/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	// Get the ID from the URL parameters
@@ -138,7 +140,9 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Param			html			formData	string	true	"HTML content to convert"
 //	@Param			target_language	formData	string	false	"Target language for translation"
 //	@Success		200	{file}	file	"Generated PDF"
-//	@Router			/convert-html-to-pdf [post]
+//	@Failure		400	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/services/html_to_pdf [post]
 func (m *Manager) ConvertHtmlToPdf(w http.ResponseWriter, r *http.Request) {
 	// Parse form data
 	if err := r.ParseForm(); err != nil {

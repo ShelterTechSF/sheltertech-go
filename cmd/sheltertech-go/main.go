@@ -31,25 +31,12 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-//	@title			Swagger Example API
+//	@title			ShelterTech API
 //	@version		1.0
-//	@description	This is a sample server celler server.
-//	@termsOfService	http://swagger.io/terms/
+//	@description	API for the ShelterTech SF Service Guide application.
 
-//	@contact.name	API Support
-//	@contact.url	http://www.swagger.io/support
-//	@contact.email	support@swagger.io
-
-//	@license.name	Apache 2.0
-//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
-
-//	@host		localhost:8080
-//	@BasePath	/api/v1
-
-//	@securityDefinitions.basic	BasicAuth
-
-// @externalDocs.description	OpenAPI
-// @externalDocs.url			https://swagger.io/resources/open-api/
+//	@host		localhost:3001
+//	@BasePath	/api
 func main() {
 
 	viper.AutomaticEnv()
@@ -99,11 +86,11 @@ func main() {
 	}
 
 	sentryHandler := sentryhttp.New(sentryhttp.Options{})
-	docs.SwaggerInfo.Title = "Swagger Example API"
-	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
+	docs.SwaggerInfo.Title = "ShelterTech API"
+	docs.SwaggerInfo.Description = "API for the ShelterTech SF Service Guide application."
 	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = "petstore.swagger.io"
-	docs.SwaggerInfo.BasePath = "/v2"
+	docs.SwaggerInfo.Host = "localhost:3001"
+	docs.SwaggerInfo.BasePath = "/api"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
 	r := chi.NewRouter()
