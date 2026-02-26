@@ -65,7 +65,8 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	folder := &Folder{}
 	err := json.Unmarshal(body, folder)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
 
 	dbFolder := &db.Folder{
@@ -137,7 +138,8 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	folder := &Folder{}
 	err := json.Unmarshal(body, folder)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
 
 	dBFolder := &db.Folder{
@@ -150,6 +152,7 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	writeStatus(w, http.StatusCreated)
@@ -170,11 +173,14 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
 	err = m.DbClient.DeleteFolderById(folderId)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	writeStatus(w, http.StatusNoContent)

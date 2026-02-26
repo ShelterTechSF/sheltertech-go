@@ -29,7 +29,8 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	changeRequest := &ChangeRequest{}
 	err := json.Unmarshal(body, changeRequest)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
 
 	var service *db.Service
@@ -41,10 +42,10 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		break
 	}
 	if err != nil || service == nil {
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	dBChangeRequest := &db.ChangeRequest{
@@ -59,6 +60,7 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	writeStatus(w, http.StatusCreated)
