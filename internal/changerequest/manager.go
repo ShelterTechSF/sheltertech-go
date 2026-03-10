@@ -35,6 +35,88 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	body, _ := io.ReadAll(r.Body)
+	payload := &ResourceChangeRequestPayload{}
+	err := json.Unmarshal(body, payload)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	resourceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid resource ID", http.StatusBadRequest)
+		return
+	}
+
+	resourceFields := &ResourceFields{}
+	err = json.Unmarshal(payload.ChangeRequest, resourceFields)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	fieldChangesMap := make(map[string]interface{})
+	fieldChangesResponse := []FieldChange{}
+
+	if resourceFields.Name != nil {
+		fieldChangesMap["name"] = *resourceFields.Name
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "name", FieldValue: *resourceFields.Name})
+	}
+	if resourceFields.AlternateName != nil {
+		fieldChangesMap["alternate_name"] = *resourceFields.AlternateName
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "alternate_name", FieldValue: *resourceFields.AlternateName})
+	}
+	if resourceFields.ShortDescription != nil {
+		fieldChangesMap["short_description"] = *resourceFields.ShortDescription
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "short_description", FieldValue: *resourceFields.ShortDescription})
+	}
+	if resourceFields.LongDescription != nil {
+		fieldChangesMap["long_description"] = *resourceFields.LongDescription
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "long_description", FieldValue: *resourceFields.LongDescription})
+	}
+	if resourceFields.Website != nil {
+		fieldChangesMap["website"] = *resourceFields.Website
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "website", FieldValue: *resourceFields.Website})
+	}
+	if resourceFields.Email != nil {
+		fieldChangesMap["email"] = *resourceFields.Email
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "email", FieldValue: *resourceFields.Email})
+	}
+	if resourceFields.LegalStatus != nil {
+		fieldChangesMap["legal_status"] = *resourceFields.LegalStatus
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "legal_status", FieldValue: *resourceFields.LegalStatus})
+	}
+	if resourceFields.InternalNote != nil {
+		fieldChangesMap["internal_note"] = *resourceFields.InternalNote
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "internal_note", FieldValue: *resourceFields.InternalNote})
+	}
+
+	changeRequestId, err := m.DbClient.UpdateResource(resourceId, fieldChangesMap)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &ResourceChangeRequest{
+		ResourceChangeRequest: ChangeRequestResponse{
+			Id:           *changeRequestId,
+			Status:       "pending",
+			Type:         "ResourceChangeRequest",
+			ObjectID:     resourceId,
+			FieldChanges: fieldChangesResponse,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
+}
+
 func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	changeRequestPayload := unmarshalPayload(w, r)

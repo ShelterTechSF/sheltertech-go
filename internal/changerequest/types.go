@@ -33,3 +33,22 @@ type PhoneFields struct {
 	Number      *string `json:"number,omitempty"`
 	ServiceType *string `json:"service_type,omitempty"`
 }
+
+type ResourceChangeRequestPayload struct {
+	ChangeRequest json.RawMessage `json:"change_request"`
+}
+
+type ResourceFields struct {
+	Name             *string `json:"name,omitempty"`
+	AlternateName    *string `json:"alternate_name,omitempty"`
+	ShortDescription *string `json:"short_description,omitempty"`
+	LongDescription  *string `json:"long_description,omitempty"`
+	Website          *string `json:"website,omitempty"`
+	Email            *string `json:"email,omitempty"`
+	LegalStatus      *string `json:"legal_status,omitempty"`
+	InternalNote     *string `json:"internal_note,omitempty"`
+}
+
+type ResourceChangeRequest struct {
+	ResourceChangeRequest ChangeRequestResponse `json:"resource_change_request"`
+}

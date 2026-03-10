@@ -56,6 +56,62 @@ func (m *Manager) GetResourcesCount() (int, error) {
 
 }
 
+func (m *Manager) UpdateResource(
+	resourceId int,
+	fieldChanges map[string]interface{},
+) (*int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Only update the resources row if there are field changes
+	if len(fieldChanges) != 0 {
+		allowed := []string{"name", "alternate_name", "short_description", "long_description", "website", "email", "legal_status", "internal_note"}
+		updateResourceSql, args := buildUpdateQuery(
+			"resources",
+			"id",
+			resourceId,
+			fieldChanges,
+			allowed,
+		)
+		_, err = tx.Exec(updateResourceSql, args...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// change_requests row is inserted even if there are no field changes
+	var changeRequestId int
+	err = tx.QueryRow(
+		insertChangeRequestSql,
+		"ResourceChangeRequest",
+		resourceId,
+		StatusPending,
+		ActionEdit,
+		resourceId,
+	).Scan(&changeRequestId)
+	if err != nil {
+		return nil, err
+	}
+
+	// insert field_changes row for each field change
+	for key, value := range fieldChanges {
+		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &changeRequestId, nil
+}
+
 func scanResource(row *sql.Row) *Resource {
 	var resource Resource
 	err := row.Scan(&resource.Id, &resource.Name, &resource.ShortDescription, &resource.LongDescription, &resource.Website, &resource.VerifiedAt, &resource.Email, &resource.Status, &resource.Certified, &resource.AlternateName, &resource.LegalStatus, &resource.ContactId, &resource.FundingId, &resource.CertifiedAt, &resource.Featured, &resource.SourceAttribution, &resource.InternalNote, &resource.UpdatedAt)
