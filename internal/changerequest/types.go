@@ -34,10 +34,6 @@ type PhoneFields struct {
 	ServiceType *string `json:"service_type,omitempty"`
 }
 
-type ResourceChangeRequestPayload struct {
-	ChangeRequest json.RawMessage `json:"change_request"`
-}
-
 type ResourceFields struct {
 	Name             *string `json:"name,omitempty"`
 	AlternateName    *string `json:"alternate_name,omitempty"`

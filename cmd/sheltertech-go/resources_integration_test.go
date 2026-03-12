@@ -43,8 +43,11 @@ func TestCreateResourceChangeRequestSingleField(t *testing.T) {
 	url := fmt.Sprintf("%s/%d/change_requests", resourceUrl, 1)
 
 	payload := map[string]interface{}{
-		"change_request": map[string]string{
-			"internal_note": "integration test note",
+		"change_request": map[string]interface{}{
+			"field_changes": map[string]string{
+				"internal_note": "integration test note",
+			},
+			"action": "edit",
 		},
 	}
 	body, err := json.Marshal(payload)
@@ -79,7 +82,10 @@ func TestCreateResourceChangeRequestEmptyBody(t *testing.T) {
 	url := fmt.Sprintf("%s/%d/change_requests", resourceUrl, 1)
 
 	payload := map[string]interface{}{
-		"change_request": map[string]string{},
+		"change_request": map[string]interface{}{
+			"field_changes": map[string]string{},
+			"action":        "edit",
+		},
 	}
 	body, err := json.Marshal(payload)
 	require.NoError(t, err)
@@ -108,8 +114,11 @@ func TestCreateResourceChangeRequestInvalidID(t *testing.T) {
 	url := fmt.Sprintf("%s/abc/change_requests", resourceUrl)
 
 	payload := map[string]interface{}{
-		"change_request": map[string]string{
-			"name": "test",
+		"change_request": map[string]interface{}{
+			"field_changes": map[string]string{
+				"name": "test",
+			},
+			"action": "edit",
 		},
 	}
 	body, err := json.Marshal(payload)
@@ -129,10 +138,13 @@ func TestCreateResourceChangeRequestMultipleFields(t *testing.T) {
 	url := fmt.Sprintf("%s/%d/change_requests", resourceUrl, 1)
 
 	payload := map[string]interface{}{
-		"change_request": map[string]string{
-			"name":         "Updated Name",
-			"email":        "updated@example.com",
-			"legal_status": "Non-profit",
+		"change_request": map[string]interface{}{
+			"field_changes": map[string]string{
+				"name":         "Updated Name",
+				"email":        "updated@example.com",
+				"legal_status": "Non-profit",
+			},
+			"action": "edit",
 		},
 	}
 	body, err := json.Marshal(payload)

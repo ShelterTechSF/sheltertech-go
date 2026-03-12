@@ -38,13 +38,7 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	body, _ := io.ReadAll(r.Body)
-	payload := &ResourceChangeRequestPayload{}
-	err := json.Unmarshal(body, payload)
-	if err != nil {
-		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	payload := unmarshalPayload(w, r)
 
 	idStr := chi.URLParam(r, "id")
 	resourceId, err := strconv.Atoi(idStr)
@@ -54,7 +48,7 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resourceFields := &ResourceFields{}
-	err = json.Unmarshal(payload.ChangeRequest, resourceFields)
+	err = json.Unmarshal(payload.ChangeRequest.FieldChanges, resourceFields)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		return
