@@ -8,23 +8,26 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/go-chi/chi/v5"
+	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient   *db.Manager
+	JwtKeyfunc keyfunc.Keyfunc
 }
 
-func New(dbManager *db.Manager) *Manager {
+func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 	manager := &Manager{
-		DbClient: dbManager,
+		DbClient:   dbManager,
+		JwtKeyfunc: jwtKeyfunc,
 	}
 	return manager
 }
 
-// Get lists folders for current user
-// (note - I don't have the user auth stuff here)
+// Get lists folders for the authenticated user
 //
 //	@Summary		Get Folders for current User
 //	@Description	get folders for user
@@ -34,22 +37,21 @@ func New(dbManager *db.Manager) *Manager {
 //	@Success		200	{array}	folders.Folders
 //	@Router			/folders [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
 	if err != nil {
-		fmt.Println("error:", err)
-		writeStatus(w, http.StatusBadRequest)
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
 		return
 	}
 
-	dbFolders := m.DbClient.GetFolders(userId)
+	dbFolders := m.DbClient.GetFolders(user.Id)
 	response := Folders{
 		Folders: FromDBTypeArray(dbFolders),
 	}
 	writeJson(w, response)
 }
 
-// Create folder for current user
-// (note - I don't have the user auth stuff here)
+// Post creates a folder for the authenticated user
 //
 //	@Summary		Create Folder for current User
 //	@Description	new folder for user
@@ -59,19 +61,27 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 
 	folder := &Folder{}
-	err := json.Unmarshal(body, folder)
+	err = json.Unmarshal(body, folder)
 	if err != nil {
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	dbFolder := &db.Folder{
 		Name:   folder.Name,
 		Order:  folder.Order,
-		UserId: folder.UserId,
+		UserId: user.Id, // Always use the authenticated user's ID.
 	}
 
 	folderId, err := m.DbClient.CreateFolder(dbFolder)
@@ -92,8 +102,7 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, FromDBType(dbFolder))
 }
 
-// Get folder by ID
-// (note - I don't have the user auth stuff here)
+// GetByID gets a folder by ID, only if owned by the authenticated user
 //
 //	@Summary		Get folder by ID
 //	@Description	get current folder for user
@@ -103,25 +112,34 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
 		writeStatus(w, http.StatusBadRequest)
 		return
-
 	}
+
 	dbFolder := m.DbClient.GetFolderById(folderId)
 	if dbFolder == nil {
 		writeStatus(w, http.StatusNotFound)
-	} else {
-		writeJson(w, FromDBType(dbFolder))
+		return
 	}
+	if !auth.CanModify(user, dbFolder.UserId) {
+		writeStatus(w, http.StatusForbidden)
+		return
+	}
+
+	writeJson(w, FromDBType(dbFolder))
 }
 
-// Update folder by ID
-// not done
-
-// (note - I don't have the user auth stuff here)
+// Put updates a folder by ID, only if owned by the authenticated user
 //
 //	@Summary		Update folder by ID
 //	@Description	update a folder for user
@@ -131,17 +149,42 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [put]
 func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
+	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		writeStatus(w, http.StatusBadRequest)
+		return
+	}
+
+	dbFolder := m.DbClient.GetFolderById(folderId)
+	if dbFolder == nil {
+		writeStatus(w, http.StatusNotFound)
+		return
+	}
+	if !auth.CanModify(user, dbFolder.UserId) {
+		writeStatus(w, http.StatusForbidden)
+		return
+	}
+
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 
 	folder := &Folder{}
-	err := json.Unmarshal(body, folder)
+	err = json.Unmarshal(body, folder)
 	if err != nil {
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	dBFolder := &db.Folder{
-		Id:    folder.Id,
+		Id:    folderId,
 		Name:  folder.Name,
 		Order: folder.Order,
 	}
@@ -150,14 +193,13 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	writeStatus(w, http.StatusCreated)
 }
 
-// Delete folder by ID
-// not done
-// (note - I don't have the user auth stuff here)
+// Delete deletes a folder by ID, only if owned by the authenticated user
 //
 //	@Summary		Delete folder by ID
 //	@Description	delete a folder for user
@@ -167,14 +209,35 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
+
+	dbFolder := m.DbClient.GetFolderById(folderId)
+	if dbFolder == nil {
+		writeStatus(w, http.StatusNotFound)
+		return
+	}
+	if !auth.CanModify(user, dbFolder.UserId) {
+		writeStatus(w, http.StatusForbidden)
+		return
+	}
+
 	err = m.DbClient.DeleteFolderById(folderId)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	writeStatus(w, http.StatusNoContent)

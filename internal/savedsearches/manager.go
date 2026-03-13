@@ -3,30 +3,32 @@ package savedsearches
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
-	"github.com/go-chi/chi/v5"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/MicahParks/keyfunc/v3"
+	"github.com/go-chi/chi/v5"
+	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient   *db.Manager
+	JwtKeyfunc keyfunc.Keyfunc
 }
 
-func New(dbManager *db.Manager) *Manager {
+func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 	manager := &Manager{
-		DbClient: dbManager,
+		DbClient:   dbManager,
+		JwtKeyfunc: jwtKeyfunc,
 	}
 	return manager
 }
 
-// Get lists saved searches for current user
-// (note - I don't have the user auth stuff here)
+// Get lists saved searches for the authenticated user
 //
 //	@Summary		Get Saved Searches for current User
 //	@Description	get saved searches for user
@@ -36,14 +38,14 @@ func New(dbManager *db.Manager) *Manager {
 //	@Success		200	{array}	savedsearches.SavedSearches
 //	@Router			/saved_searches [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
 	if err != nil {
-		fmt.Println("error:", err)
-		writeStatus(w, http.StatusBadRequest)
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
 		return
 	}
 
-	dbSavedSearches := m.DbClient.GetSavedSearches(userId)
+	dbSavedSearches := m.DbClient.GetSavedSearches(user.Id)
 	dbEligibilities := m.DbClient.GetEligibilitiesByIDs(getEligibilityIdsFromDbSavedSearches(dbSavedSearches))
 	dbCategories := m.DbClient.GetCategoriesByIDs(getCategoryIdsFromDbSavedSearches(dbSavedSearches))
 
@@ -62,8 +64,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
-// Create saved search for current user
-// (note - I don't have the user auth stuff here)
+// Post creates a saved search for the authenticated user
 //
 //	@Summary		Create SavedSearch for current User
 //	@Description	new saved search for user
@@ -73,17 +74,27 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	savedsearches.SavedSearch
 //	@Router			/saved_searches [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 
 	savedSearch := &SavedSearch{}
-	err := json.Unmarshal(body, savedSearch)
+	err = json.Unmarshal(body, savedSearch)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
+
+	// Always use the authenticated user's ID, never the client-supplied value.
+	savedSearch.UserId = user.Id
 
 	var dbEligibilityIds []int
 	if len(savedSearch.Search.Eligibilities) > 0 {
@@ -164,25 +175,39 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, FromDBType(dbSavedSearch, eligibilityIdToName, categoryIdToName))
 }
 
-// Get saved searches for current user
-// (note - I don't have the user auth stuff here)
+// GetByID gets a saved search by ID, only if owned by the authenticated user
 //
-//	@Summary		Get Saved Search for current User
-//	@Description	get saved searches for user
+//	@Summary		Get Saved Search by ID for current User
+//	@Description	get saved search by id for user
 //	@Tags			saved_searches
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	savedsearches.SavedSearch
-//	@Router			/saved_searches [get]
+//	@Success		200	{object}	savedsearches.SavedSearch
+//	@Router			/saved_searches/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
 	savedSearchId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		fmt.Println("error:", err)
 		writeStatus(w, http.StatusBadRequest)
 		return
 	}
 
 	dbSavedSearch := m.DbClient.GetSavedSearchById(savedSearchId)
+	if dbSavedSearch == nil {
+		writeStatus(w, http.StatusNotFound)
+		return
+	}
+	if !auth.CanModify(user, dbSavedSearch.UserId) {
+		writeStatus(w, http.StatusForbidden)
+		return
+	}
+
 	eligibilityIds := getEligibilityIdsFromDbSavedSearches([]*db.SavedSearch{dbSavedSearch})
 	dbEligibilities := m.DbClient.GetEligibilitiesByIDs(eligibilityIds)
 	categoryIds := getCategoryIdsFromDbSavedSearches([]*db.SavedSearch{dbSavedSearch})
@@ -197,31 +222,47 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		categoryIdToName[dbCategory.Id] = dbCategory.Name
 	}
 
-	response := FromDBType(dbSavedSearch, eligibilityIdToName, categoryIdToName)
-
-	writeJson(w, response)
+	writeJson(w, FromDBType(dbSavedSearch, eligibilityIdToName, categoryIdToName))
 }
 
-// Delete saved search by ID
-// not done
-// (note - I don't have the user auth stuff here)
+// Delete deletes a saved search by ID, only if owned by the authenticated user
 //
 //	@Summary		Delete saved search by ID
 //	@Description	delete a saved search for user
 //	@Tags			saved_searches
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	savedsearches.SavedSearch
+//	@Success		200
 //	@Router			/saved_searches/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		writeStatus(w, http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		log.Printf("%v", err)
+		writeStatus(w, http.StatusBadRequest)
+		return
 	}
+
+	dbSavedSearch := m.DbClient.GetSavedSearchById(id)
+	if dbSavedSearch == nil {
+		writeStatus(w, http.StatusNotFound)
+		return
+	}
+	if !auth.CanModify(user, dbSavedSearch.UserId) {
+		writeStatus(w, http.StatusForbidden)
+		return
+	}
+
 	err = m.DbClient.DeleteSavedSearchById(id)
 	if err != nil {
 		log.Print(err)
 		writeStatus(w, http.StatusInternalServerError)
+		return
 	}
 
 	writeStatus(w, http.StatusOK)
