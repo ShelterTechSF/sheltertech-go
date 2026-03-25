@@ -38,6 +38,8 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.22.x'
+      - name: Inject test user external ID into seed data
+        run: sed -i 's/test_user_external_id/${{ secrets.AUTH0_CLIENT_ID }}@clients/' db/data.sql
       - name: up
         run: make ci-run
       - name: Test with the Go CLI
