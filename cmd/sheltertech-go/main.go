@@ -179,6 +179,9 @@ func setIntegrationTestEnv() {
 	if !viper.IsSet("AUTH0_DOMAIN") {
 		viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
 	}
+	if !viper.IsSet("ENABLE_JWT_VERIFICATION") {
+		viper.SetDefault("ENABLE_JWT_VERIFICATION", true)
+	}
 	// TODO: AUTH0_DOMAIN, AUTH0_AUDIENCE, and AUTH0_CLIENT_ID should be set via environment variables.
 	// For local development and CI, set these in your shell or GitHub Actions secrets:
 	//   AUTH0_DOMAIN=<your-auth0-tenant>.us.auth0.com
