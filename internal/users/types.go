@@ -13,6 +13,12 @@ type ApiError struct {
 	Error string `json:"error"`
 }
 
+type SaveUserRequest struct {
+	Email        string  `json:"email"`
+	Name         *string `json:"name"`
+	Organization *string `json:"organization"`
+}
+
 func FromDBType(dbUser *db.User) *User {
 	user := &User{
 		Id:           dbUser.Id,

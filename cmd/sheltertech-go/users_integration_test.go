@@ -6,6 +6,9 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -19,6 +22,10 @@ func init() {
 }
 
 const userUrl = "http://localhost:3001/api/users"
+
+type usersAPIError struct {
+	Error string `json:"error"`
+}
 
 func TestGetCurrentUser(t *testing.T) {
 	req, err := http.NewRequest("GET", userUrl+"/current", nil)
@@ -55,4 +62,136 @@ func TestGetCurrentUserWithAuthHeader(t *testing.T) {
 		// Otherwise, expect 400 for invalid token
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should return 400 Bad Request with invalid token")
 	}
+}
+
+func TestSaveUserWithInvalidBody(t *testing.T) {
+	req, err := http.NewRequest("POST", userUrl, bytes.NewBufferString("not-json"))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Invalid JSON should return 400")
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	apiErr := usersAPIError{}
+	err = json.Unmarshal(body, &apiErr)
+	require.NoError(t, err)
+	assert.NotEmpty(t, apiErr.Error, "Error payload should contain a message")
+}
+
+func TestSaveUserWithMissingEmail(t *testing.T) {
+	payload := map[string]interface{}{
+		"name":         "Any Name",
+		"organization": "Any Org",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("POST", userUrl, bytes.NewBuffer(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Missing email should return 400")
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	apiErr := usersAPIError{}
+	err = json.Unmarshal(resBody, &apiErr)
+	require.NoError(t, err)
+	assert.NotEmpty(t, apiErr.Error, "Error payload should contain a message")
+}
+
+func TestSaveUserWithEmptyEmail(t *testing.T) {
+	payload := map[string]interface{}{
+		"email":        "   ",
+		"name":         "Any Name",
+		"organization": "Any Org",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("POST", userUrl, bytes.NewBuffer(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Empty email should return 400")
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	apiErr := usersAPIError{}
+	err = json.Unmarshal(resBody, &apiErr)
+	require.NoError(t, err)
+	assert.NotEmpty(t, apiErr.Error, "Error payload should contain a message")
+}
+
+func TestSaveUserWithoutAuthorizationHeader(t *testing.T) {
+	payload := map[string]interface{}{
+		"email":        "person@example.org",
+		"name":         "Any Name",
+		"organization": "Any Org",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("POST", userUrl, bytes.NewBuffer(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Missing Authorization header should return 400")
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	apiErr := usersAPIError{}
+	err = json.Unmarshal(resBody, &apiErr)
+	require.NoError(t, err)
+	assert.NotEmpty(t, apiErr.Error, "Error payload should contain a message")
+}
+
+func TestSaveUserWithInvalidAuthorizationHeader(t *testing.T) {
+	payload := map[string]interface{}{
+		"email":        "person@example.org",
+		"name":         "",
+		"organization": "",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest("POST", userUrl, bytes.NewBuffer(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer dummy-token")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Invalid Authorization token should return 400")
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	apiErr := usersAPIError{}
+	err = json.Unmarshal(resBody, &apiErr)
+	require.NoError(t, err)
+	assert.NotEmpty(t, apiErr.Error, "Error payload should contain a message")
 }

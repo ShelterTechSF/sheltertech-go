@@ -137,6 +137,8 @@ func main() {
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 
 		r.Post("/api/change_requests", changeRequestManager.Create)
+
+		r.Post("/api/users", usersManager.SaveUser)
 	})
 
 	r.Group(func(r chi.Router) {
