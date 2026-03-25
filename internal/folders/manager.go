@@ -8,23 +8,27 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/MicahParks/keyfunc/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
-type Manager struct {
-	DbClient   *db.Manager
-	JwtKeyfunc keyfunc.Keyfunc
+// FolderDB defines the database operations used by this manager.
+// *db.Manager satisfies this interface automatically.
+type FolderDB interface {
+	GetFolders(userId int) []*db.Folder
+	GetFolderById(folderId int) *db.Folder
+	CreateFolder(folder *db.Folder) (int, error)
+	UpdateFolder(folder *db.Folder) error
+	DeleteFolderById(folderId int) error
 }
 
-func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
-	manager := &Manager{
-		DbClient:   dbManager,
-		JwtKeyfunc: jwtKeyfunc,
-	}
-	return manager
+type Manager struct {
+	DbClient FolderDB
+}
+
+func New(dbManager *db.Manager) *Manager {
+	return &Manager{DbClient: dbManager}
 }
 
 // Get lists folders for the authenticated user
@@ -37,7 +41,7 @@ func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 //	@Success		200	{array}	folders.Folders
 //	@Router			/folders [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -61,7 +65,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -112,7 +116,7 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -149,7 +153,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [put]
 func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -209,7 +213,7 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	folders.Folder
 //	@Router			/folders/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)

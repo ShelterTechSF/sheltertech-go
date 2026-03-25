@@ -9,23 +9,30 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MicahParks/keyfunc/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
-type Manager struct {
-	DbClient   *db.Manager
-	JwtKeyfunc keyfunc.Keyfunc
+// SavedSearchDB defines the database operations used by this manager.
+// *db.Manager satisfies this interface automatically.
+type SavedSearchDB interface {
+	GetSavedSearches(userId int) []*db.SavedSearch
+	GetSavedSearchById(savedSearchId int) *db.SavedSearch
+	CreateSavedSearch(savedSearch *db.SavedSearch) (int, error)
+	DeleteSavedSearchById(id int) error
+	GetEligibilitiesByIDs(ids []int) []*db.Eligibility
+	GetEligibilitiesByNames(names []string) []*db.Eligibility
+	GetCategoriesByIDs(ids []int) []*db.Category
+	GetCategoriesByNames(names []string) []*db.Category
 }
 
-func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
-	manager := &Manager{
-		DbClient:   dbManager,
-		JwtKeyfunc: jwtKeyfunc,
-	}
-	return manager
+type Manager struct {
+	DbClient SavedSearchDB
+}
+
+func New(dbManager *db.Manager) *Manager {
+	return &Manager{DbClient: dbManager}
 }
 
 // Get lists saved searches for the authenticated user
@@ -38,7 +45,7 @@ func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 //	@Success		200	{array}	savedsearches.SavedSearches
 //	@Router			/saved_searches [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -74,7 +81,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	savedsearches.SavedSearch
 //	@Router			/saved_searches [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -185,7 +192,7 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	savedsearches.SavedSearch
 //	@Router			/saved_searches/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)
@@ -235,7 +242,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Success		200
 //	@Router			/saved_searches/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		writeStatus(w, http.StatusUnauthorized)

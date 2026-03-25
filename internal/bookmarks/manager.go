@@ -7,28 +7,32 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/MicahParks/keyfunc/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
-type Manager struct {
-	DbClient   *db.Manager
-	JwtKeyfunc keyfunc.Keyfunc
+// BookmarkDB defines the database operations used by this manager.
+// *db.Manager satisfies this interface automatically.
+type BookmarkDB interface {
+	GetBookmarksByUserID(userId int) ([]*db.Bookmark, error)
+	GetBookmarkByID(bookmarkId int) (*db.Bookmark, error)
+	SubmitBookmark(bookmark *db.Bookmark) error
+	UpdateBookmark(bookmark *db.Bookmark) error
+	DeleteBookmarkByID(bookmarkId int) error
 }
 
-func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
-	manager := &Manager{
-		DbClient:   dbManager,
-		JwtKeyfunc: jwtKeyfunc,
-	}
-	return manager
+type Manager struct {
+	DbClient BookmarkDB
+}
+
+func New(dbManager *db.Manager) *Manager {
+	return &Manager{DbClient: dbManager}
 }
 
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
@@ -49,7 +53,7 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
@@ -69,6 +73,10 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
 		return
 	}
+	if dbBookmark == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "bookmark not found")
+		return
+	}
 	if dbBookmark.UserID == nil || !auth.CanModify(user, *dbBookmark.UserID) {
 		common.WriteErrorJson(w, http.StatusForbidden, "forbidden")
 		return
@@ -78,7 +86,7 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
@@ -119,7 +127,7 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
@@ -137,6 +145,10 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if existing == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "bookmark not found")
 		return
 	}
 	if existing.UserID == nil || !auth.CanModify(user, *existing.UserID) {
@@ -176,7 +188,7 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
-	user, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	user, err := auth.UserFromContext(r.Context())
 	if err != nil {
 		log.Printf("authentication failed: %v", err)
 		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
@@ -194,6 +206,10 @@ func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if existing == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "bookmark not found")
 		return
 	}
 	if existing.UserID == nil || !auth.CanModify(user, *existing.UserID) {
