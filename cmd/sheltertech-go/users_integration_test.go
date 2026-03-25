@@ -28,9 +28,8 @@ func TestGetCurrentUser(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	// Without a valid Authorization Bearer JWT mapped to a DB user,
-	// endpoint returns 400 Bad Request (see users.GetCurrent).
-	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should return 400 Bad Request without valid auth")
+	// Without a valid Authorization Bearer JWT, the auth middleware returns 401 Unauthorized.
+	assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Should return 401 Unauthorized without valid auth")
 }
 
 func TestGetCurrentUserWithAuthHeader(t *testing.T) {
@@ -44,15 +43,9 @@ func TestGetCurrentUserWithAuthHeader(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	// In environments where JWT verification is disabled or configured differently,
-	// the endpoint might return 200. In environments with JWT verification enabled,
-	// it should return 400 for an invalid token.
-	// Both behaviors are acceptable - the important thing is that the endpoint handles the request
-	if res.StatusCode == http.StatusOK {
-		// If it returns 200, that's fine - JWT verification might be disabled in CI
-		t.Log("Endpoint returned 200 OK - JWT verification may be disabled in this environment")
-	} else {
-		// Otherwise, expect 400 for invalid token
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Should return 400 Bad Request with invalid token")
+	// With JWT verification enabled, an invalid token is rejected by the auth middleware with 401.
+	// If verification is disabled, the handler runs and may return 200 or 400.
+	if res.StatusCode != http.StatusOK {
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Should return 401 Unauthorized with invalid token")
 	}
 }
