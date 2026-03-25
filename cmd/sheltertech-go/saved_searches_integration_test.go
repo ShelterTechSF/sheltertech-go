@@ -27,7 +27,7 @@ func init() {
 const savedSearchUrl = "http://localhost:3001/api/saved_searches"
 
 func TestGetSavedSearches(t *testing.T) {
-	req, err := http.NewRequest("GET", savedSearchUrl+"?user_id=1", nil)
+	req, err := newAuthRequest("GET", savedSearchUrl+"?user_id=1", nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
@@ -51,15 +51,14 @@ func TestPostSavedSearch(t *testing.T) {
 		Search: savedsearches.SavedSearchQuery{
 			Query: "test query",
 		},
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(savedSearch)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", savedSearchUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", savedSearchUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -76,15 +75,14 @@ func TestGetSavedSearchByID(t *testing.T) {
 		Search: savedsearches.SavedSearchQuery{
 			Query: "test get query",
 		},
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(savedSearch)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", savedSearchUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", savedSearchUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -104,7 +102,7 @@ func TestGetSavedSearchByID(t *testing.T) {
 	// Now get the saved search by ID
 	url := fmt.Sprintf("%s/%d", savedSearchUrl, createdSavedSearch.Id)
 
-	req, err = http.NewRequest("GET", url, nil)
+	req, err = newAuthRequest("GET", url, nil)
 	require.NoError(t, err)
 
 	res, err = http.DefaultClient.Do(req)
@@ -133,15 +131,14 @@ func TestDeleteSavedSearch(t *testing.T) {
 		Search: savedsearches.SavedSearchQuery{
 			Query: "test delete query",
 		},
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(savedSearch)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", savedSearchUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", savedSearchUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -161,7 +158,7 @@ func TestDeleteSavedSearch(t *testing.T) {
 	// Now delete the saved search
 	url := fmt.Sprintf("%s/%d", savedSearchUrl, createdSavedSearch.Id)
 
-	req, err = http.NewRequest("DELETE", url, nil)
+	req, err = newAuthRequest("DELETE", url, nil)
 	require.NoError(t, err)
 
 	res, err = http.DefaultClient.Do(req)
@@ -175,7 +172,7 @@ func TestDeleteSavedSearch(t *testing.T) {
 func TestGetSavedSearchByIDWithInvalidID(t *testing.T) {
 	url := savedSearchUrl + "/invalid"
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := newAuthRequest("GET", url, nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)

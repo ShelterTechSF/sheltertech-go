@@ -25,7 +25,9 @@ func init() {
 const bookmarkUrl = "http://localhost:3001/api/bookmarks"
 
 func TestGetBookmarksBadRequest(t *testing.T) {
-	res, err := http.Get(bookmarkUrl + "?user_id=a")
+	req, err := newAuthRequest("GET", bookmarkUrl+"?user_id=a", nil)
+	require.NoError(t, err)
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer res.Body.Close()
 
@@ -41,7 +43,9 @@ func TestGetBookmarksBadRequest(t *testing.T) {
 }
 
 func TestGetBookmarkByIDError(t *testing.T) {
-	res, err := http.Get(bookmarkUrl + "/0")
+	req, err := newAuthRequest("GET", bookmarkUrl+"/0", nil)
+	require.NoError(t, err)
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer res.Body.Close()
 
