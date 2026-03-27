@@ -2,9 +2,9 @@ name: testsuite
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   GCP_REPO: us-west2-docker.pkg.dev/askdarcel-184805/sheltertech/sheltertech-go
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.22.x'
+          go-version: "1.22.x"
       - name: Build
         run: make build
       - name: Test with the Go CLI
@@ -27,19 +27,13 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     env:
-      AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-      AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
-      AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
-      AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
       ENABLE_JWT_VERIFICATION: "true"
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.22.x'
-      - name: Inject test user external ID into seed data
-        run: sed -i 's/test_user_external_id/${{ secrets.AUTH0_CLIENT_ID }}@clients/' db/data.sql
+          go-version: "1.22.x"
       - name: up
         run: make ci-run
       - name: Test with the Go CLI
