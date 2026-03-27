@@ -180,7 +180,7 @@ func setIntegrationTestEnv() {
 		viper.SetDefault("ISSUER_URL", "http://localhost/")
 	}
 	if !viper.IsSet("AUTH0_AUDIENCE") {
-		viper.SetDefault("AUTH0_AUDIENCE", "https://test.sheltertech.org")
+		viper.SetDefault("AUTH0_AUDIENCE", "login.sfserviceguide.org")
 	}
 	if !viper.IsSet("ENABLE_JWT_VERIFICATION") {
 		viper.SetDefault("ENABLE_JWT_VERIFICATION", true)

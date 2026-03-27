@@ -11,6 +11,7 @@ services:
       DB_NAME: askdarcel_development
       DB_USER: postgres
       ISSUER_URL: "https://dev-nykixf8szsm220fi.us.auth0.com/"
+      AUTH0_AUDIENCE: "http://localhost:8080/api"
       ENABLE_JWT_VERIFICATION: "true"
       PDF_CROWD_API_KEY:
       PDF_CROWD_USERNAME:
