@@ -176,11 +176,11 @@ func setIntegrationTestEnv() {
 	if !viper.IsSet("DB_PASS") {
 		viper.SetDefault("DB_PASS", "")
 	}
-	if !viper.IsSet("ISSUER_URL") {
-		viper.SetDefault("ISSUER_URL", "http://localhost/")
-	}
 	if !viper.IsSet("AUTH0_AUDIENCE") {
 		viper.SetDefault("AUTH0_AUDIENCE", "login.sfserviceguide.org")
+	}
+	if !viper.IsSet("ISSUER_URL") {
+		viper.SetDefault("ISSUER_URL", "http://localhost/")
 	}
 	if !viper.IsSet("ENABLE_JWT_VERIFICATION") {
 		viper.SetDefault("ENABLE_JWT_VERIFICATION", true)
