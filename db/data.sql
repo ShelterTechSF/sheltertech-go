@@ -9462,7 +9462,7 @@ COPY public.user_groups (user_id, group_id) FROM stdin;
 --
 
 COPY public.users (id, name, organization, user_external_id, email) FROM stdin;
-1	Test User	Test Organization	test_user_external_id	test@test.com
+0	Test User	Test Organization	test_user_external_id	test@sheltertech.org
 \.
 
 

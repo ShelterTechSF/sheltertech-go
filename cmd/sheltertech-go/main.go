@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/sheltertechsf/sheltertech-go/docs"
@@ -21,7 +20,6 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
-	"github.com/MicahParks/keyfunc/v3"
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
@@ -58,28 +56,17 @@ func main() {
 	dbPort := viper.GetString("DB_PORT")
 	dbName := viper.GetString("DB_NAME")
 	dbPass := viper.GetString("DB_PASS")
-	auth0Domain := viper.GetString("AUTH0_DOMAIN")
 	enableJwtVerification := viper.GetBool("ENABLE_JWT_VERIFICATION")
 	googleTranslateCredentials := viper.GetString("TRANSLATE_CREDENTIALS")
 	pdfCrowdUsername := viper.GetString("PDF_CROWD_USERNAME")
 	pdfCrowdApiKey := viper.GetString("PDF_CROWD_API_KEY")
-	var jwtKeyfunc keyfunc.Keyfunc
-	if auth0Domain != "" {
-		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
-		var err error
-		jwtKeyfunc, err = keyfunc.NewDefault([]string{jwksUrl})
-		if err != nil {
-			log.Fatalf("Failed to create keyfunc for %q.\nError: %s", jwksUrl, err)
-		}
-	}
-
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)
 	changeRequestManager := changerequest.New(dbManager)
 	foldersManager := folders.New(dbManager)
 	servicesManager := services.New(dbManager, googleTranslateCredentials, pdfCrowdUsername, pdfCrowdApiKey)
 	resourcesManager := resources.New(dbManager)
-	usersManager := users.New(dbManager, jwtKeyfunc)
+	usersManager := users.New(dbManager)
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
 	datathonManager := datathon.New(dbManager)
@@ -113,7 +100,7 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		if enableJwtVerification {
-			r.Use(auth.EnsureValidToken())
+			r.Use(auth.EnsureValidToken(dbManager))
 		}
 		r.Get("/api/folders", foldersManager.Get)
 		r.Post("/api/folders", foldersManager.Post)
@@ -137,6 +124,8 @@ func main() {
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 
 		r.Post("/api/change_requests", changeRequestManager.Create)
+
+		r.Get("/api/users/current", usersManager.GetCurrent)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -152,7 +141,6 @@ func main() {
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
-		r.Get("/api/users/current", usersManager.GetCurrent)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
@@ -180,7 +168,7 @@ func setIntegrationTestEnv() {
 		viper.SetDefault("DB_HOST", "localhost")
 	}
 	if !viper.IsSet("DB_PORT") {
-		viper.SetDefault("DB_PORT", "5432")
+		viper.SetDefault("DB_PORT", "5433")
 	}
 	if !viper.IsSet("DB_NAME") {
 		viper.SetDefault("DB_NAME", "askdarcel_development")
@@ -188,7 +176,13 @@ func setIntegrationTestEnv() {
 	if !viper.IsSet("DB_PASS") {
 		viper.SetDefault("DB_PASS", "")
 	}
-	if !viper.IsSet("AUTH0_DOMAIN") {
-		viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
+	if !viper.IsSet("AUTH0_AUDIENCE") {
+		viper.SetDefault("AUTH0_AUDIENCE", "login.sfserviceguide.org")
+	}
+	if !viper.IsSet("ISSUER_URL") {
+		viper.SetDefault("ISSUER_URL", "http://localhost/")
+	}
+	if !viper.IsSet("ENABLE_JWT_VERIFICATION") {
+		viper.SetDefault("ENABLE_JWT_VERIFICATION", true)
 	}
 }

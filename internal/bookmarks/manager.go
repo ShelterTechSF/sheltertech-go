@@ -7,51 +7,45 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
-
-	"github.com/go-chi/chi/v5"
 )
 
+// BookmarkDB defines the database operations used by this manager.
+// *db.Manager satisfies this interface automatically.
+type BookmarkDB interface {
+	GetBookmarksByUserID(userId int) ([]*db.Bookmark, error)
+	GetBookmarkByID(bookmarkId int) (*db.Bookmark, error)
+	SubmitBookmark(bookmark *db.Bookmark) error
+	UpdateBookmark(bookmark *db.Bookmark) error
+	DeleteBookmarkByID(bookmarkId int) error
+}
+
 type Manager struct {
-	DbClient *db.Manager
+	DbClient BookmarkDB
 }
 
 func New(dbManager *db.Manager) *Manager {
-	manager := &Manager{
-		DbClient: dbManager,
-	}
-	return manager
+	return &Manager{DbClient: dbManager}
 }
 
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-
-	var dbBookmarks []*db.Bookmark
-
-	userId := r.URL.Query().Get("user_id")
-
-	if userId != "" {
-		iUserId, err := strconv.Atoi(userId)
-		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		dbBookmarks, err = m.DbClient.GetBookmarksByUserID(iUserId)
-		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-			return
-		}
-	} else {
-		var err error
-		dbBookmarks, err = m.DbClient.GetBookmarks()
-		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-			return
-		}
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
+		return
 	}
+
+	dbBookmarks, err := m.DbClient.GetBookmarksByUserID(user.Id)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
 	response := Bookmarks{
 		Bookmarks: FromDBTypeArray(dbBookmarks),
 	}
@@ -59,6 +53,12 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
+		return
+	}
 
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -73,24 +73,39 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
 		return
 	}
+	if dbBookmark == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "bookmark not found")
+		return
+	}
+	if dbBookmark.UserID == nil || !auth.CanModify(user, *dbBookmark.UserID) {
+		common.WriteErrorJson(w, http.StatusForbidden, "forbidden")
+		return
+	}
 
-	response := FromDBType(dbBookmark)
-
-	writeJson(w, response)
+	writeJson(w, FromDBType(dbBookmark))
 }
 
 func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
+		return
+	}
 
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 
 	bookmark := &Bookmark{}
-	err := json.Unmarshal(body, bookmark)
+	err = json.Unmarshal(body, bookmark)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	// Always use the authenticated user's ID, never the client-supplied value.
+	bookmark.UserID = &user.Id
 
 	dbBookmark := &db.Bookmark{
 		Order:      bookmark.Order,
@@ -112,12 +127,40 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	existing, err := m.DbClient.GetBookmarkByID(id)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if existing == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "bookmark not found")
+		return
+	}
+	if existing.UserID == nil || !auth.CanModify(user, *existing.UserID) {
+		common.WriteErrorJson(w, http.StatusForbidden, "forbidden")
+		return
+	}
 
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 
 	bookmark := &Bookmark{}
-	err := json.Unmarshal(body, bookmark)
+	err = json.Unmarshal(body, bookmark)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
@@ -125,12 +168,12 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbBookmark := &db.Bookmark{
-		Id:         bookmark.Id,
+		Id:         id,
 		Order:      bookmark.Order,
 		FolderID:   bookmark.FolderID,
 		ServiceID:  bookmark.ServiceID,
 		ResourceID: bookmark.ResourceID,
-		UserID:     bookmark.UserID,
+		UserID:     &user.Id, // preserve ownership — never let client change this
 		Name:       bookmark.Name,
 	}
 
@@ -142,10 +185,15 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeStatus(w, http.StatusCreated)
-
 }
 
 func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
+	user, err := auth.UserFromContext(r.Context())
+	if err != nil {
+		log.Printf("authentication failed: %v", err)
+		common.WriteErrorJson(w, http.StatusUnauthorized, err.Error())
+		return
+	}
 
 	bookmarkId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -154,12 +202,26 @@ func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	existing, err := m.DbClient.GetBookmarkByID(bookmarkId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if existing == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "bookmark not found")
+		return
+	}
+	if existing.UserID == nil || !auth.CanModify(user, *existing.UserID) {
+		common.WriteErrorJson(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
 	err = m.DbClient.DeleteBookmarkByID(bookmarkId)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 	}
-
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {

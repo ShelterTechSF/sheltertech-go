@@ -2,9 +2,9 @@ name: testsuite
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   GCP_REPO: us-west2-docker.pkg.dev/askdarcel-184805/sheltertech/sheltertech-go
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.22.x'
+          go-version: "1.22.x"
       - name: Build
         run: make build
       - name: Test with the Go CLI
@@ -26,12 +26,18 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    env:
+      ENABLE_JWT_VERIFICATION: "true"
+      ISSUER_URL: http://jwks-server/
+      AUTH0_AUDIENCE: https://test.sheltertech.org
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.22.x'
+          go-version: "1.22.x"
+      - name: Generate test keys
+        run: make generate-test-keys
       - name: up
         run: make ci-run
       - name: Test with the Go CLI

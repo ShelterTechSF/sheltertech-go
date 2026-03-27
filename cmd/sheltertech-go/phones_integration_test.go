@@ -65,7 +65,7 @@ func TestDeletePhoneEndpoint(t *testing.T) {
 	defer deleteTestPhone(t, phoneID) // Ensure cleanup happens even if the test fails later
 	// Construct the DELETE request
 	url := fmt.Sprintf("%s/%d", phonesUrl, phoneID)
-	req, err := http.NewRequest("DELETE", url, nil)
+	req, err := newAuthRequest("DELETE", url, nil)
 	if err != nil {
 		t.Fatalf("Failed to create DELETE request: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestDeletePhoneEndpoint(t *testing.T) {
 	// Check the response status code
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Expected status code 204")
 	// Attempt to delete the same phone again, expecting a 404
-	req, err = http.NewRequest("DELETE", url, nil)
+	req, err = newAuthRequest("DELETE", url, nil)
 	if err != nil {
 		t.Fatalf("Failed to create second DELETE request: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestCreatePhoneEndpoint(t *testing.T) {
 	require.NoError(t, err)
 	bytes := bytes.NewBuffer(body)
 
-	req, err := http.NewRequest("POST", url, bytes)
+	req, err := newAuthRequest("POST", url, bytes)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
@@ -136,7 +136,7 @@ func TestUpdatePhoneEndpoint(t *testing.T) {
 	require.NoError(t, err)
 	bytes := bytes.NewBuffer(body)
 
-	req, err := http.NewRequest("POST", url, bytes)
+	req, err := newAuthRequest("POST", url, bytes)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)

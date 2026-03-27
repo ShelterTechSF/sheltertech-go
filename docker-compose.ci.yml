@@ -5,6 +5,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      jwks-server:
+        condition: service_healthy
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,10 +15,26 @@ services:
       DB_PORT: 5432
       DB_NAME: askdarcel_development
       DB_USER: postgres
+      ENABLE_JWT_VERIFICATION: "true"
+      ISSUER_URL: http://jwks-server/
+      AUTH0_AUDIENCE: https://test.sheltertech.org
     networks:
       - askdarcel-ci
     ports:
       - "3001:3001"
+
+  jwks-server:
+    image: nginx:alpine
+    volumes:
+      - ./test/jwks.json:/usr/share/nginx/html/jwks.json
+      - ./test/oidc-config.json:/usr/share/nginx/html/.well-known/openid-configuration
+    networks:
+      - askdarcel-ci
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/jwks.json || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   db:
     build:
@@ -27,7 +45,7 @@ services:
     networks:
       - askdarcel-ci
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

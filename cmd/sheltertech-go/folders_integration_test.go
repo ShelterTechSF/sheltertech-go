@@ -27,7 +27,7 @@ func init() {
 const folderUrl = "http://localhost:3001/api/folders"
 
 func TestGetFolders(t *testing.T) {
-	req, err := http.NewRequest("GET", folderUrl+"?user_id=1", nil)
+	req, err := newAuthRequest("GET", folderUrl+"?user_id=1", nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)
@@ -48,15 +48,14 @@ func TestGetFolders(t *testing.T) {
 func TestPostFolder(t *testing.T) {
 	folder := folders.Folder{
 		Name:   "Test Folder",
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(folder)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", folderUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", folderUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -70,15 +69,14 @@ func TestGetFolderByID(t *testing.T) {
 	// First create a folder
 	folder := folders.Folder{
 		Name:   "Test Get Folder",
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(folder)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", folderUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", folderUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -98,7 +96,7 @@ func TestGetFolderByID(t *testing.T) {
 	// Now get the folder by ID
 	url := fmt.Sprintf("%s/%d", folderUrl, createdFolder.Id)
 
-	req, err = http.NewRequest("GET", url, nil)
+	req, err = newAuthRequest("GET", url, nil)
 	require.NoError(t, err)
 
 	res, err = http.DefaultClient.Do(req)
@@ -122,15 +120,14 @@ func TestPutFolder(t *testing.T) {
 	// First create a folder to update
 	folder := folders.Folder{
 		Name:   "Test Update Folder",
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(folder)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", folderUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", folderUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -153,15 +150,14 @@ func TestPutFolder(t *testing.T) {
 	updatedFolder := folders.Folder{
 		Id:     createdFolder.Id,
 		Name:   "Updated Test Folder",
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err = json.Marshal(updatedFolder)
 	require.NoError(t, err)
 
-	req, err = http.NewRequest("PUT", url, bytes.NewBuffer(body))
+	req, err = newAuthRequest("PUT", url, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -171,7 +167,7 @@ func TestPutFolder(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, res.StatusCode, "Should return 201 Created")
 
 	// Verify the update actually persisted by reading the folder
-	req, err = http.NewRequest("GET", url, nil)
+	req, err = newAuthRequest("GET", url, nil)
 	require.NoError(t, err)
 
 	res, err = http.DefaultClient.Do(req)
@@ -197,15 +193,14 @@ func TestDeleteFolder(t *testing.T) {
 	// First create a folder to delete
 	folder := folders.Folder{
 		Name:   "Test Delete Folder",
-		UserId: 1,
+		UserId: 0,
 	}
 
 	body, err := json.Marshal(folder)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", folderUrl, bytes.NewBuffer(body))
+	req, err := newAuthRequest("POST", folderUrl, bytes.NewBuffer(body))
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -225,7 +220,7 @@ func TestDeleteFolder(t *testing.T) {
 	// Now delete the folder
 	url := fmt.Sprintf("%s/%d", folderUrl, createdFolder.Id)
 
-	req, err = http.NewRequest("DELETE", url, nil)
+	req, err = newAuthRequest("DELETE", url, nil)
 	require.NoError(t, err)
 
 	res, err = http.DefaultClient.Do(req)
@@ -239,7 +234,7 @@ func TestDeleteFolder(t *testing.T) {
 func TestGetFolderByIDWithInvalidID(t *testing.T) {
 	url := folderUrl + "/invalid"
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := newAuthRequest("GET", url, nil)
 	require.NoError(t, err)
 
 	res, err := http.DefaultClient.Do(req)

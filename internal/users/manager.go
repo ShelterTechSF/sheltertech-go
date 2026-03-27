@@ -5,29 +5,23 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/MicahParks/keyfunc/v3"
 	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
-	DbClient   *db.Manager
-	JwtKeyfunc keyfunc.Keyfunc
+	DbClient *db.Manager
 }
 
-func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
-	manager := &Manager{
-		DbClient:   dbManager,
-		JwtKeyfunc: jwtKeyfunc,
-	}
-	return manager
+func New(dbManager *db.Manager) *Manager {
+	return &Manager{DbClient: dbManager}
 }
 
 // Get the currently authenticated user
 func (m *Manager) GetCurrent(w http.ResponseWriter, r *http.Request) {
-	dbUser, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	dbUser, err := auth.UserFromContext(r.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnauthorized)
 		writeJson(w, ApiError{err.Error()})
 		return
 	}
