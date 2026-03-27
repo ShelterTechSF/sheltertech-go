@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 # go source files, ignore vendor directory
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-.PHONY: run test integration-test build ci-run fmt
+.PHONY: run test integration-test build ci-run generate-test-keys fmt
 
 # Dev Commands
 
@@ -20,9 +20,21 @@ run-standalone: docker-exists
 test: go-exists
 	go test -v ./...
 
-## Expects a server running on localhost:3001 from the dev flow
-integration-test: go-exists
-	go test -v -tags=integration ./...
+## Brings up the CI stack, runs integration tests, then tears down.
+integration-test: docker-exists go-exists generate-test-keys
+	docker compose -f docker-compose.dev.yml down
+	docker compose -f docker-compose.ci.yml build && docker compose -f docker-compose.ci.yml up -d
+	ISSUER_URL=http://jwks-server/ AUTH0_AUDIENCE=https://test.sheltertech.org go test -v -tags=integration ./... ; docker compose -f docker-compose.ci.yml down
+
+## Generates test RSA key pair and jwks.json. Used by CI before starting the stack.
+## Safe to run multiple times — skips generation if keys already exist.
+generate-test-keys: go-exists
+	@if [ ! -f test/private_key.pem ] || [ ! -f test/jwks.json ]; then \
+		echo "Generating test keys..."; \
+		go run test/generate_keys.go; \
+	else \
+		echo "Test keys already exist, skipping generation."; \
+	fi
 
 # CI Commands
 

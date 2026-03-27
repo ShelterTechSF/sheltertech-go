@@ -28,12 +28,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENABLE_JWT_VERIFICATION: "true"
+      ISSUER_URL: http://jwks-server/
+      AUTH0_AUDIENCE: https://test.sheltertech.org
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.22.x"
+      - name: Generate test keys
+        run: make generate-test-keys
       - name: up
         run: make ci-run
       - name: Test with the Go CLI

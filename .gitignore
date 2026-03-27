@@ -33,3 +33,7 @@ go.work.sum
 .idea
 /sheltertech-go
 /tmp
+
+# Generated test keys — created by `make generate-test-keys`, never commit
+test/private_key.pem
+test/jwks.json

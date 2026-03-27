@@ -34,7 +34,7 @@ func (c CustomClaims) Validate(ctx context.Context) error {
 // EnsureValidToken is a middleware that will check the validity of our JWT.
 // It validates the token, looks up the user in the DB, and stores the user in the request context.
 func EnsureValidToken(dbManager *db.Manager) func(next http.Handler) http.Handler {
-	issuerURL, err := url.Parse("https://" + os.Getenv("AUTH0_DOMAIN") + "/")
+	issuerURL, err := url.Parse(os.Getenv("ISSUER_URL"))
 	if err != nil {
 		log.Fatalf("Failed to parse the issuer url: %v", err)
 	}

@@ -168,7 +168,7 @@ func setIntegrationTestEnv() {
 		viper.SetDefault("DB_HOST", "localhost")
 	}
 	if !viper.IsSet("DB_PORT") {
-		viper.SetDefault("DB_PORT", "5432")
+		viper.SetDefault("DB_PORT", "5433")
 	}
 	if !viper.IsSet("DB_NAME") {
 		viper.SetDefault("DB_NAME", "askdarcel_development")
@@ -176,16 +176,13 @@ func setIntegrationTestEnv() {
 	if !viper.IsSet("DB_PASS") {
 		viper.SetDefault("DB_PASS", "")
 	}
-	if !viper.IsSet("AUTH0_DOMAIN") {
-		viper.SetDefault("AUTH0_DOMAIN", "login.sfserviceguide.org")
+	if !viper.IsSet("ISSUER_URL") {
+		viper.SetDefault("ISSUER_URL", "http://localhost/")
+	}
+	if !viper.IsSet("AUTH0_AUDIENCE") {
+		viper.SetDefault("AUTH0_AUDIENCE", "https://test.sheltertech.org")
 	}
 	if !viper.IsSet("ENABLE_JWT_VERIFICATION") {
 		viper.SetDefault("ENABLE_JWT_VERIFICATION", true)
 	}
-	// TODO: AUTH0_DOMAIN, AUTH0_AUDIENCE, and AUTH0_CLIENT_ID should be set via environment variables.
-	// For local development and CI, set these in your shell or GitHub Actions secrets:
-	//   AUTH0_DOMAIN=<your-auth0-tenant>.us.auth0.com
-	//   AUTH0_AUDIENCE=<your-api-identifier>
-	//   AUTH0_CLIENT_ID=<your-m2m-client-id>
-	//   AUTH0_CLIENT_SECRET=<your-m2m-client-secret>  (never hardcode this)
 }
