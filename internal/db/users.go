@@ -19,21 +19,22 @@ FROM public.users u
 WHERE u.user_external_id = $1
 `
 
-func (m *Manager) GetUserByUserExternalID(userExternalId string) *User {
+func (m *Manager) GetUserByUserExternalID(userExternalId string) (*User, error) {
 	row := m.DB.QueryRow(userByUserExternalIDSql, userExternalId)
 	return scanUser(row)
 }
-func scanUser(row *sql.Row) *User {
+
+func scanUser(row *sql.Row) (*User, error) {
 	var user User
 	err := row.Scan(&user.Id, &user.Name, &user.Organization, &user.UserExternalId, &user.Email)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
-			return nil
+			return nil, nil
 		default:
-			panic(err)
+			return nil, err
 		}
 	}
-	return &user
+	return &user, nil
 }
