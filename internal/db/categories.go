@@ -3,8 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"github.com/lib/pq"
 	"log"
+
+	"github.com/lib/pq"
 )
 
 type Category struct {
@@ -109,146 +110,203 @@ func (m *Manager) GetCategories(topLevel *bool) []*Category {
 	}
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategories(rows)
+	defer rows.Close()
+	categories, err := scanCategories(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return categories
 }
 
 func (m *Manager) GetCategoryServiceCounts() []*CategoryCount {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoryServiceCounts)
+	rows, err := m.DB.Query(categoryServiceCounts)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategoryCounts(rows)
+	defer rows.Close()
+	counts, err := scanCategoryCounts(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return counts
 }
 
 func (m *Manager) GetCategoryResourceCounts() []*CategoryCount {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoryResourceCounts)
+	rows, err := m.DB.Query(categoryResourceCounts)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategoryCounts(rows)
+	defer rows.Close()
+	counts, err := scanCategoryCounts(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return counts
 }
 
 func (m *Manager) GetCategoriesByFeatured() []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoriesByFeaturedSql)
+	rows, err := m.DB.Query(categoriesByFeaturedSql)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategories(rows)
+	defer rows.Close()
+	categories, err := scanCategories(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return categories
 }
 
 func (m *Manager) GetSubCategoriesByID(categoryId int) []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(subCategoriesByIDSql, categoryId)
+	rows, err := m.DB.Query(subCategoriesByIDSql, categoryId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategories(rows)
+	defer rows.Close()
+	categories, err := scanCategories(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return categories
 }
 
-func (m *Manager) GetCategoryByID(categoryId int) *Category {
+func (m *Manager) GetCategoryByID(categoryId int) (*Category, error) {
 	row := m.DB.QueryRow(categoriesByIDSql, categoryId)
 	return scanCategory(row)
 }
 
 func (m *Manager) GetCategoriesByIDs(ids []int) []*Category {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(categoriesByIDsSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(pq.Array(ids))
+	defer stmt.Close()
+	rows, err := stmt.Query(pq.Array(ids))
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategories(rows)
+	defer rows.Close()
+	categories, err := scanCategories(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return categories
 }
 
 func (m *Manager) GetCategoriesByNames(names []string) []*Category {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(categoriesByNamesSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(pq.Array(names))
+	defer stmt.Close()
+	rows, err := stmt.Query(pq.Array(names))
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanCategories(rows)
-}
-
-func (m *Manager) GetCategoriesByServiceID(serviceId int) []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoriesByServiceIDSql, serviceId)
+	defer rows.Close()
+	categories, err := scanCategories(rows)
 	if err != nil {
 		log.Printf("%v\n", err)
-	}
-	return scanCategories(rows)
-}
-
-func (m *Manager) GetCategoriesByResourceID(resourceId int) []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoriesByResourceIDSql, resourceId)
-	if err != nil {
-		log.Printf("%v\n", err)
-	}
-	return scanCategories(rows)
-}
-
-func scanCategories(rows *sql.Rows) []*Category {
-	var categories []*Category
-	for rows.Next() {
-		var category Category
-		err := rows.Scan(&category.Id, &category.Name, &category.TopLevel, &category.Featured)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		}
-		categories = append(categories, &category)
+		return nil
 	}
 	return categories
 }
 
-func scanCategory(row *sql.Row) *Category {
+func (m *Manager) GetCategoriesByServiceID(serviceId int) []*Category {
+	rows, err := m.DB.Query(categoriesByServiceIDSql, serviceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	defer rows.Close()
+	categories, err := scanCategories(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return categories
+}
+
+func (m *Manager) GetCategoriesByResourceID(resourceId int) []*Category {
+	rows, err := m.DB.Query(categoriesByResourceIDSql, resourceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	defer rows.Close()
+	categories, err := scanCategories(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return categories
+}
+
+func scanCategories(rows *sql.Rows) ([]*Category, error) {
+	var categories []*Category
+	for rows.Next() {
+		var category Category
+		err := rows.Scan(&category.Id, &category.Name, &category.TopLevel, &category.Featured)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		categories = append(categories, &category)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
+func scanCategory(row *sql.Row) (*Category, error) {
 	var category Category
 	err := row.Scan(&category.Id, &category.Name, &category.TopLevel, &category.Featured)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
-			return nil
+			return nil, nil
 		default:
-			panic(err)
+			return nil, err
 		}
 	}
-	return &category
+	return &category, nil
 }
 
-func scanCategoryCounts(rows *sql.Rows) []*CategoryCount {
+func scanCategoryCounts(rows *sql.Rows) ([]*CategoryCount, error) {
 	var counts []*CategoryCount
 	for rows.Next() {
 		var count CategoryCount
 		err := rows.Scan(&count.CategoryName, &count.Count)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
 		counts = append(counts, &count)
 	}
-	return counts
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return counts, nil
 }
