@@ -2,7 +2,7 @@ package users
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -23,7 +23,6 @@ func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
 	return manager
 }
 
-// Get the currently authenticated user
 func (m *Manager) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	dbUser, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
 	if err != nil {
@@ -38,12 +37,13 @@ func (m *Manager) GetCurrent(w http.ResponseWriter, r *http.Request) {
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("error marshaling response: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
+	if _, err = w.Write(output); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
 }

@@ -2,8 +2,7 @@ package folders
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -23,49 +22,40 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
-// Get lists folders for current user
-// (note - I don't have the user auth stuff here)
-//
-//	@Summary		Get Folders for current User
-//	@Description	get folders for user
-//	@Tags			folders
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{array}	folders.Folders
-//	@Router			/folders [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
 	if err != nil {
-		fmt.Println("error:", err)
-		writeStatus(w, http.StatusBadRequest)
+		log.Printf("error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	dbFolders := m.DbClient.GetFolders(userId)
+	dbFolders, err := m.DbClient.GetFolders(userId)
+	if err != nil {
+		log.Printf("error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	response := Folders{
 		Folders: FromDBTypeArray(dbFolders),
 	}
 	writeJson(w, response)
 }
 
-// Create folder for current user
-// (note - I don't have the user auth stuff here)
-//
-//	@Summary		Create Folder for current User
-//	@Description	new folder for user
-//	@Tags			folders
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	folders.Folder
-//	@Router			/folders [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error reading body: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	folder := &Folder{}
-	err := json.Unmarshal(body, folder)
+	err = json.Unmarshal(body, folder)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	dbFolder := &db.Folder{
@@ -77,67 +67,60 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	folderId, err := m.DbClient.CreateFolder(dbFolder)
 	if err != nil {
 		log.Print(err)
-		writeStatus(w, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	dbFolder = m.DbClient.GetFolderById(folderId)
+	dbFolder, err = m.DbClient.GetFolderById(folderId)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if dbFolder == nil {
 		// This really shouldn't happen, since we just created it.
-		writeStatus(w, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	writeStatus(w, http.StatusCreated)
+	w.WriteHeader(http.StatusCreated)
 	writeJson(w, FromDBType(dbFolder))
 }
 
-// Get folder by ID
-// (note - I don't have the user auth stuff here)
-//
-//	@Summary		Get folder by ID
-//	@Description	get current folder for user
-//	@Tags			folders
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	folders.Folder
-//	@Router			/folders/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
-		writeStatus(w, http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
-
 	}
-	dbFolder := m.DbClient.GetFolderById(folderId)
+	dbFolder, err := m.DbClient.GetFolderById(folderId)
+	if err != nil {
+		log.Printf("%v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if dbFolder == nil {
-		writeStatus(w, http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
 	} else {
 		writeJson(w, FromDBType(dbFolder))
 	}
 }
 
-// Update folder by ID
-// not done
-
-// (note - I don't have the user auth stuff here)
-//
-//	@Summary		Update folder by ID
-//	@Description	update a folder for user
-//	@Tags			folders
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	folders.Folder
-//	@Router			/folders/{id} [put]
 func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error reading body: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	folder := &Folder{}
-	err := json.Unmarshal(body, folder)
+	err = json.Unmarshal(body, folder)
 	if err != nil {
-		writeStatus(w, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	dBFolder := &db.Folder{
@@ -149,50 +132,40 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	err = m.DbClient.UpdateFolder(dBFolder)
 	if err != nil {
 		log.Print(err)
-		writeStatus(w, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	writeStatus(w, http.StatusCreated)
+	w.WriteHeader(http.StatusCreated)
 }
 
-// Delete folder by ID
-// not done
-// (note - I don't have the user auth stuff here)
-//
-//	@Summary		Delete folder by ID
-//	@Description	delete a folder for user
-//	@Tags			folders
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	folders.Folder
-//	@Router			/folders/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	err = m.DbClient.DeleteFolderById(folderId)
 	if err != nil {
 		log.Print(err)
-		writeStatus(w, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	writeStatus(w, http.StatusNoContent)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("error marshaling response: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
+	if _, err = w.Write(output); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
-}
-
-func writeStatus(w http.ResponseWriter, responseStatus int) {
-	w.WriteHeader(responseStatus)
 }

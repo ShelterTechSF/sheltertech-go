@@ -2,7 +2,10 @@ package resources
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
@@ -11,9 +14,6 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
-	"log"
-	"net/http"
-	"strconv"
 )
 
 type Manager struct {
@@ -27,22 +27,20 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
-// GetByID Get a resource by ID
-//
-//	@Summary		Get Resource
-//	@Description	gets a single service by resource ID
-//	@Tags			resources
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{array}	resources.Resource
-//	@Router			/resources/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	resourceId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "invalid resource ID")
+		return
 	}
-	dbService := m.DbClient.GetResourceById(resourceId)
-	response := FromDBType(dbService)
+	dbResource, err := m.DbClient.GetResourceById(resourceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	response := FromDBType(dbResource)
 	response.Schedule = schedules.FromDBType(m.DbClient.GetScheduleByResourceId(resourceId))
 	response.Categories = categories.FromDBTypeArray(m.DbClient.GetCategoriesByResourceID(resourceId))
 	response.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByResourceID(resourceId))
@@ -60,23 +58,24 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	count, err := m.DbClient.GetResourcesCount()
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(strconv.Itoa(count)))
-	if err != nil {
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	if _, err = w.Write([]byte(strconv.Itoa(count))); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("error marshaling response: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
+	if _, err = w.Write(output); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
 }
