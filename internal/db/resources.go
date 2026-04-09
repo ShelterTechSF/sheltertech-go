@@ -40,7 +40,7 @@ FROM public.resources
 WHERE status = 1
 `
 
-func (m *Manager) GetResourceById(resourceId int) *Resource {
+func (m *Manager) GetResourceById(resourceId int) (*Resource, error) {
 	row := m.DB.QueryRow(resourceByIDSql, resourceId)
 	return scanResource(row)
 }
@@ -53,20 +53,19 @@ func (m *Manager) GetResourcesCount() (int, error) {
 		return 0, err
 	}
 	return count, nil
-
 }
 
-func scanResource(row *sql.Row) *Resource {
+func scanResource(row *sql.Row) (*Resource, error) {
 	var resource Resource
 	err := row.Scan(&resource.Id, &resource.Name, &resource.ShortDescription, &resource.LongDescription, &resource.Website, &resource.VerifiedAt, &resource.Email, &resource.Status, &resource.Certified, &resource.AlternateName, &resource.LegalStatus, &resource.ContactId, &resource.FundingId, &resource.CertifiedAt, &resource.Featured, &resource.SourceAttribution, &resource.InternalNote, &resource.UpdatedAt)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
-			return nil
+			return nil, nil
 		default:
-			panic(err)
+			return nil, err
 		}
 	}
-	return &resource
+	return &resource, nil
 }
