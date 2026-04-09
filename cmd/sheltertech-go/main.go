@@ -31,27 +31,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-//	@title			Swagger Example API
-//	@version		1.0
-//	@description	This is a sample server celler server.
-//	@termsOfService	http://swagger.io/terms/
-
-//	@contact.name	API Support
-//	@contact.url	http://www.swagger.io/support
-//	@contact.email	support@swagger.io
-
-//	@license.name	Apache 2.0
-//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
-
-//	@host		localhost:8080
-//	@BasePath	/api/v1
-
-//	@securityDefinitions.basic	BasicAuth
-
-// @externalDocs.description	OpenAPI
-// @externalDocs.url			https://swagger.io/resources/open-api/
 func main() {
-
 	viper.AutomaticEnv()
 	dbUser := viper.GetString("DB_USER")
 	dbHost := viper.GetString("DB_HOST")
@@ -87,12 +67,10 @@ func main() {
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
 
+	sentryDsn := viper.GetString("SENTRY_DSN")
 	if err := sentry.Init(sentry.ClientOptions{
-		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
-		EnableTracing: true,
-		// Set TracesSampleRate to 1.0 to capture 100%
-		// of transactions for performance monitoring.
-		// We recommend adjusting this value in production,
+		Dsn:              sentryDsn,
+		EnableTracing:    true,
 		TracesSampleRate: 1.0,
 	}); err != nil {
 		fmt.Printf("Sentry initialization failed: %v", err)
@@ -130,7 +108,6 @@ func main() {
 		r.Get("/api/saved_searches", savedSearchesManager.Get)
 		r.Post("/api/saved_searches", savedSearchesManager.Post)
 		r.Get("/api/saved_searches/{id}", savedSearchesManager.GetByID)
-		// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
 		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
 
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
@@ -168,11 +145,10 @@ func main() {
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 	})
 
-	http.ListenAndServe(":3001", r)
+	log.Fatal(http.ListenAndServe(":3001", r))
 }
 
 func setIntegrationTestEnv() {
-	// Only set defaults if environment variables are not already set
 	if !viper.IsSet("DB_USER") {
 		viper.SetDefault("DB_USER", "postgres")
 	}
