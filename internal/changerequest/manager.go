@@ -2,8 +2,8 @@ package changerequest
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -53,6 +53,7 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		formatted, err := formatPhoneNumber(*phoneFields.Number)
 		if err != nil {
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return // Fix: must return after writing error response
 		}
 		fieldChangesMap["number"] = formatted
 		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
@@ -84,8 +85,8 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	w.WriteHeader(http.StatusCreated)
 	writeJson(w, response)
-	writeStatus(w, http.StatusCreated)
 }
 
 func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
@@ -134,8 +135,8 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 		},
 	}
 
+	w.WriteHeader(http.StatusCreated)
 	writeJson(w, response)
-	writeStatus(w, http.StatusCreated)
 }
 
 func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
@@ -144,43 +145,40 @@ func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) P
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 	}
-
 	return *phoneFields
 }
 
 func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {
-	body, _ := io.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "failed to read request body")
+		return ChangeRequestPayload{}
+	}
 	changeRequestPayload := &ChangeRequestPayload{}
-	err := json.Unmarshal(body, changeRequestPayload)
+	err = json.Unmarshal(body, changeRequestPayload)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 	}
-
 	return *changeRequestPayload
 }
 
 func formatPhoneNumber(number string) (string, error) {
 	parsed, err := phonenumbers.Parse(strings.TrimSpace(number), "US")
-
 	if err != nil {
 		return "", err
 	}
-
 	return phonenumbers.Format(parsed, phonenumbers.E164), nil
-}
-
-func writeStatus(w http.ResponseWriter, responseStatus int) {
-	w.WriteHeader(responseStatus)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("error marshaling response: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
+	if _, err = w.Write(output); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
 }
