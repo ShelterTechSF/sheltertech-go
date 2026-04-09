@@ -2,7 +2,6 @@ package categories
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -24,15 +23,6 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
-// Get lists all existing categories
-//
-//	@Summary		Get Categories
-//	@Description	get all categories
-//	@Tags			categories
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{array}	categories.Categories
-//	@Router			/categories [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	topLevelString := r.URL.Query().Get("top_level")
 	var topLevel *bool
@@ -51,13 +41,10 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
-	// Get all categories first
 	allCategories := m.DbClient.GetCategories(nil)
 
-	// Create a map to store service and resource counts
 	countsMap := make(map[string]CategoryCountDTO)
 
-	// Initialize all categories with 0 counts
 	for _, category := range allCategories {
 		countsMap[category.Name] = CategoryCountDTO{
 			Name:      category.Name,
@@ -66,7 +53,6 @@ func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 
-	// Add service counts
 	serviceCounts := m.DbClient.GetCategoryServiceCounts()
 	for _, serviceCount := range serviceCounts {
 		if dto, exists := countsMap[serviceCount.CategoryName]; exists {
@@ -75,7 +61,6 @@ func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 
-	// Add resource counts
 	resourceCounts := m.DbClient.GetCategoryResourceCounts()
 	for _, resourceCount := range resourceCounts {
 		if dto, exists := countsMap[resourceCount.CategoryName]; exists {
@@ -84,13 +69,11 @@ func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 
-	// Convert to array and sort by name (alphabetical order)
 	var response []CategoryCountDTO
 	for _, dto := range countsMap {
 		response = append(response, dto)
 	}
 
-	// Sort by name to match Rails API order
 	sort.Slice(response, func(i, j int) bool {
 		return response[i].Name < response[j].Name
 	})
@@ -103,7 +86,12 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("%v", err)
 	}
-	dbCategory := m.DbClient.GetCategoryByID(categoryId)
+	dbCategory, err := m.DbClient.GetCategoryByID(categoryId)
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	writeJson(w, FromDBType(dbCategory))
 }
 
@@ -130,12 +118,13 @@ func (m *Manager) GetByFeatured(w http.ResponseWriter, _ *http.Request) {
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Printf("error marshaling response: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
+	if _, err = w.Write(output); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
 }
