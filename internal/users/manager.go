@@ -111,13 +111,11 @@ func (m *Manager) SaveUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) reconcileUser(existingUser *db.User, request SaveUserRequest, subject string) error {
-	updatedUser := &db.User{
-		Id:             existingUser.Id,
-		Name:           normalizeOptionalField(request.Name, existingUser.Name),
-		Organization:   normalizeOptionalField(request.Organization, existingUser.Organization),
-		UserExternalId: subject,
-		Email:          strings.TrimSpace(request.Email),
-	}
+	updatedUser := *existingUser
+	updatedUser.Name = normalizeOptionalField(request.Name, existingUser.Name)
+	updatedUser.Organization = normalizeOptionalField(request.Organization, existingUser.Organization)
+	updatedUser.UserExternalId = subject
+	updatedUser.Email = strings.TrimSpace(request.Email)
 
 	if updatedUser.Name == existingUser.Name &&
 		updatedUser.Organization == existingUser.Organization &&
@@ -126,7 +124,7 @@ func (m *Manager) reconcileUser(existingUser *db.User, request SaveUserRequest, 
 		return nil
 	}
 
-	return m.DbClient.UpdateUser(updatedUser)
+	return m.DbClient.UpdateUser(&updatedUser)
 }
 
 func normalizeOptionalField(value *string, existing string) string {
