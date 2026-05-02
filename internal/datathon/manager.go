@@ -23,6 +23,8 @@ func New(dbManager *db.Manager) *Manager {
 //	@Summary		Get Content Curation Dataset
 //	@Description	gives a csv of the content curation dataset
 //	@Tags			datathon
+//	@Produce		text/csv
+//	@Success		200	{string}	string	"CSV data"
 //	@Router			/datathon/content_curation_dataset [get]
 func (m *Manager) GetContentCurationDataset(w http.ResponseWriter, r *http.Request) {
 	dbContentCurationData := m.DbClient.GetContentCurationData()
@@ -34,6 +36,8 @@ func (m *Manager) GetContentCurationDataset(w http.ResponseWriter, r *http.Reque
 //	@Summary		Get Datathon Dataset
 //	@Description	gives a csv of the datathon dataset
 //	@Tags			datathon
+//	@Produce		text/csv
+//	@Success		200	{string}	string	"CSV data"
 //	@Router			/datathon/datathon_dataset [get]
 func (m *Manager) GetDatathonDataset(w http.ResponseWriter, r *http.Request) {
 	dbContentCurationData := m.DbClient.GetDatathonData()

@@ -31,7 +31,9 @@ func New(dbManager *db.Manager) *Manager {
 //	@Tags			folders
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	folders.Folders
+//	@Param			user_id	query		int	true	"User ID"
+//	@Success		200		{object}	folders.Folders
+//	@Failure		400
 //	@Router			/folders [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
@@ -56,7 +58,10 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Tags			folders
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	folders.Folder
+//	@Param			folder	body		folders.Folder	true	"Folder object"
+//	@Success		201		{object}	folders.Folder
+//	@Failure		400
+//	@Failure		500
 //	@Router			/folders [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -100,7 +105,10 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 //	@Tags			folders
 //	@Accept			json
 //	@Produce		json
+//	@Param			id	path		int	true	"Folder ID"
 //	@Success		200	{object}	folders.Folder
+//	@Failure		400
+//	@Failure		404
 //	@Router			/folders/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -128,7 +136,11 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Tags			folders
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	folders.Folder
+//	@Param			id		path	int				true	"Folder ID"
+//	@Param			folder	body	folders.Folder	true	"Folder object"
+//	@Success		201
+//	@Failure		400
+//	@Failure		500
 //	@Router			/folders/{id} [put]
 func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -163,8 +175,10 @@ func (m *Manager) Put(w http.ResponseWriter, r *http.Request) {
 //	@Description	delete a folder for user
 //	@Tags			folders
 //	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	folders.Folder
+//	@Param			id	path	int	true	"Folder ID"
+//	@Success		204
+//	@Failure		400
+//	@Failure		500
 //	@Router			/folders/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 	folderId, err := strconv.Atoi(chi.URLParam(r, "id"))

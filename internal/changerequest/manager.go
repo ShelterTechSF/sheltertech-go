@@ -25,6 +25,18 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
+// Create creates a new change request
+//
+//	@Summary		Create Change Request
+//	@Description	create a new change request (e.g. for phones)
+//	@Tags			change_requests
+//	@Accept			json
+//	@Produce		json
+//	@Param			change_request	body		changerequest.ChangeRequestPayload	true	"Change request payload"
+//	@Success		201				{object}	changerequest.PhoneChangeRequest
+//	@Failure		400				{object}	common.Error
+//	@Failure		500				{object}	common.Error
+//	@Router			/change_requests [post]
 func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	changeRequestPayload := unmarshalPayload(w, r)
@@ -35,6 +47,19 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdatePhone updates a phone via a change request
+//
+//	@Summary		Update Phone Change Request
+//	@Description	create a change request to update phone fields
+//	@Tags			change_requests
+//	@Accept			json
+//	@Produce		json
+//	@Param			id				path		int									true	"Phone ID"
+//	@Param			change_request	body		changerequest.ChangeRequestPayload	true	"Change request payload"
+//	@Success		201				{object}	changerequest.PhoneChangeRequest
+//	@Failure		400				{object}	common.Error
+//	@Failure		500				{object}	common.Error
+//	@Router			/phones/{id}/change_requests [post]
 func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	changeRequestPayload := unmarshalPayload(w, r)

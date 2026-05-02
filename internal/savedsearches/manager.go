@@ -33,7 +33,9 @@ func New(dbManager *db.Manager) *Manager {
 //	@Tags			saved_searches
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	savedsearches.SavedSearches
+//	@Param			user_id	query		int	true	"User ID"
+//	@Success		200		{object}	savedsearches.SavedSearches
+//	@Failure		400
 //	@Router			/saved_searches [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(r.URL.Query().Get("user_id"))
@@ -70,7 +72,10 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 //	@Tags			saved_searches
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	savedsearches.SavedSearch
+//	@Param			saved_search	body		savedsearches.SavedSearch	true	"Saved search object"
+//	@Success		201				{object}	savedsearches.SavedSearch
+//	@Failure		400
+//	@Failure		500
 //	@Router			/saved_searches [post]
 func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -167,13 +172,15 @@ func (m *Manager) Post(w http.ResponseWriter, r *http.Request) {
 // Get saved searches for current user
 // (note - I don't have the user auth stuff here)
 //
-//	@Summary		Get Saved Search for current User
-//	@Description	get saved searches for user
+//	@Summary		Get Saved Search by ID
+//	@Description	get a saved search by its ID
 //	@Tags			saved_searches
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	savedsearches.SavedSearch
-//	@Router			/saved_searches [get]
+//	@Param			id	path		int	true	"Saved Search ID"
+//	@Success		200	{object}	savedsearches.SavedSearch
+//	@Failure		400
+//	@Router			/saved_searches/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	savedSearchId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -210,8 +217,9 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 //	@Description	delete a saved search for user
 //	@Tags			saved_searches
 //	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	savedsearches.SavedSearch
+//	@Param			id	path	int	true	"Saved Search ID"
+//	@Success		200
+//	@Failure		500
 //	@Router			/saved_searches/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))

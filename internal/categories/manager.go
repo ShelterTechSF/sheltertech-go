@@ -31,7 +31,8 @@ func New(dbManager *db.Manager) *Manager {
 //	@Tags			categories
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	categories.Categories
+//	@Param			top_level	query		bool	false	"Filter to top-level categories only"
+//	@Success		200			{object}	categories.Categories
 //	@Router			/categories [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	topLevelString := r.URL.Query().Get("top_level")
@@ -50,6 +51,14 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
+// GetCategoryCounts returns service and resource counts per category
+//
+//	@Summary		Get Category Counts
+//	@Description	get service and resource counts for each category
+//	@Tags			categories
+//	@Produce		json
+//	@Success		200	{array}	categories.CategoryCountDTO
+//	@Router			/categories/counts [get]
 func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
 	// Get all categories first
 	allCategories := m.DbClient.GetCategories(nil)
@@ -98,6 +107,15 @@ func (m *Manager) GetCategoryCounts(w http.ResponseWriter, _ *http.Request) {
 	writeJson(w, response)
 }
 
+// GetByID gets a category by ID
+//
+//	@Summary		Get Category by ID
+//	@Description	get a single category by its ID
+//	@Tags			categories
+//	@Produce		json
+//	@Param			id	path		int	true	"Category ID"
+//	@Success		200	{object}	categories.Category
+//	@Router			/categories/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	categoryId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -107,6 +125,15 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, FromDBType(dbCategory))
 }
 
+// GetSubCategoriesByID gets subcategories of a category
+//
+//	@Summary		Get Subcategories by Category ID
+//	@Description	get subcategories for a given parent category ID
+//	@Tags			categories
+//	@Produce		json
+//	@Param			id	path		int	true	"Parent Category ID"
+//	@Success		200	{object}	categories.Categories
+//	@Router			/categories/subcategories/{id} [get]
 func (m *Manager) GetSubCategoriesByID(w http.ResponseWriter, r *http.Request) {
 	categoryId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -119,6 +146,14 @@ func (m *Manager) GetSubCategoriesByID(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
+// GetByFeatured gets featured categories
+//
+//	@Summary		Get Featured Categories
+//	@Description	get all featured categories
+//	@Tags			categories
+//	@Produce		json
+//	@Success		200	{object}	categories.Categories
+//	@Router			/categories/featured [get]
 func (m *Manager) GetByFeatured(w http.ResponseWriter, _ *http.Request) {
 	dbCategories := m.DbClient.GetCategoriesByFeatured()
 	response := Categories{

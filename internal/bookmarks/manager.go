@@ -24,6 +24,18 @@ func New(dbManager *db.Manager) *Manager {
 	return manager
 }
 
+// Get lists all bookmarks, optionally filtered by user_id
+//
+//	@Summary		Get Bookmarks
+//	@Description	get all bookmarks, optionally filtered by user_id
+//	@Tags			bookmarks
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	query		int	false	"Filter by user ID"
+//	@Success		200		{object}	bookmarks.Bookmarks
+//	@Failure		400		{object}	common.Error
+//	@Failure		500		{object}	common.Error
+//	@Router			/bookmarks [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 
 	var dbBookmarks []*db.Bookmark
@@ -58,6 +70,18 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
+// GetByID gets a bookmark by ID
+//
+//	@Summary		Get Bookmark by ID
+//	@Description	get a single bookmark by its ID
+//	@Tags			bookmarks
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Bookmark ID"
+//	@Success		200	{object}	bookmarks.Bookmark
+//	@Failure		400	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/bookmarks/{id} [get]
 func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -79,6 +103,18 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
+// Submit creates a new bookmark
+//
+//	@Summary		Create Bookmark
+//	@Description	create a new bookmark
+//	@Tags			bookmarks
+//	@Accept			json
+//	@Produce		json
+//	@Param			bookmark	body	bookmarks.Bookmark	true	"Bookmark object"
+//	@Success		201
+//	@Failure		400	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/bookmarks [post]
 func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
@@ -111,6 +147,19 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 	writeStatus(w, http.StatusCreated)
 }
 
+// Update updates an existing bookmark
+//
+//	@Summary		Update Bookmark
+//	@Description	update an existing bookmark by ID
+//	@Tags			bookmarks
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path	int					true	"Bookmark ID"
+//	@Param			bookmark	body	bookmarks.Bookmark	true	"Bookmark object"
+//	@Success		201
+//	@Failure		400	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/bookmarks/{id} [put]
 func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
@@ -145,6 +194,16 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// DeleteByID deletes a bookmark by ID
+//
+//	@Summary		Delete Bookmark
+//	@Description	delete a bookmark by its ID
+//	@Tags			bookmarks
+//	@Accept			json
+//	@Param			id	path		int	true	"Bookmark ID"
+//	@Success		204
+//	@Failure		400	{object}	common.Error
+//	@Router			/bookmarks/{id} [delete]
 func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 
 	bookmarkId, err := strconv.Atoi(chi.URLParam(r, "id"))

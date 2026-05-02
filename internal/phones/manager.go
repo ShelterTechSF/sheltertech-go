@@ -22,13 +22,16 @@ func New(dbManager *db.Manager) *Manager {
 
 // Deletes a phones table row given its id
 //
-//	@Summary		Delete Phones
-//	@Description	delete a phones row given its id
+//	@Summary		Delete Phone
+//	@Description	delete a phone record by its ID
 //	@Tags			phones
 //	@Accept			json
-//	@Produce		None
-//	@Success		204 No Content
-//	@Router			/phones [delete]
+//	@Param			id	path	int	true	"Phone ID"
+//	@Success		204
+//	@Failure		400
+//	@Failure		404
+//	@Failure		500
+//	@Router			/phones/{id} [delete]
 func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)

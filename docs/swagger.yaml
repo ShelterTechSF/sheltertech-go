@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /api
 definitions:
   addresses.Address:
     properties:
@@ -27,6 +27,30 @@ definitions:
       state_province:
         type: string
     type: object
+  bookmarks.Bookmark:
+    properties:
+      folder_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      order:
+        type: integer
+      resource_id:
+        type: integer
+      service_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  bookmarks.Bookmarks:
+    properties:
+      bookmarks:
+        items:
+          $ref: '#/definitions/bookmarks.Bookmark'
+        type: array
+    type: object
   categories.Categories:
     properties:
       categories:
@@ -44,6 +68,51 @@ definitions:
         type: string
       top_level:
         type: boolean
+    type: object
+  categories.CategoryCountDTO:
+    properties:
+      name:
+        type: string
+      resources:
+        type: integer
+      services:
+        type: integer
+    type: object
+  changerequest.ChangeRequestPayload:
+    type: object
+  changerequest.ChangeRequestResponse:
+    properties:
+      field_changes:
+        items:
+          $ref: '#/definitions/changerequest.FieldChange'
+        type: array
+      id:
+        type: integer
+      object_id:
+        type: integer
+      status:
+        type: string
+      type:
+        type: string
+    type: object
+  changerequest.FieldChange:
+    properties:
+      field_name:
+        type: string
+      field_value:
+        type: string
+    type: object
+  changerequest.PhoneChangeRequest:
+    properties:
+      phone_change_request:
+        $ref: '#/definitions/changerequest.ChangeRequestResponse'
+    type: object
+  common.Error:
+    properties:
+      error:
+        type: string
+      status_code:
+        type: integer
     type: object
   documents.Document:
     properties:
@@ -88,6 +157,53 @@ definitions:
       id:
         type: integer
       instruction:
+        type: string
+    type: object
+  newsarticles.NewsArticle:
+    properties:
+      body:
+        type: string
+      effective_date:
+        type: string
+      expiration_date:
+        type: string
+      headline:
+        type: string
+      id:
+        type: integer
+      priority:
+        type: integer
+      url:
+        type: string
+    type: object
+  newsarticles.NewsArticleCreateRequest:
+    properties:
+      body:
+        type: string
+      effective_date:
+        type: string
+      expiration_date:
+        type: string
+      headline:
+        type: string
+      priority:
+        type: integer
+      url:
+        type: string
+    type: object
+  newsarticles.NewsArticleUpdateRequest:
+    properties:
+      body:
+        type: string
+      effective_date:
+        type: string
+      expiration_date:
+        type: string
+      headline:
+        type: string
+      priority:
+        type: integer
+      url:
         type: string
     type: object
   notes.Note:
@@ -177,6 +293,11 @@ definitions:
         type: string
       website:
         type: string
+    type: object
+  resources.ResourceResponse:
+    properties:
+      resource:
+        $ref: '#/definitions/resources.Resource'
     type: object
   resources.ResourceService:
     properties:
@@ -389,28 +510,212 @@ definitions:
       wait_time:
         type: string
     type: object
-externalDocs:
-  description: OpenAPI
-  url: https://swagger.io/resources/open-api/
-host: localhost:8080
+  services.ServiceResponse:
+    properties:
+      service:
+        $ref: '#/definitions/services.Service'
+    type: object
+  users.ApiError:
+    properties:
+      error:
+        type: string
+    type: object
+  users.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      organization:
+        type: string
+    type: object
+host: localhost:3001
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: This is a sample server celler server.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Swagger Example API
+  contact: {}
+  description: API for the ShelterTech SF Service Guide application.
+  title: ShelterTech API
   version: "1.0"
 paths:
+  /bookmarks:
+    get:
+      consumes:
+      - application/json
+      description: get all bookmarks, optionally filtered by user_id
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bookmarks.Bookmarks'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Get Bookmarks
+      tags:
+      - bookmarks
+    post:
+      consumes:
+      - application/json
+      description: create a new bookmark
+      parameters:
+      - description: Bookmark object
+        in: body
+        name: bookmark
+        required: true
+        schema:
+          $ref: '#/definitions/bookmarks.Bookmark'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Create Bookmark
+      tags:
+      - bookmarks
+  /bookmarks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete a bookmark by its ID
+      parameters:
+      - description: Bookmark ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Delete Bookmark
+      tags:
+      - bookmarks
+    get:
+      consumes:
+      - application/json
+      description: get a single bookmark by its ID
+      parameters:
+      - description: Bookmark ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bookmarks.Bookmark'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Get Bookmark by ID
+      tags:
+      - bookmarks
+    put:
+      consumes:
+      - application/json
+      description: update an existing bookmark by ID
+      parameters:
+      - description: Bookmark ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Bookmark object
+        in: body
+        name: bookmark
+        required: true
+        schema:
+          $ref: '#/definitions/bookmarks.Bookmark'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Update Bookmark
+      tags:
+      - bookmarks
   /categories:
     get:
       consumes:
       - application/json
       description: get all categories
+      parameters:
+      - description: Filter to top-level categories only
+        in: query
+        name: top_level
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/categories.Categories'
+      summary: Get Categories
+      tags:
+      - categories
+  /categories/{id}:
+    get:
+      description: get a single category by its ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/categories.Category'
+      summary: Get Category by ID
+      tags:
+      - categories
+  /categories/counts:
+    get:
+      description: get service and resource counts for each category
       produces:
       - application/json
       responses:
@@ -418,22 +723,96 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/categories.Categories'
+              $ref: '#/definitions/categories.CategoryCountDTO'
             type: array
-      summary: Get Categories
+      summary: Get Category Counts
       tags:
       - categories
+  /categories/featured:
+    get:
+      description: get all featured categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/categories.Categories'
+      summary: Get Featured Categories
+      tags:
+      - categories
+  /categories/subcategories/{id}:
+    get:
+      description: get subcategories for a given parent category ID
+      parameters:
+      - description: Parent Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/categories.Categories'
+      summary: Get Subcategories by Category ID
+      tags:
+      - categories
+  /change_requests:
+    post:
+      consumes:
+      - application/json
+      description: create a new change request (e.g. for phones)
+      parameters:
+      - description: Change request payload
+        in: body
+        name: change_request
+        required: true
+        schema:
+          $ref: '#/definitions/changerequest.ChangeRequestPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/changerequest.PhoneChangeRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Create Change Request
+      tags:
+      - change_requests
   /datathon/content_curation_dataset:
     get:
       description: gives a csv of the content curation dataset
-      responses: {}
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: CSV data
+          schema:
+            type: string
       summary: Get Content Curation Dataset
       tags:
       - datathon
   /datathon/datathon_dataset:
     get:
       description: gives a csv of the datathon dataset
-      responses: {}
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: CSV data
+          schema:
+            type: string
       summary: Get Datathon Dataset
       tags:
       - datathon
@@ -567,15 +946,21 @@ paths:
       consumes:
       - application/json
       description: get folders for user
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/folders.Folders'
-            type: array
+            $ref: '#/definitions/folders.Folders'
+        "400":
+          description: Bad Request
       summary: Get Folders for current User
       tags:
       - folders
@@ -583,13 +968,24 @@ paths:
       consumes:
       - application/json
       description: new folder for user
+      parameters:
+      - description: Folder object
+        in: body
+        name: folder
+        required: true
+        schema:
+          $ref: '#/definitions/folders.Folder'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/folders.Folder'
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
       summary: Create Folder for current User
       tags:
       - folders
@@ -598,13 +994,19 @@ paths:
       consumes:
       - application/json
       description: delete a folder for user
-      produces:
-      - application/json
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/folders.Folder'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
       summary: Delete folder by ID
       tags:
       - folders
@@ -612,6 +1014,12 @@ paths:
       consumes:
       - application/json
       description: get current folder for user
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -619,6 +1027,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/folders.Folder'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
       summary: Get folder by ID
       tags:
       - folders
@@ -626,21 +1038,39 @@ paths:
       consumes:
       - application/json
       description: update a folder for user
+      parameters:
+      - description: Folder ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Folder object
+        in: body
+        name: folder
+        required: true
+        schema:
+          $ref: '#/definitions/folders.Folder'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/folders.Folder'
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
       summary: Update folder by ID
       tags:
       - folders
-  /resources/{id}:
+  /news_articles:
     get:
-      consumes:
-      - application/json
-      description: gets a single service by resource ID
+      description: Get all news articles with optional filtering for active articles
+        only
+      parameters:
+      - description: Filter for active news articles only
+        in: query
+        name: active
+        type: boolean
       produces:
       - application/json
       responses:
@@ -648,9 +1078,193 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/resources.Resource'
+              $ref: '#/definitions/newsarticles.NewsArticle'
             type: array
+      summary: Get News Articles
+      tags:
+      - news_articles
+    post:
+      consumes:
+      - application/json
+      description: Create a new news article
+      parameters:
+      - description: News article data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/newsarticles.NewsArticleCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/newsarticles.NewsArticle'
+        "400":
+          description: Invalid request body
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Create News Article
+      tags:
+      - news_articles
+  /news_articles/{id}:
+    delete:
+      description: Delete an existing news article
+      parameters:
+      - description: News Article ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Empty response on success
+          schema:
+            type: object
+        "400":
+          description: Invalid news article ID format
+          schema: {}
+        "404":
+          description: News article not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Delete News Article
+      tags:
+      - news_articles
+    put:
+      consumes:
+      - application/json
+      description: Update an existing news article
+      parameters:
+      - description: News Article ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: News article update data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/newsarticles.NewsArticleUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/newsarticles.NewsArticle'
+        "400":
+          description: Invalid request body
+          schema: {}
+        "404":
+          description: News article not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Update News Article
+      tags:
+      - news_articles
+  /phones/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete a phone record by its ID
+      parameters:
+      - description: Phone ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Delete Phone
+      tags:
+      - phones
+  /phones/{id}/change_requests:
+    post:
+      consumes:
+      - application/json
+      description: create a change request to update phone fields
+      parameters:
+      - description: Phone ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Change request payload
+        in: body
+        name: change_request
+        required: true
+        schema:
+          $ref: '#/definitions/changerequest.ChangeRequestPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/changerequest.PhoneChangeRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Update Phone Change Request
+      tags:
+      - change_requests
+  /resources/{id}:
+    get:
+      consumes:
+      - application/json
+      description: gets a single resource by resource ID
+      parameters:
+      - description: Resource ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/resources.ResourceResponse'
       summary: Get Resource
+      tags:
+      - resources
+  /resources/count:
+    get:
+      description: get the total count of resources
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Resource count
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Get Resource Count
       tags:
       - resources
   /saved_searches:
@@ -658,29 +1272,46 @@ paths:
       consumes:
       - application/json
       description: get saved searches for user
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/savedsearches.SavedSearch'
-            type: array
-      summary: Get Saved Search for current User
+            $ref: '#/definitions/savedsearches.SavedSearches'
+        "400":
+          description: Bad Request
+      summary: Get Saved Searches for current User
       tags:
       - saved_searches
     post:
       consumes:
       - application/json
       description: new saved search for user
+      parameters:
+      - description: Saved search object
+        in: body
+        name: saved_search
+        required: true
+        schema:
+          $ref: '#/definitions/savedsearches.SavedSearch'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/savedsearches.SavedSearch'
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
       summary: Create SavedSearch for current User
       tags:
       - saved_searches
@@ -689,6 +1320,30 @@ paths:
       consumes:
       - application/json
       description: delete a saved search for user
+      parameters:
+      - description: Saved Search ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: Delete saved search by ID
+      tags:
+      - saved_searches
+    get:
+      consumes:
+      - application/json
+      description: get a saved search by its ID
+      parameters:
+      - description: Saved Search ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -696,7 +1351,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/savedsearches.SavedSearch'
-      summary: Delete saved search by ID
+        "400":
+          description: Bad Request
+      summary: Get Saved Search by ID
       tags:
       - saved_searches
   /services/{id}:
@@ -704,19 +1361,76 @@ paths:
       consumes:
       - application/json
       description: gets a single service by service ID
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/services.Service'
-            type: array
+            $ref: '#/definitions/services.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
       summary: Get Service
       tags:
       - services
-securityDefinitions:
-  BasicAuth:
-    type: basic
+  /services/html_to_pdf:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Converts HTML to PDF, with optional translation
+      parameters:
+      - description: HTML content to convert
+        in: formData
+        name: html
+        required: true
+        type: string
+      - description: Target language for translation
+        in: formData
+        name: target_language
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: Generated PDF
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/common.Error'
+      summary: Convert HTML to PDF
+      tags:
+      - services
+  /users/current:
+    get:
+      consumes:
+      - application/json
+      description: get the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/users.ApiError'
+      summary: Get Current User
+      tags:
+      - users
 swagger: "2.0"
