@@ -133,11 +133,6 @@ func main() {
 		// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
 		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
 
-		r.Delete("/api/phones/{id}", phonesManager.Delete)
-		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
-
-		r.Post("/api/change_requests", changeRequestManager.Create)
-
 		r.Post("/api/users", usersManager.SaveUser)
 	})
 
@@ -168,6 +163,10 @@ func main() {
 		r.Put("/api/eligibilities/{id}", eligibilityManager.UpdateEligibilityById)
 		r.Get("/api/eligibilities/featured", eligibilityManager.GetFeaturedEligibilities)
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
+
+		r.Delete("/api/phones/{id}", phonesManager.Delete)
+		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
+		r.Post("/api/change_requests", changeRequestManager.Create)
 	})
 
 	http.ListenAndServe(":3001", r)
