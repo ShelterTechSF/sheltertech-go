@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -156,6 +158,64 @@ func TestManager_ConvertHtmlToPdf(t *testing.T) {
 		})
 	}
 }
+
+func TestManager_GetCount(t *testing.T) {
+	const serviceCountQuery = `SELECT count(1)
+FROM public.services`
+
+	tests := []struct {
+		name           string
+		setupMock      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "returns service count",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceCountQuery)).
+					WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(42))
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   "42",
+		},
+		{
+			name: "returns internal server error when count query fails",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceCountQuery)).
+					WillReturnError(errors.New("database unavailable"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"error":"Internal Server Error","status_code":500}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sqlDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer sqlDB.Close()
+
+			tt.setupMock(mock)
+
+			manager := NewWithDependencies(
+				&db.Manager{DB: sqlDB},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			req := httptest.NewRequest(http.MethodGet, "/api/services/count", nil)
+			w := httptest.NewRecorder()
+
+			manager.GetCount(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedBody, w.Body.String())
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestManager_processHTML_ErrorHandling(t *testing.T) {
 	tests := []struct {
 		name                string

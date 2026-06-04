@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,22 @@ func init() {
 }
 
 const serviceUrl = "http://localhost:3001/api/services"
+
+func TestGetServicesCount(t *testing.T) {
+	res, err := http.Get(serviceUrl + "/count")
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	body, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	count, err := strconv.Atoi(string(body))
+	require.NoError(t, err)
+
+	assert.Greater(t, count, 1, "service count should include seeded services")
+}
 
 func TestGetServiceByID(t *testing.T) {
 	serviceId := 1

@@ -48,9 +48,24 @@ FROM public.services
 WHERE resource_id = $1 and status = 1
 `
 
+const serviceCountSql = `
+SELECT count(1)
+FROM public.services
+`
+
 func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)
+}
+
+func (m *Manager) GetServicesCount() (int, error) {
+	row := m.DB.QueryRow(serviceCountSql)
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (m *Manager) GetApprovedServicesByResourceId(resourceId int) []*Service {
