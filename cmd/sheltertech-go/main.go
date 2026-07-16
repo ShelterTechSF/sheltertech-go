@@ -144,6 +144,7 @@ func main() {
 		r.Get("/api/categories/featured", categoriesManager.GetByFeatured)
 		r.Get("/api/categories/counts", categoriesManager.GetCategoryCounts)
 
+		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 

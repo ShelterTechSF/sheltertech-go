@@ -128,6 +128,30 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, serviceResponse)
 }
 
+// GetCount gets the total number of services.
+//
+//	@Summary		Get Service Count
+//	@Description	gets the total number of services
+//	@Tags			services
+//	@Produce		json
+//	@Success		200	{integer}	integer
+//	@Router			/services/count [get]
+func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
+	count, err := m.DbClient.GetServicesCount()
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write([]byte(strconv.Itoa(count)))
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
+}
+
 // ConvertHtmlToPdf method to convert HTML to PDF
 //
 //	@Summary		Convert HTML to PDF
