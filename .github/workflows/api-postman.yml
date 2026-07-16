@@ -1,7 +1,6 @@
 name: api-postman
 
 env:
-  DOCKER_REPO: sheltertechsf/sheltertech-go
   NODE_VERSION: 16.x
 
 on:

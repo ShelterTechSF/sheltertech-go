@@ -8,7 +8,6 @@ on:
 
 env:
   GCP_REPO: us-west2-docker.pkg.dev/askdarcel-184805/sheltertech/sheltertech-go
-  DOCKER_REPO: sheltertechsf/sheltertech-go
 
 jobs:
   build:
@@ -25,7 +24,6 @@ jobs:
             suffix=
           images: |
             ${{ env.GCP_REPO }}
-            ${{ env.DOCKER_REPO }}
           tags: |
             type=semver,pattern={{version}}
       - uses: docker/setup-qemu-action@v3
@@ -47,11 +45,6 @@ jobs:
           registry: us-west2-docker.pkg.dev
           username: _json_key
           password: ${{ secrets.GCP_ARTIFACT_REGISTRY_KEY }}
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - uses: docker/build-push-action@v6
         with:
           push: true
