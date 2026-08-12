@@ -99,102 +99,135 @@ RETURNING id, name, feature_rank
 `
 
 func (m *Manager) GetEligibilities() []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(eligibilitiesSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query()
+	defer stmt.Close()
+	rows, err := stmt.Query()
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
-
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) GetEligibilitiesByCategoryId(categoryId *int) []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(eligibilitiesByCategoryIDSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(*categoryId)
+	defer stmt.Close()
+	rows, err := stmt.Query(*categoryId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
-
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) GetEligibilitiesByIDs(ids []int) []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(eligibilitiesByIDsSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(pq.Array(ids))
+	defer stmt.Close()
+	rows, err := stmt.Query(pq.Array(ids))
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) GetFeaturedEligibilities() []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(featuredEligibilitiesSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query()
+	defer stmt.Close()
+	rows, err := stmt.Query()
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) GetSubEligibilitiesByParentName(parentName string) []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(subEligibilitiesByParentNameSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(parentName)
+	defer stmt.Close()
+	rows, err := stmt.Query(parentName)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) GetSubEligibilitiesByParentID(parentID int) []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(subEligibilitiesByParentIDSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(parentID)
+	defer stmt.Close()
+	rows, err := stmt.Query(parentID)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) UpdateEligibility(id int, name *string, featureRank *int) (*Eligibility, error) {
 	var eligibility Eligibility
 	var nameParam, featureRankParam interface{}
 
-	// Set parameters for the query
 	nameParam = nil
 	if name != nil {
 		nameParam = *name
@@ -205,7 +238,6 @@ func (m *Manager) UpdateEligibility(id int, name *string, featureRank *int) (*El
 		featureRankParam = *featureRank
 	}
 
-	// Execute the query
 	row := m.DB.QueryRow(updateEligibilitySql, nameParam, featureRankParam, id)
 	err := row.Scan(&eligibility.Id, &eligibility.Name, &eligibility.FeatureRank)
 
@@ -220,41 +252,56 @@ func (m *Manager) UpdateEligibility(id int, name *string, featureRank *int) (*El
 }
 
 func (m *Manager) GetEligibilitiesByNames(names []string) []*Eligibility {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(eligibilitiesByNamesSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(pq.Array(names))
+	defer stmt.Close()
+	rows, err := stmt.Query(pq.Array(names))
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
 func (m *Manager) GetEligibilitiesByServiceID(serviceId int) []*Eligibility {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(eligibilitiesByServiceIDSql, serviceId)
+	rows, err := m.DB.Query(eligibilitiesByServiceIDSql, serviceId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanEligibilities(rows)
+	defer rows.Close()
+	result, err := scanEligibilities(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return result
 }
 
-func scanEligibilities(rows *sql.Rows) []*Eligibility {
+func scanEligibilities(rows *sql.Rows) ([]*Eligibility, error) {
 	var eligibilities []*Eligibility
 	for rows.Next() {
 		var eligibility Eligibility
 		err := rows.Scan(&eligibility.Id, &eligibility.Name, &eligibility.FeatureRank)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
 		eligibilities = append(eligibilities, &eligibility)
 	}
-	return eligibilities
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return eligibilities, nil
 }
