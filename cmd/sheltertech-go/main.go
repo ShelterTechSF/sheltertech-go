@@ -19,6 +19,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
+	"github.com/sheltertechsf/sheltertech-go/internal/translation"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -86,6 +87,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	translationManager := translation.New(services.NewGoogleTranslateService(googleTranslateCredentials), googleTranslateCredentials)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -169,6 +171,7 @@ func main() {
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Post("/api/translation/translate_text", translationManager.TranslateText)
 	})
 
 	http.ListenAndServe(":3001", r)
