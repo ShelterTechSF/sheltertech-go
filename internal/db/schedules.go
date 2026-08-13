@@ -45,6 +45,9 @@ WHERE sd.schedule_id = $1
 func (m *Manager) GetScheduleByServiceId(serviceId int) *Schedule {
 	row := m.DB.QueryRow(scheduleByServiceIDSql, serviceId)
 	schedule := scanSchedule(row)
+	if schedule == nil {
+		return nil
+	}
 	schedule.ScheduleDays = m.GetScheduleDaysByScheduleID(schedule.Id)
 	return schedule
 }
@@ -52,6 +55,9 @@ func (m *Manager) GetScheduleByServiceId(serviceId int) *Schedule {
 func (m *Manager) GetScheduleByResourceId(resourceId int) *Schedule {
 	row := m.DB.QueryRow(scheduleByResourceIDSql, resourceId)
 	schedule := scanSchedule(row)
+	if schedule == nil {
+		return nil
+	}
 	schedule.ScheduleDays = m.GetScheduleDaysByScheduleID(schedule.Id)
 	return schedule
 }

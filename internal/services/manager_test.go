@@ -2,6 +2,7 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -212,6 +214,67 @@ FROM public.services`
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedBody, w.Body.String())
 			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestManager_CreateValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:           "invalid resource ID",
+			path:           "/api/resources/foo/services",
+			body:           `{"services":[]}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid resource ID format","status_code":400}`,
+		},
+		{
+			name:           "malformed body",
+			path:           "/api/resources/1/services",
+			body:           `{"services":`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid request body","status_code":400}`,
+		},
+		{
+			name:           "missing services",
+			path:           "/api/resources/1/services",
+			body:           `{}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Services are required","status_code":400}`,
+		},
+		{
+			name:           "empty services array",
+			path:           "/api/resources/1/services",
+			body:           `{"services":[]}`,
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"services":[]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			manager := NewWithDependencies(
+				&db.Manager{},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			router := chi.NewRouter()
+			router.Post("/api/resources/{id}/services", manager.Create)
+
+			req := httptest.NewRequest(http.MethodPost, tt.path, bytes.NewBufferString(tt.body))
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
 		})
 	}
 }

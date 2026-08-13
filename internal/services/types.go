@@ -19,6 +19,56 @@ import (
 type ServiceResponse struct {
 	Service *Service `json:"service"`
 }
+
+type ServicesCreateResponse struct {
+	Services []*ServiceResponse `json:"services"`
+}
+
+type ServicesCreateRequest struct {
+	Services *[]ServiceCreateRequest `json:"services"`
+}
+
+type ServiceCreateRequest struct {
+	AlternateName          *string                       `json:"alternate_name"`
+	ApplicationProcess     *string                       `json:"application_process"`
+	Eligibility            *string                       `json:"eligibility"`
+	Email                  *string                       `json:"email"`
+	Fee                    *string                       `json:"fee"`
+	InterpretationServices *string                       `json:"interpretation_services"`
+	LongDescription        *string                       `json:"long_description"`
+	Name                   *string                       `json:"name"`
+	RequiredDocuments      *string                       `json:"required_documents"`
+	Url                    *string                       `json:"url"`
+	WaitTime               *string                       `json:"wait_time"`
+	Categories             []ServiceCreateIDReference    `json:"categories"`
+	Eligibilities          []ServiceCreateIDReference    `json:"eligibilities"`
+	Notes                  []ServiceCreateNoteRequest    `json:"notes"`
+	Instructions           []ServiceCreateInstruction    `json:"instructions"`
+	Schedule               *ServiceCreateScheduleRequest `json:"schedule"`
+}
+
+type ServiceCreateIDReference struct {
+	Id int `json:"id"`
+}
+
+type ServiceCreateNoteRequest struct {
+	Note *string `json:"note"`
+}
+
+type ServiceCreateInstruction struct {
+	Instruction *string `json:"instruction"`
+}
+
+type ServiceCreateScheduleRequest struct {
+	ScheduleDays []ServiceCreateScheduleDayRequest `json:"schedule_days"`
+}
+
+type ServiceCreateScheduleDayRequest struct {
+	Day      string `json:"day"`
+	OpensAt  *int   `json:"opens_at"`
+	ClosesAt *int   `json:"closes_at"`
+}
+
 type Service struct {
 	UpdatedAt              string  `json:"updated_at"`
 	AlternateName          *string `json:"alternate_name"`
@@ -72,6 +122,60 @@ type TranslateService interface {
 type PDFService interface {
 	ConvertToPDF(html string) ([]byte, error)
 	// No Close() method here either - same reasoning
+}
+
+func (service ServiceCreateRequest) ToDBType() db.ServiceCreate {
+	categories := make([]int, 0, len(service.Categories))
+	for _, category := range service.Categories {
+		categories = append(categories, category.Id)
+	}
+
+	eligibilities := make([]int, 0, len(service.Eligibilities))
+	for _, eligibility := range service.Eligibilities {
+		eligibilities = append(eligibilities, eligibility.Id)
+	}
+
+	notes := make([]db.ServiceNoteCreate, 0, len(service.Notes))
+	for _, note := range service.Notes {
+		notes = append(notes, db.ServiceNoteCreate{Note: note.Note})
+	}
+
+	instructions := make([]db.ServiceInstructionCreate, 0, len(service.Instructions))
+	for _, instruction := range service.Instructions {
+		instructions = append(instructions, db.ServiceInstructionCreate{Instruction: instruction.Instruction})
+	}
+
+	var schedule *db.ServiceScheduleCreate
+	if service.Schedule != nil {
+		scheduleDays := make([]db.ServiceScheduleDayCreate, 0, len(service.Schedule.ScheduleDays))
+		for _, scheduleDay := range service.Schedule.ScheduleDays {
+			scheduleDays = append(scheduleDays, db.ServiceScheduleDayCreate{
+				Day:      scheduleDay.Day,
+				OpensAt:  scheduleDay.OpensAt,
+				ClosesAt: scheduleDay.ClosesAt,
+			})
+		}
+		schedule = &db.ServiceScheduleCreate{ScheduleDays: scheduleDays}
+	}
+
+	return db.ServiceCreate{
+		AlternateName:          service.AlternateName,
+		ApplicationProcess:     service.ApplicationProcess,
+		Eligibility:            service.Eligibility,
+		Email:                  service.Email,
+		Fee:                    service.Fee,
+		InterpretationServices: service.InterpretationServices,
+		LongDescription:        service.LongDescription,
+		Name:                   service.Name,
+		RequiredDocuments:      service.RequiredDocuments,
+		Url:                    service.Url,
+		WaitTime:               service.WaitTime,
+		Categories:             categories,
+		Eligibilities:          eligibilities,
+		Notes:                  notes,
+		Instructions:           instructions,
+		Schedule:               schedule,
+	}
 }
 
 func FromDBType(dbService *db.Service) *Service {
