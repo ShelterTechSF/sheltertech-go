@@ -40,6 +40,12 @@ FROM public.resources
 WHERE status = 1
 `
 
+const certifyResourceSql = `
+UPDATE public.resources
+SET certified = true, certified_at = now()
+WHERE id = $1
+`
+
 func (m *Manager) GetResourceById(resourceId int) *Resource {
 	row := m.DB.QueryRow(resourceByIDSql, resourceId)
 	return scanResource(row)
@@ -54,6 +60,20 @@ func (m *Manager) GetResourcesCount() (int, error) {
 	}
 	return count, nil
 
+}
+
+func (m *Manager) CertifyResource(resourceId int) (bool, error) {
+	res, err := m.DB.Exec(certifyResourceSql, resourceId)
+	if err != nil {
+		return false, err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rowCount > 0, nil
 }
 
 func (m *Manager) UpdateResource(
