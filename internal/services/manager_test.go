@@ -159,6 +159,136 @@ func TestManager_ConvertHtmlToPdf(t *testing.T) {
 	}
 }
 
+func TestManager_ConvertHtmlToPdf_AcceptsJSONPayload(t *testing.T) {
+	html := "<html><body>Test</body></html>"
+	pdfData := []byte("%PDF-1.4 test")
+
+	mockTranslate := new(MockTranslateService)
+	mockPDF := new(MockPDFService)
+	mockPDF.On("ConvertToPDF", html).Return(pdfData, nil)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/services/html_to_pdf",
+		strings.NewReader(`{"html":"<html><body>Test</body></html>","target_language":""}`),
+	)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, "attachment; filename=translation.pdf", w.Header().Get("Content-Disposition"))
+	assert.Equal(t, pdfData, w.Body.Bytes())
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
+func TestManager_ConvertHtmlToPdf_AcceptsJSONPayloadWithTranslation(t *testing.T) {
+	html := "<html><body>Hello World</body></html>"
+	translatedHTML := "<html><body>Hola Mundo</body></html>"
+	pdfData := []byte("%PDF-1.4 translated")
+
+	mockTranslate := new(MockTranslateService)
+	mockTranslate.On("Translate", mock.Anything, []string{html}, language.Spanish).
+		Return([]string{translatedHTML}, nil)
+	mockPDF := new(MockPDFService)
+	mockPDF.On("ConvertToPDF", translatedHTML).Return(pdfData, nil)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/services/html_to_pdf",
+		strings.NewReader(`{"html":"<html><body>Hello World</body></html>","target_language":"es"}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, pdfData, w.Body.Bytes())
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
+func TestManager_ConvertHtmlToPdf_PreservesFormPayload(t *testing.T) {
+	html := "<html><body>Form Test</body></html>"
+	pdfData := []byte("%PDF-1.4 form")
+
+	mockTranslate := new(MockTranslateService)
+	mockPDF := new(MockPDFService)
+	mockPDF.On("ConvertToPDF", html).Return(pdfData, nil)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	formData := url.Values{}
+	formData.Set("html", html)
+	req := httptest.NewRequest(http.MethodPost, "/api/services/html_to_pdf", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, pdfData, w.Body.Bytes())
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
+func TestManager_ConvertHtmlToPdf_ReturnsBadRequestForMalformedJSON(t *testing.T) {
+	mockTranslate := new(MockTranslateService)
+	mockPDF := new(MockPDFService)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/services/html_to_pdf", strings.NewReader(`{"html":`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+
+	var errorResponse map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &errorResponse)
+	assert.NoError(t, err)
+	assert.Contains(t, errorResponse["error"], "Error parsing JSON data")
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
 func TestManager_GetCount(t *testing.T) {
 	const serviceCountQuery = `SELECT count(1)
 FROM public.services`

@@ -62,6 +62,11 @@ type PDFCrowdConfig struct {
 	Key     string
 }
 
+type HTMLToPDFRequest struct {
+	HTML           string `json:"html"`
+	TargetLanguage string `json:"target_language"`
+}
+
 // TranslateService interface for translation functionality
 type TranslateService interface {
 	Translate(ctx context.Context, texts []string, targetLang language.Tag) ([]string, error)
