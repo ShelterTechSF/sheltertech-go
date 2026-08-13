@@ -34,6 +34,20 @@ type PhoneFields struct {
 	ServiceType *string `json:"service_type,omitempty"`
 }
 
+type AddressFields struct {
+	Attention     *string `json:"attention,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	Address1      *string `json:"address_1,omitempty"`
+	Address2      *string `json:"address_2,omitempty"`
+	Address3      *string `json:"address_3,omitempty"`
+	Address4      *string `json:"address_4,omitempty"`
+	City          *string `json:"city,omitempty"`
+	StateProvince *string `json:"state_province,omitempty"`
+	PostalCode    *string `json:"postal_code,omitempty"`
+	Latitude      *string `json:"latitude,omitempty"`
+	Longitude     *string `json:"longitude,omitempty"`
+}
+
 type ResourceFields struct {
 	Name             *string `json:"name,omitempty"`
 	AlternateName    *string `json:"alternate_name,omitempty"`
@@ -47,4 +61,8 @@ type ResourceFields struct {
 
 type ResourceChangeRequest struct {
 	ResourceChangeRequest ChangeRequestResponse `json:"resource_change_request"`
+}
+
+type AddressChangeRequest struct {
+	AddressChangeRequest ChangeRequestResponse `json:"address_change_request"`
 }

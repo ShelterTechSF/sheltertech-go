@@ -32,6 +32,8 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 	switch changeRequestPayload.Type {
 	case "phones":
 		createPhone(w, m.DbClient, changeRequestPayload)
+	case "addresses":
+		createAddress(w, m.DbClient, changeRequestPayload)
 	}
 }
 
@@ -214,6 +216,61 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 	writeStatus(w, http.StatusCreated)
 }
 
+func createAddress(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+	addressFields := unmarshalAddressFields(w, payload.ChangeRequest.FieldChanges)
+	fieldChangesMap := make(map[string]interface{})
+	var fieldChangesResponse []FieldChange
+
+	if addressFields.Address1 == nil || addressFields.City == nil || addressFields.StateProvince == nil || addressFields.PostalCode == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Missing Required Fields")
+		return
+	}
+
+	addAddressField := func(fieldName string, fieldValue *string) {
+		if fieldValue == nil {
+			return
+		}
+		fieldChangesMap[fieldName] = *fieldValue
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
+			FieldName:  fieldName,
+			FieldValue: *fieldValue,
+		})
+	}
+
+	addAddressField("address_1", addressFields.Address1)
+	addAddressField("address_2", addressFields.Address2)
+	addAddressField("address_3", addressFields.Address3)
+	addAddressField("address_4", addressFields.Address4)
+	addAddressField("city", addressFields.City)
+	addAddressField("state_province", addressFields.StateProvince)
+	addAddressField("postal_code", addressFields.PostalCode)
+	addAddressField("attention", addressFields.Attention)
+	addAddressField("name", addressFields.Name)
+	addAddressField("latitude", addressFields.Latitude)
+	addAddressField("longitude", addressFields.Longitude)
+
+	fieldChangesMap["resource_id"] = payload.ParentResourceID
+
+	objectId, changeRequestId, err := dbClient.InsertAddress(fieldChangesMap)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &AddressChangeRequest{
+		AddressChangeRequest: ChangeRequestResponse{
+			Id:           *changeRequestId,
+			Status:       "pending",
+			Type:         "AddressChangeRequest",
+			ObjectID:     *objectId,
+			FieldChanges: fieldChangesResponse,
+		},
+	}
+
+	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
+}
+
 func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
 	phoneFields := &PhoneFields{}
 	err := json.Unmarshal(fieldChanges, phoneFields)
@@ -222,6 +279,16 @@ func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) P
 	}
 
 	return *phoneFields
+}
+
+func unmarshalAddressFields(w http.ResponseWriter, fieldChanges json.RawMessage) AddressFields {
+	addressFields := &AddressFields{}
+	err := json.Unmarshal(fieldChanges, addressFields)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+	}
+
+	return *addressFields
 }
 
 func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {
