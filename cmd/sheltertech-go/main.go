@@ -19,6 +19,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
+	"github.com/sheltertechsf/sheltertech-go/internal/textings"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -63,6 +64,8 @@ func main() {
 	googleTranslateCredentials := viper.GetString("TRANSLATE_CREDENTIALS")
 	pdfCrowdUsername := viper.GetString("PDF_CROWD_USERNAME")
 	pdfCrowdApiKey := viper.GetString("PDF_CROWD_API_KEY")
+	textellentURL := viper.GetString("TEXTELLENT_URL")
+	textellentAPIKey := viper.GetString("TEXTELLENT_API_KEY")
 	var jwtKeyfunc keyfunc.Keyfunc
 	if auth0Domain != "" {
 		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
@@ -86,6 +89,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	textingsManager := textings.New(dbManager, textellentURL, textellentAPIKey)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -166,6 +170,7 @@ func main() {
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
+		r.Post("/api/textings", textingsManager.Create)
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/change_requests", changeRequestManager.Create)
