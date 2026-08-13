@@ -235,7 +235,7 @@ RETURNING id, note, created_at, updated_at
 				PDFCrowdConfig{},
 			)
 			req := httptest.NewRequest(http.MethodPost, "/api/services/"+tt.serviceID+"/notes", strings.NewReader(tt.body))
-			req = requestWithServiceID(req, tt.serviceID)
+			req = requestWithServiceNoteID(req, tt.serviceID)
 			w := httptest.NewRecorder()
 
 			manager.CreateNote(w, req)
@@ -305,7 +305,7 @@ FROM public.services`
 	}
 }
 
-func requestWithServiceID(req *http.Request, serviceID string) *http.Request {
+func requestWithServiceNoteID(req *http.Request, serviceID string) *http.Request {
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("id", serviceID)
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
