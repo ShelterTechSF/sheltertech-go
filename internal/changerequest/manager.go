@@ -1,7 +1,9 @@
 package changerequest
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -164,6 +166,57 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	writeStatus(w, http.StatusCreated)
 }
 
+func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	idStr := chi.URLParam(r, "id")
+	noteId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid note ID", http.StatusBadRequest)
+		return
+	}
+
+	payload, err := unmarshalNoteChangeRequestPayload(r)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if payload.ChangeRequest.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Missing note")
+		return
+	}
+
+	noteText := *payload.ChangeRequest.Note
+	changeRequestId, err := m.DbClient.UpdateNote(noteId, noteText)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			common.WriteErrorJson(w, http.StatusNotFound, "Note not found")
+			return
+		}
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &NoteChangeRequest{
+		NoteChangeRequest: ChangeRequestResponse{
+			Id:       *changeRequestId,
+			Status:   "pending",
+			Type:     "NoteChangeRequest",
+			ObjectID: noteId,
+			FieldChanges: []FieldChange{
+				{
+					FieldName:  "note",
+					FieldValue: noteText,
+				},
+			},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
+}
+
 func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
 	phoneFields := unmarshalPhoneFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
@@ -222,6 +275,21 @@ func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) P
 	}
 
 	return *phoneFields
+}
+
+func unmarshalNoteChangeRequestPayload(r *http.Request) (*NoteChangeRequestPayload, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	noteChangeRequestPayload := &NoteChangeRequestPayload{}
+	err = json.Unmarshal(body, noteChangeRequestPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	return noteChangeRequestPayload, nil
 }
 
 func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {

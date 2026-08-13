@@ -29,6 +29,18 @@ type PhoneChangeRequest struct {
 	PhoneChangeRequest ChangeRequestResponse `json:"phone_change_request"`
 }
 
+type NoteChangeRequestPayload struct {
+	ChangeRequest NoteFields `json:"change_request"`
+}
+
+type NoteChangeRequest struct {
+	NoteChangeRequest ChangeRequestResponse `json:"note_change_request"`
+}
+
+type NoteFields struct {
+	Note *string `json:"note,omitempty"`
+}
+
 type PhoneFields struct {
 	Number      *string `json:"number,omitempty"`
 	ServiceType *string `json:"service_type,omitempty"`
