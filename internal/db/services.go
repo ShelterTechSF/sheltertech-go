@@ -53,9 +53,24 @@ SELECT count(1)
 FROM public.services
 `
 
+const serviceExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.services
+WHERE id = $1
+)
+`
+
 func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)
+}
+
+func (m *Manager) ServiceExists(serviceId int) (bool, error) {
+	row := m.DB.QueryRow(serviceExistsSql, serviceId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 func (m *Manager) GetServicesCount() (int, error) {

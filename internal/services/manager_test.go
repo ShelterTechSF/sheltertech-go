@@ -2,6 +2,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -214,6 +216,151 @@ FROM public.services`
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestManager_AddAddress(t *testing.T) {
+	const serviceExistsQuery = `SELECT EXISTS (
+SELECT 1
+FROM public.services
+WHERE id = $1
+)`
+	const addressExistsQuery = `SELECT EXISTS (
+SELECT 1
+FROM public.addresses
+WHERE id = $1
+)`
+	const serviceAddressExistsQuery = `SELECT EXISTS (
+SELECT 1
+FROM public.addresses_services
+WHERE service_id = $1
+AND address_id = $2
+)`
+	const createServiceAddressQuery = `INSERT INTO public.addresses_services (service_id, address_id)
+VALUES ($1, $2)`
+
+	tests := []struct {
+		name           string
+		serviceId      string
+		addressId      string
+		setupMock      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:      "returns ok when association already exists",
+			serviceId: "1",
+			addressId: "2",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(addressExistsQuery)).
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceAddressExistsQuery)).
+					WithArgs(1, 2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:      "creates association and returns created",
+			serviceId: "1",
+			addressId: "2",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(addressExistsQuery)).
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceAddressExistsQuery)).
+					WithArgs(1, 2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+				mock.ExpectExec(regexp.QuoteMeta(createServiceAddressQuery)).
+					WithArgs(1, 2).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:      "returns bad request when service is missing",
+			serviceId: "1",
+			addressId: "2",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
+		},
+		{
+			name:      "returns bad request when address is missing",
+			serviceId: "1",
+			addressId: "2",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(addressExistsQuery)).
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
+		},
+		{
+			name:           "returns bad request for invalid service ID",
+			serviceId:      "abc",
+			addressId:      "2",
+			setupMock:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid service ID format","status_code":400}`,
+		},
+		{
+			name:           "returns bad request for invalid address ID",
+			serviceId:      "1",
+			addressId:      "abc",
+			setupMock:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid address ID format","status_code":400}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sqlDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer sqlDB.Close()
+
+			tt.setupMock(mock)
+
+			manager := NewWithDependencies(
+				&db.Manager{DB: sqlDB},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			req := newAddAddressRequest(tt.serviceId, tt.addressId)
+			w := httptest.NewRecorder()
+
+			manager.AddAddress(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedBody, w.Body.String())
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func newAddAddressRequest(serviceId, addressId string) *http.Request {
+	req := httptest.NewRequest(http.MethodPut, "/api/services/"+serviceId+"/addresses/"+addressId, nil)
+	routeContext := chi.NewRouteContext()
+	routeContext.URLParams.Add("id", serviceId)
+	routeContext.URLParams.Add("address_id", addressId)
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
 }
 
 func TestManager_processHTML_ErrorHandling(t *testing.T) {
