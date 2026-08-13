@@ -168,6 +168,7 @@ func main() {
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
+		r.Post("/api/schedule_days/{id}/change_requests", changeRequestManager.UpdateScheduleDay)
 		r.Post("/api/change_requests", changeRequestManager.Create)
 	})
 
