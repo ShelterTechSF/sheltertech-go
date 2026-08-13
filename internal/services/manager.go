@@ -32,6 +32,14 @@ type Manager struct {
 	PDFCrowdConfig   PDFCrowdConfig   // ← Same
 }
 
+type serviceNoteCreateRequest struct {
+	Note serviceNoteCreateParams `json:"note"`
+}
+
+type serviceNoteCreateParams struct {
+	Note *string `json:"note"`
+}
+
 func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, pdfCrowdApiKey string) *Manager {
 	googleConfig := GoogleConfig{
 		TranslateCredential: translateCredentials,
@@ -65,6 +73,48 @@ func NewWithDependencies(
 		GoogleConfig:     googleConfig,     // ← Same as before
 		PDFCrowdConfig:   pdfCrowdConfig,   // ← Same as before
 	}
+}
+
+// CreateNote creates a note associated with a service.
+func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
+		return
+	}
+
+	var request serviceNoteCreateRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if request.Note.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Note is required")
+		return
+	}
+
+	serviceExists, err := m.DbClient.ServiceExistsById(serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if !serviceExists {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Failed to retrieve service")
+		return
+	}
+
+	dbNote, err := m.DbClient.CreateNoteForService(*request.Note.Note, serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	writeJsonWithStatus(w, notes.FromNoteDBType(dbNote), http.StatusCreated)
 }
 
 // GetByID Get a service by ID
@@ -281,6 +331,10 @@ func (m *Manager) htmlToPDF(html string) ([]byte, error) {
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
+	writeJsonWithStatus(w, object, http.StatusOK)
+}
+
+func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
 	output, err := json.Marshal(object)
 	if err != nil {
 		log.Printf("%v", err)
@@ -288,7 +342,7 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	_, err = w.Write(output)
 	if err != nil {
 		panic(err)

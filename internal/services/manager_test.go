@@ -2,6 +2,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -10,8 +11,10 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -159,6 +162,92 @@ func TestManager_ConvertHtmlToPdf(t *testing.T) {
 	}
 }
 
+func TestManager_CreateNote(t *testing.T) {
+	const serviceExistsQuery = `
+SELECT EXISTS(SELECT 1 FROM public.services WHERE id = $1)
+`
+	const createNoteForServiceQuery = `
+INSERT INTO public.notes (note, service_id, created_at, updated_at)
+VALUES ($1, $2, now(), now())
+RETURNING id, note, created_at, updated_at
+`
+
+	tests := []struct {
+		name           string
+		serviceID      string
+		body           string
+		setupMock      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:      "creates service note",
+			serviceID: "123",
+			body:      `{"note":{"note":"Legacy compatible note"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(123).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(createNoteForServiceQuery)).
+					WithArgs("Legacy compatible note", 123).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "note", "created_at", "updated_at"}).
+						AddRow(456, "Legacy compatible note", time.Now(), time.Now()))
+			},
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"id":456,"note":"Legacy compatible note"}`,
+		},
+		{
+			name:      "returns bad request for invalid service id",
+			serviceID: "not-an-id",
+			body:      `{"note":{"note":"Legacy compatible note"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid service ID format","status_code":400}`,
+		},
+		{
+			name:      "does not create note when service is missing",
+			serviceID: "999",
+			body:      `{"note":{"note":"Legacy compatible note"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(999).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Failed to retrieve service","status_code":400}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sqlDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer sqlDB.Close()
+
+			tt.setupMock(mock)
+
+			manager := NewWithDependencies(
+				&db.Manager{DB: sqlDB},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			req := httptest.NewRequest(http.MethodPost, "/api/services/"+tt.serviceID+"/notes", strings.NewReader(tt.body))
+			req = requestWithServiceID(req, tt.serviceID)
+			w := httptest.NewRecorder()
+
+			manager.CreateNote(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestManager_GetCount(t *testing.T) {
 	const serviceCountQuery = `SELECT count(1)
 FROM public.services`
@@ -214,6 +303,12 @@ FROM public.services`
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func requestWithServiceID(req *http.Request, serviceID string) *http.Request {
+	routeContext := chi.NewRouteContext()
+	routeContext.URLParams.Add("id", serviceID)
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
 }
 
 func TestManager_processHTML_ErrorHandling(t *testing.T) {

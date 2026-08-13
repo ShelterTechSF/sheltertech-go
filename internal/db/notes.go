@@ -27,6 +27,12 @@ FROM public.notes n
 WHERE n.resource_id = $1
 `
 
+const createNoteForServiceSql = `
+INSERT INTO public.notes (note, service_id, created_at, updated_at)
+VALUES ($1, $2, now(), now())
+RETURNING id, note, created_at, updated_at
+`
+
 func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
 	var rows *sql.Rows
 	var err error
@@ -47,6 +53,11 @@ func (m *Manager) GetNotesByResourceID(resourceId int) []*Note {
 	return scanNotes(rows)
 }
 
+func (m *Manager) CreateNoteForService(noteText string, serviceId int) (*Note, error) {
+	row := m.DB.QueryRow(createNoteForServiceSql, noteText, serviceId)
+	return scanNote(row)
+}
+
 func scanNotes(rows *sql.Rows) []*Note {
 	var notes []*Note
 	for rows.Next() {
@@ -60,4 +71,10 @@ func scanNotes(rows *sql.Rows) []*Note {
 		notes = append(notes, &note)
 	}
 	return notes
+}
+
+func scanNote(row *sql.Row) (*Note, error) {
+	var note Note
+	err := row.Scan(&note.Id, &note.Note, &note.CreatedAt, &note.UpdatedAt)
+	return &note, err
 }

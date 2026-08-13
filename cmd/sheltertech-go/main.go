@@ -146,6 +146,7 @@ func main() {
 
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Post("/api/services/{id}/notes", servicesManager.CreateNote)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
