@@ -126,7 +126,7 @@ WHERE resource_id = $1
 			tt.setupMock(mock)
 
 			manager := New(&db.Manager{DB: sqlDB})
-			req := requestWithResourceID(http.MethodDelete, tt.id)
+			req := requestWithResourceDeleteID(http.MethodDelete, tt.id)
 			w := httptest.NewRecorder()
 
 			manager.Delete(w, req)
@@ -138,7 +138,7 @@ WHERE resource_id = $1
 	}
 }
 
-func requestWithResourceID(method, id string) *http.Request {
+func requestWithResourceDeleteID(method, id string) *http.Request {
 	req := httptest.NewRequest(method, "/api/resources/"+id, nil)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("id", id)
