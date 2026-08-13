@@ -150,6 +150,7 @@ func main() {
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
+		r.Delete("/api/resources/{id}", resourcesManager.Delete)
 		r.Get("/api/users/current", usersManager.GetCurrent)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)

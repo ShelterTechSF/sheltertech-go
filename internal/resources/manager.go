@@ -68,6 +68,49 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Delete deactivates an approved resource and its approved child services.
+//
+//	@Summary		Delete Resource
+//	@Description	deactivate an approved resource and its approved services
+//	@Tags			resources
+//	@Param			id	path	integer	true	"Resource ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		412
+//	@Failure		500
+//	@Router			/resources/{id} [delete]
+func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	resourceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid resource ID", http.StatusBadRequest)
+		return
+	}
+
+	status, err := m.DbClient.GetResourceStatusByID(resourceId)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if status == nil {
+		http.Error(w, "404: Resource not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
+	if *status != db.ResourceStatusApproved {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		return
+	}
+
+	err = m.DbClient.DeactivateResourceAndApprovedServices(resourceId)
+	if err != nil {
+		http.Error(w, "Failed to deactivate resource", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
