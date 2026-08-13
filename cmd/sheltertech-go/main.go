@@ -149,6 +149,7 @@ func main() {
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
+		r.Post("/api/resources/{id}/notes", resourcesManager.CreateNote)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
 		r.Get("/api/users/current", usersManager.GetCurrent)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
