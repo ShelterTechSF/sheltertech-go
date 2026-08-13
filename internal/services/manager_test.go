@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -208,6 +209,111 @@ FROM public.services`
 			w := httptest.NewRecorder()
 
 			manager.GetCount(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedBody, w.Body.String())
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestManager_DeleteAddress(t *testing.T) {
+	const serviceAddressExistenceQuery = `SELECT\s+EXISTS\(SELECT 1 FROM public\.services WHERE id = \$1\),\s+EXISTS\(SELECT 1 FROM public\.addresses WHERE id = \$2\)`
+	const deleteServiceAddressQuery = `DELETE FROM public\.addresses_services\s+WHERE service_id = \$1 AND address_id = \$2`
+
+	tests := []struct {
+		name           string
+		path           string
+		setupMock      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "deletes associated service address and returns no content",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, true))
+				mock.ExpectExec(deleteServiceAddressQuery).
+					WithArgs(123, 456).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "returns ok when service and address exist but are not associated",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, true))
+				mock.ExpectExec(deleteServiceAddressQuery).
+					WithArgs(123, 456).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "returns bad request when service is missing",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(false, true))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
+		},
+		{
+			name: "returns bad request when address is missing",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, false))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
+		},
+		{
+			name:           "returns bad request when service id is invalid",
+			path:           "/api/services/not-an-id/addresses/456",
+			setupMock:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid service ID format","status_code":400}`,
+		},
+		{
+			name:           "returns bad request when address id is invalid",
+			path:           "/api/services/123/addresses/not-an-id",
+			setupMock:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid address ID format","status_code":400}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sqlDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer sqlDB.Close()
+
+			tt.setupMock(mock)
+
+			manager := NewWithDependencies(
+				&db.Manager{DB: sqlDB},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			router := chi.NewRouter()
+			router.Delete("/api/services/{id}/addresses/{address_id}", manager.DeleteAddress)
+
+			req := httptest.NewRequest(http.MethodDelete, tt.path, nil)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedBody, w.Body.String())

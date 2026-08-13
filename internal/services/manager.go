@@ -152,6 +152,40 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *Manager) DeleteAddress(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
+		return
+	}
+
+	addressId, err := strconv.Atoi(chi.URLParam(r, "address_id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid address ID format")
+		return
+	}
+
+	status, err := m.DbClient.DeleteServiceAddress(serviceId, addressId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	switch status {
+	case db.ServiceAddressDeleteDeleted:
+		w.WriteHeader(http.StatusNoContent)
+	case db.ServiceAddressDeleteNotAssociated:
+		w.WriteHeader(http.StatusOK)
+	case db.ServiceAddressDeleteMissing:
+		common.WriteErrorJson(w, http.StatusBadRequest, "Service or address not found")
+	default:
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
+}
+
 // ConvertHtmlToPdf method to convert HTML to PDF
 //
 //	@Summary		Convert HTML to PDF
