@@ -172,6 +172,7 @@ func main() {
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/change_requests", changeRequestManager.Create)
 		r.Post("/api/instructions", instructionsManager.Create)
+		r.Put("/api/instructions/{id}", instructionsManager.Update)
 	})
 
 	http.ListenAndServe(":3001", r)
