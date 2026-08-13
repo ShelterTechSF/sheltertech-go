@@ -15,6 +15,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
+	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
@@ -86,6 +87,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	notesManager := notes.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -169,6 +171,7 @@ func main() {
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
 
 	http.ListenAndServe(":3001", r)
