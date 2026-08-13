@@ -152,6 +152,49 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Delete deactivates an approved service.
+//
+//	@Summary		Delete Service
+//	@Description	deactivate an approved service
+//	@Tags			services
+//	@Param			id	path	integer	true	"Service ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		412
+//	@Failure		500
+//	@Router			/services/{id} [delete]
+func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	serviceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		return
+	}
+
+	status, err := m.DbClient.GetServiceStatusByID(serviceId)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if status == nil {
+		http.Error(w, "404: Service not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
+	if *status != db.ServiceStatusApproved {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		return
+	}
+
+	err = m.DbClient.DeactivateService(serviceId)
+	if err != nil {
+		http.Error(w, "Failed to deactivate service", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // ConvertHtmlToPdf method to convert HTML to PDF
 //
 //	@Summary		Convert HTML to PDF
