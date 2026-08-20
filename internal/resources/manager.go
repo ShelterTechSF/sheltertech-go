@@ -11,20 +11,29 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient    *db.Manager
+	SearchIndex searchindex.Indexer
 }
 
 func New(dbManager *db.Manager) *Manager {
-	manager := &Manager{
-		DbClient: dbManager,
+	return NewWithDependencies(dbManager, searchindex.NoopIndexer{})
+}
+
+func NewWithDependencies(dbManager *db.Manager, indexer searchindex.Indexer) *Manager {
+	if indexer == nil {
+		indexer = searchindex.NoopIndexer{}
 	}
-	return manager
+	return &Manager{
+		DbClient:    dbManager,
+		SearchIndex: indexer,
+	}
 }
 
 // GetByID Get a resource by ID
@@ -65,6 +74,62 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write([]byte(strconv.Itoa(count)))
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
+}
+
+// Delete deactivates an approved resource and its approved child services.
+//
+//	@Summary		Delete Resource
+//	@Description	deactivate an approved resource and its approved services
+//	@Tags			resources
+//	@Param			id	path	integer	true	"Resource ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		412
+//	@Failure		500
+//	@Router			/resources/{id} [delete]
+func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	resourceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid resource ID", http.StatusBadRequest)
+		return
+	}
+
+	status, err := m.DbClient.GetResourceStatusByID(resourceId)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if status == nil {
+		http.Error(w, "404: Resource not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
+	if *status != db.ResourceStatusApproved {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		return
+	}
+
+	deactivatedServiceIds, err := m.DbClient.DeactivateResourceAndApprovedServices(resourceId)
+	if err != nil {
+		http.Error(w, "Failed to deactivate resource", http.StatusInternalServerError)
+		return
+	}
+
+	m.removeDeactivatedObjectsFromSearchIndex(resourceId, deactivatedServiceIds)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (m *Manager) removeDeactivatedObjectsFromSearchIndex(resourceId int, serviceIds []int) {
+	if err := m.SearchIndex.DeleteObject(searchindex.ResourceObjectID(resourceId)); err != nil {
+		log.Printf("failed to remove resource %d from search index: %v", resourceId, err)
+	}
+	for _, serviceId := range serviceIds {
+		if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
+			log.Printf("failed to remove service %d from search index: %v", serviceId, err)
+		}
 	}
 }
 
