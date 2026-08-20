@@ -29,6 +29,9 @@ func TestUpdateNoteCreatesChangeRequestWithNoteResourceID(t *testing.T) {
 	mock.ExpectExec(regexp.QuoteMeta(updateNoteForChangeRequestSql)).
 		WithArgs("Updated note text", 14).
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(touchResourceForNoteChangeRequestSql)).
+		WithArgs(22).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	manager := &Manager{DB: sqlDB}
@@ -60,6 +63,9 @@ func TestUpdateNoteCreatesChangeRequestWithServiceResourceID(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec(regexp.QuoteMeta(updateNoteForChangeRequestSql)).
 		WithArgs("Service note text", 15).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta(touchResourceForNoteChangeRequestSql)).
+		WithArgs(33).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 

@@ -42,6 +42,11 @@ UPDATE public.notes
 SET note = $1, updated_at = now()
 WHERE id = $2`
 
+const touchResourceForNoteChangeRequestSql = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1`
+
 func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
 	var rows *sql.Rows
 	var err error
@@ -77,8 +82,11 @@ func (m *Manager) UpdateNote(noteId int, noteText string) (*int, error) {
 	}
 
 	var changeRequestResourceID interface{}
+	var resourceIDToTouch *int
 	if noteResourceID.Valid {
-		changeRequestResourceID = int(noteResourceID.Int64)
+		resourceID := int(noteResourceID.Int64)
+		changeRequestResourceID = resourceID
+		resourceIDToTouch = &resourceID
 	} else if serviceID.Valid {
 		var serviceResourceID sql.NullInt64
 		err = tx.QueryRow(serviceResourceIDForNoteChangeRequestSql, int(serviceID.Int64)).Scan(&serviceResourceID)
@@ -86,7 +94,9 @@ func (m *Manager) UpdateNote(noteId int, noteText string) (*int, error) {
 			return nil, err
 		}
 		if serviceResourceID.Valid {
-			changeRequestResourceID = int(serviceResourceID.Int64)
+			resourceID := int(serviceResourceID.Int64)
+			changeRequestResourceID = resourceID
+			resourceIDToTouch = &resourceID
 		}
 	}
 
@@ -111,6 +121,13 @@ func (m *Manager) UpdateNote(noteId int, noteText string) (*int, error) {
 	_, err = tx.Exec(updateNoteForChangeRequestSql, noteText, noteId)
 	if err != nil {
 		return nil, err
+	}
+
+	if resourceIDToTouch != nil {
+		_, err = tx.Exec(touchResourceForNoteChangeRequestSql, *resourceIDToTouch)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = tx.Commit()
