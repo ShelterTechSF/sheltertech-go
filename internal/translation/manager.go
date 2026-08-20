@@ -14,6 +14,10 @@ type TranslateService interface {
 	Translate(ctx context.Context, texts []string, targetLang language.Tag) ([]string, error)
 }
 
+type SourceTranslateService interface {
+	TranslateWithSource(ctx context.Context, texts []string, targetLang, sourceLang language.Tag) ([]string, error)
+}
+
 type Manager struct {
 	TranslateService    TranslateService
 	TranslateCredential string
@@ -55,7 +59,7 @@ func (m *Manager) TranslateText(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	translations, err := m.TranslateService.Translate(r.Context(), []string{req.Text}, language.English)
+	translations, err := m.translateToEnglish(r.Context(), req)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusInternalServerError, "Failed to translate text")
@@ -67,6 +71,24 @@ func (m *Manager) TranslateText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, translateTextResponse{Result: translations[0]}, http.StatusOK)
+}
+
+func (m *Manager) translateToEnglish(ctx context.Context, req translateTextRequest) ([]string, error) {
+	if req.SourceLanguage == "" {
+		return m.TranslateService.Translate(ctx, []string{req.Text}, language.English)
+	}
+
+	sourceLang, err := language.Parse(req.SourceLanguage)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceTranslator, ok := m.TranslateService.(SourceTranslateService)
+	if !ok {
+		return m.TranslateService.Translate(ctx, []string{req.Text}, language.English)
+	}
+
+	return sourceTranslator.TranslateWithSource(ctx, []string{req.Text}, language.English, sourceLang)
 }
 
 func writeJSON(w http.ResponseWriter, object interface{}, status int) {

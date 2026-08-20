@@ -22,6 +22,11 @@ func (m *mockTranslateService) Translate(ctx context.Context, texts []string, ta
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *mockTranslateService) TranslateWithSource(ctx context.Context, texts []string, targetLang, sourceLang language.Tag) ([]string, error) {
+	args := m.Called(ctx, texts, targetLang, sourceLang)
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func TestManager_TranslateText(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -36,7 +41,7 @@ func TestManager_TranslateText(t *testing.T) {
 			body:       `{"text":"hola","source_language":"es"}`,
 			credential: "fake-credentials",
 			setupMock: func(mockTranslate *mockTranslateService) {
-				mockTranslate.On("Translate", mock.Anything, []string{"hola"}, language.English).
+				mockTranslate.On("TranslateWithSource", mock.Anything, []string{"hola"}, language.English, language.Spanish).
 					Return([]string{"hello"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -71,7 +76,7 @@ func TestManager_TranslateText(t *testing.T) {
 			body:       `{"text":"hola","source_language":"es"}`,
 			credential: "fake-credentials",
 			setupMock: func(mockTranslate *mockTranslateService) {
-				mockTranslate.On("Translate", mock.Anything, []string{"hola"}, language.English).
+				mockTranslate.On("TranslateWithSource", mock.Anything, []string{"hola"}, language.English, language.Spanish).
 					Return([]string{}, errors.New("quota exceeded"))
 			},
 			expectedStatus: http.StatusInternalServerError,
