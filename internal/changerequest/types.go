@@ -5,13 +5,38 @@ import "encoding/json"
 type ChangeRequestPayload struct {
 	ChangeRequest    ChangeRequest `json:"change_request"`
 	ParentResourceID int           `json:"parent_resource_id"`
+	ScheduleID       int           `json:"schedule_id"`
 	Type             string        `json:"type"`
 }
 
 type ChangeRequest struct {
 	Action       string          `json:"action"`
 	FieldChanges json.RawMessage `json:"field_changes"`
+	rawFields    map[string]json.RawMessage
 }
+
+func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
+	type changeRequestFields struct {
+		Action       string          `json:"action"`
+		FieldChanges json.RawMessage `json:"field_changes"`
+	}
+
+	var fields changeRequestFields
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+
+	var rawFields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &rawFields); err != nil {
+		return err
+	}
+
+	cr.Action = fields.Action
+	cr.FieldChanges = fields.FieldChanges
+	cr.rawFields = rawFields
+	return nil
+}
+
 type FieldChange struct {
 	FieldName  string `json:"field_name"`
 	FieldValue string `json:"field_value"`
@@ -27,6 +52,10 @@ type ChangeRequestResponse struct {
 
 type PhoneChangeRequest struct {
 	PhoneChangeRequest ChangeRequestResponse `json:"phone_change_request"`
+}
+
+type ScheduleDayChangeRequest struct {
+	ScheduleDayChangeRequest ChangeRequestResponse `json:"schedule_day_change_request"`
 }
 
 type PhoneFields struct {
