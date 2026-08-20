@@ -22,7 +22,11 @@ WHERE id = $1`
 
 const createResourceNoteQuery = `INSERT INTO public.notes (note, resource_id, created_at, updated_at)
 VALUES ($1, $2, NOW(), NOW())
-RETURNING id, note, created_at, updated_at`
+RETURNING id, note, resource_id, service_id, created_at, updated_at`
+
+const touchResourceForNoteQuery = `UPDATE public.resources
+SET updated_at = NOW()
+WHERE id = $1`
 
 func TestManager_CreateNote(t *testing.T) {
 	tests := []struct {
@@ -38,15 +42,21 @@ func TestManager_CreateNote(t *testing.T) {
 			resourceID: "7",
 			body:       `{"note":{"note":"harro"}}`,
 			setupMock: func(mock sqlmock.Sqlmock) {
+				now := time.Date(2026, time.August, 20, 12, 34, 56, 0, time.UTC)
 				mock.ExpectQuery(regexp.QuoteMeta(resourceByIDQuery)).
 					WithArgs(7).
-					WillReturnRows(resourceRows().AddRow(7, "Mission Resource", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, time.Now()))
+					WillReturnRows(resourceRows().AddRow(7, "Mission Resource", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, now))
+				mock.ExpectBegin()
 				mock.ExpectQuery(regexp.QuoteMeta(createResourceNoteQuery)).
 					WithArgs("harro", 7).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "note", "created_at", "updated_at"}).AddRow(42, "harro", time.Now(), time.Now()))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "note", "resource_id", "service_id", "created_at", "updated_at"}).AddRow(42, "harro", 7, nil, now, now))
+				mock.ExpectExec(regexp.QuoteMeta(touchResourceForNoteQuery)).
+					WithArgs(7).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"id":42,"note":"harro"}`,
+			expectedBody:   `{"id":42,"note":"harro","resource_id":7,"service_id":null,"created_at":"2026-08-20T12:34:56Z","updated_at":"2026-08-20T12:34:56Z"}`,
 		},
 		{
 			name:       "returns bad request for invalid resource ID",
@@ -87,7 +97,7 @@ func TestManager_CreateNote(t *testing.T) {
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-			assert.Equal(t, tt.expectedBody, w.Body.String())
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}

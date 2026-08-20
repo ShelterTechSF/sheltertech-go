@@ -100,7 +100,7 @@ func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJsonWithStatus(w, notes.FromNoteDBType(dbNote), http.StatusCreated)
+	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
