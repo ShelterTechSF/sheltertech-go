@@ -53,6 +53,37 @@ func TestUpdateAddressEditsAddressAndCreatesChangeRequest(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestUpdateAddressAcceptsNestedFieldChanges(t *testing.T) {
+	sqlDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer sqlDB.Close()
+
+	manager := New(&db.Manager{DB: sqlDB})
+	expectAddressEditChangeRequest(mock, 12, 34, 99)
+
+	w := serveAddressChangeRequest(
+		manager,
+		"/api/addresses/12/change_requests",
+		`{"change_request":{"action":"edit","field_changes":{"city":"Oakland","address_1":"123 New St","postal_code":"94612"}}}`,
+	)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.JSONEq(t, `{
+		"address_change_request": {
+			"id": 99,
+			"status": "pending",
+			"type": "AddressChangeRequest",
+			"object_id": 12,
+			"field_changes": [
+				{"field_name":"address_1","field_value":"123 New St"},
+				{"field_name":"city","field_value":"Oakland"},
+				{"field_name":"postal_code","field_value":"94612"}
+			]
+		}
+	}`, w.Body.String())
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestUpdateAddressRemovesAddressAndCreatesChangeRequest(t *testing.T) {
 	sqlDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -151,6 +182,9 @@ func expectAddressEditChangeRequest(mock sqlmock.Sqlmock, addressID int, resourc
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE public.addresses SET address_1=$1, city=$2, postal_code=$3, updated_at=now() WHERE id=$4")).
 		WithArgs("123 New St", "Oakland", "94612", addressID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(regexp.QuoteMeta(touchResourceForAddressChangeRequestSQLForTest)).
+		WithArgs(int32(resourceID)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 }
 
@@ -168,6 +202,9 @@ func expectAddressRemoveChangeRequest(mock sqlmock.Sqlmock, addressID int, resou
 	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM public.addresses WHERE id = $1")).
 		WithArgs(addressID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(regexp.QuoteMeta(touchResourceForAddressChangeRequestSQLForTest)).
+		WithArgs(int32(resourceID)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 }
 
@@ -184,3 +221,8 @@ RETURNING id`
 const fieldChangeInsertSQLForTest = `
 INSERT INTO public.field_changes (field_name, field_value, change_request_id)
 VALUES ($1, $2, $3)`
+
+const touchResourceForAddressChangeRequestSQLForTest = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1`

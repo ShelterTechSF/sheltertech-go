@@ -363,6 +363,11 @@ func addressFieldChangesFromPayload(changeRequest json.RawMessage) (map[string]i
 	if err := json.Unmarshal(changeRequest, &requestFields); err != nil {
 		return nil, nil, err
 	}
+	if nestedFieldChanges, ok := requestFields["field_changes"]; ok && string(nestedFieldChanges) != "null" {
+		if err := json.Unmarshal(nestedFieldChanges, &requestFields); err != nil {
+			return nil, nil, err
+		}
+	}
 
 	fieldChangesMap := make(map[string]interface{})
 	fieldChangesResponse := []FieldChange{}

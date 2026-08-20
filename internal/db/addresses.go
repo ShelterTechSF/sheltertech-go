@@ -67,6 +67,11 @@ SELECT resource_id
 FROM public.addresses
 WHERE id = $1`
 
+const touchResourceForAddressChangeRequestSql = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1`
+
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	var rows *sql.Rows
 	var err error
@@ -123,6 +128,10 @@ func (m *Manager) UpdateAddress(addressId int, fieldChanges map[string]interface
 		}
 	}
 
+	if err := touchResourceForAddressChangeRequest(tx, resourceId); err != nil {
+		return nil, err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
@@ -160,6 +169,10 @@ func (m *Manager) RemoveAddress(addressId int) (*int, error) {
 	rowsAffected, err := result.RowsAffected()
 	if err == nil && rowsAffected == 0 {
 		return nil, ErrAddressNotFound
+	}
+
+	if err := touchResourceForAddressChangeRequest(tx, resourceId); err != nil {
+		return nil, err
 	}
 
 	err = tx.Commit()
@@ -208,6 +221,15 @@ func addressResourceIDValue(resourceId sql.NullInt32) interface{} {
 	}
 
 	return int(resourceId.Int32)
+}
+
+func touchResourceForAddressChangeRequest(tx *sql.Tx, resourceId sql.NullInt32) error {
+	if !resourceId.Valid {
+		return nil
+	}
+
+	_, err := tx.Exec(touchResourceForAddressChangeRequestSql, resourceId.Int32)
+	return err
 }
 
 func buildAddressUpdateQuery(addressId int, fieldChanges map[string]interface{}) (string, []interface{}) {
