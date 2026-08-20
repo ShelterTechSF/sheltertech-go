@@ -11,6 +11,7 @@ type ChangeRequestPayload struct {
 type ChangeRequest struct {
 	Action       string          `json:"action"`
 	FieldChanges json.RawMessage `json:"field_changes"`
+	Status       *string         `json:"status,omitempty"`
 }
 type FieldChange struct {
 	FieldName  string `json:"field_name"`
@@ -43,6 +44,7 @@ type ResourceFields struct {
 	Email            *string `json:"email,omitempty"`
 	LegalStatus      *string `json:"legal_status,omitempty"`
 	InternalNote     *string `json:"internal_note,omitempty"`
+	Status           *string `json:"status,omitempty"`
 }
 
 type ResourceChangeRequest struct {
