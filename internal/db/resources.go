@@ -62,6 +62,7 @@ UPDATE public.services
 SET status = $2, updated_at = NOW()
 WHERE resource_id = $1
   AND status = $3
+RETURNING id
 `
 
 func (m *Manager) GetResourceById(resourceId int) *Resource {
@@ -98,32 +99,45 @@ func (m *Manager) GetResourcesCount() (int, error) {
 
 }
 
-func (m *Manager) DeactivateResourceAndApprovedServices(resourceId int) error {
+func (m *Manager) DeactivateResourceAndApprovedServices(resourceId int) ([]int, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	res, err := tx.Exec(deactivateResourceSql, resourceId, ResourceStatusInactive)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	rowCount, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if rowCount != 1 {
-		return fmt.Errorf("unexpected rows modified, expected one, saw %v", rowCount)
+		return nil, fmt.Errorf("unexpected rows modified, expected one, saw %v", rowCount)
 	}
 
-	_, err = tx.Exec(deactivateApprovedResourceServicesSql, resourceId, ResourceStatusInactive, ResourceStatusApproved)
+	rows, err := tx.Query(deactivateApprovedResourceServicesSql, resourceId, ResourceStatusInactive, ResourceStatusApproved)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	defer rows.Close()
+
+	var serviceIds []int
+	for rows.Next() {
+		var serviceId int
+		if err := rows.Scan(&serviceId); err != nil {
+			return nil, err
+		}
+		serviceIds = append(serviceIds, serviceId)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return tx.Commit()
+	return serviceIds, tx.Commit()
 }
 
 func (m *Manager) UpdateResource(

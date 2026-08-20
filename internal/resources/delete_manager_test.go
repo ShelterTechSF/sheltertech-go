@@ -12,8 +12,19 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"github.com/stretchr/testify/assert"
 )
+
+type fakeSearchIndexer struct {
+	deletedObjectIDs []string
+	err              error
+}
+
+func (f *fakeSearchIndexer) DeleteObject(objectID string) error {
+	f.deletedObjectIDs = append(f.deletedObjectIDs, objectID)
+	return f.err
+}
 
 func TestManager_Delete(t *testing.T) {
 	const resourceStatusQuery = `
@@ -31,14 +42,17 @@ UPDATE public.services
 SET status = $2, updated_at = NOW()
 WHERE resource_id = $1
   AND status = $3
+RETURNING id
 `
 
 	tests := []struct {
-		name           string
-		id             string
-		setupMock      func(sqlmock.Sqlmock)
-		expectedStatus int
-		expectedBody   string
+		name                     string
+		id                       string
+		setupMock                func(sqlmock.Sqlmock)
+		searchIndexErr           error
+		expectedStatus           int
+		expectedBody             string
+		expectedDeletedObjectIDs []string
 	}{
 		{
 			name: "deactivates approved resource and approved child services",
@@ -51,13 +65,35 @@ WHERE resource_id = $1
 				mock.ExpectExec(regexp.QuoteMeta(deactivateResourceQuery)).
 					WithArgs(123, db.ResourceStatusInactive).
 					WillReturnResult(sqlmock.NewResult(0, 1))
-				mock.ExpectExec(regexp.QuoteMeta(deactivateServicesQuery)).
+				mock.ExpectQuery(regexp.QuoteMeta(deactivateServicesQuery)).
 					WithArgs(123, db.ResourceStatusInactive, db.ResourceStatusApproved).
-					WillReturnResult(sqlmock.NewResult(0, 2))
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(456).AddRow(789))
 				mock.ExpectCommit()
 			},
-			expectedStatus: http.StatusOK,
-			expectedBody:   "",
+			expectedStatus:           http.StatusOK,
+			expectedBody:             "",
+			expectedDeletedObjectIDs: []string{"resource_123", "service_456", "service_789"},
+		},
+		{
+			name: "keeps Rails-compatible success when search index removal fails",
+			id:   "123",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(resourceStatusQuery)).
+					WithArgs(123).
+					WillReturnRows(sqlmock.NewRows([]string{"status"}).AddRow(db.ResourceStatusApproved))
+				mock.ExpectBegin()
+				mock.ExpectExec(regexp.QuoteMeta(deactivateResourceQuery)).
+					WithArgs(123, db.ResourceStatusInactive).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectQuery(regexp.QuoteMeta(deactivateServicesQuery)).
+					WithArgs(123, db.ResourceStatusInactive, db.ResourceStatusApproved).
+					WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(456))
+				mock.ExpectCommit()
+			},
+			searchIndexErr:           errors.New("search index unavailable"),
+			expectedStatus:           http.StatusOK,
+			expectedBody:             "",
+			expectedDeletedObjectIDs: []string{"resource_123", "service_456"},
 		},
 		{
 			name: "returns precondition failed when resource is not approved",
@@ -125,7 +161,8 @@ WHERE resource_id = $1
 
 			tt.setupMock(mock)
 
-			manager := New(&db.Manager{DB: sqlDB})
+			indexer := &fakeSearchIndexer{err: tt.searchIndexErr}
+			manager := NewWithDependencies(&db.Manager{DB: sqlDB}, indexer)
 			req := requestWithResourceDeleteID(http.MethodDelete, tt.id)
 			w := httptest.NewRecorder()
 
@@ -133,9 +170,15 @@ WHERE resource_id = $1
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedBody, w.Body.String())
+			assert.Equal(t, tt.expectedDeletedObjectIDs, indexer.deletedObjectIDs)
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestNewWithDependenciesDefaultsSearchIndex(t *testing.T) {
+	manager := NewWithDependencies(nil, nil)
+	assert.IsType(t, searchindex.NoopIndexer{}, manager.SearchIndex)
 }
 
 func requestWithResourceDeleteID(method, id string) *http.Request {

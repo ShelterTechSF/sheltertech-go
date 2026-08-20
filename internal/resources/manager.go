@@ -11,20 +11,29 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient    *db.Manager
+	SearchIndex searchindex.Indexer
 }
 
 func New(dbManager *db.Manager) *Manager {
-	manager := &Manager{
-		DbClient: dbManager,
+	return NewWithDependencies(dbManager, searchindex.NoopIndexer{})
+}
+
+func NewWithDependencies(dbManager *db.Manager, indexer searchindex.Indexer) *Manager {
+	if indexer == nil {
+		indexer = searchindex.NoopIndexer{}
 	}
-	return manager
+	return &Manager{
+		DbClient:    dbManager,
+		SearchIndex: indexer,
+	}
 }
 
 // GetByID Get a resource by ID
@@ -102,13 +111,26 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = m.DbClient.DeactivateResourceAndApprovedServices(resourceId)
+	deactivatedServiceIds, err := m.DbClient.DeactivateResourceAndApprovedServices(resourceId)
 	if err != nil {
 		http.Error(w, "Failed to deactivate resource", http.StatusInternalServerError)
 		return
 	}
 
+	m.removeDeactivatedObjectsFromSearchIndex(resourceId, deactivatedServiceIds)
+
 	w.WriteHeader(http.StatusOK)
+}
+
+func (m *Manager) removeDeactivatedObjectsFromSearchIndex(resourceId int, serviceIds []int) {
+	if err := m.SearchIndex.DeleteObject(searchindex.ResourceObjectID(resourceId)); err != nil {
+		log.Printf("failed to remove resource %d from search index: %v", resourceId, err)
+	}
+	for _, serviceId := range serviceIds {
+		if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
+			log.Printf("failed to remove service %d from search index: %v", serviceId, err)
+		}
+	}
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
