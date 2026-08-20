@@ -24,6 +24,15 @@ func NewGoogleTranslateService(credentials string) *GoogleTranslateService {
 
 // Translate translates the given texts to the target language
 func (g *GoogleTranslateService) Translate(ctx context.Context, texts []string, targetLang language.Tag) ([]string, error) {
+	return g.translate(ctx, texts, targetLang, nil)
+}
+
+// TranslateWithSource translates the given texts to the target language with a source-language hint.
+func (g *GoogleTranslateService) TranslateWithSource(ctx context.Context, texts []string, targetLang, sourceLang language.Tag) ([]string, error) {
+	return g.translate(ctx, texts, targetLang, &translate.Options{Source: sourceLang})
+}
+
+func (g *GoogleTranslateService) translate(ctx context.Context, texts []string, targetLang language.Tag, options *translate.Options) ([]string, error) {
 	if g.credentials == "" {
 		return nil, fmt.Errorf("translation credentials not provided")
 	}
@@ -36,7 +45,7 @@ func (g *GoogleTranslateService) Translate(ctx context.Context, texts []string, 
 	defer client.Close()
 
 	// Perform translation
-	translations, err := client.Translate(ctx, texts, targetLang, nil)
+	translations, err := client.Translate(ctx, texts, targetLang, options)
 	if err != nil {
 		// Handle quota/rate limit errors specifically
 		if strings.Contains(err.Error(), "quota") || strings.Contains(err.Error(), "limit") {
