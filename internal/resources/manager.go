@@ -68,6 +68,28 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *Manager) Certify(w http.ResponseWriter, r *http.Request) {
+	resourceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid resource ID format")
+		return
+	}
+
+	certified, err := m.DbClient.CertifyResource(resourceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	if !certified {
+		common.WriteErrorJson(w, http.StatusNotFound, "Resource not found")
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
