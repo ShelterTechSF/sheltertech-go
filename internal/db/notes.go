@@ -30,7 +30,20 @@ WHERE n.resource_id = $1
 const createNoteForServiceSql = `
 INSERT INTO public.notes (note, service_id, created_at, updated_at)
 VALUES ($1, $2, now(), now())
-RETURNING id, note, created_at, updated_at
+RETURNING id, note, resource_id, service_id, created_at, updated_at
+`
+
+const touchServiceForNoteSql = `
+UPDATE public.services
+SET updated_at = now()
+WHERE id = $1
+RETURNING resource_id
+`
+
+const touchResourceForServiceNoteSql = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1
 `
 
 func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
@@ -54,8 +67,33 @@ func (m *Manager) GetNotesByResourceID(resourceId int) []*Note {
 }
 
 func (m *Manager) CreateNoteForService(noteText string, serviceId int) (*Note, error) {
-	row := m.DB.QueryRow(createNoteForServiceSql, noteText, serviceId)
-	return scanNote(row)
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	row := tx.QueryRow(createNoteForServiceSql, noteText, serviceId)
+	note, err := scanNote(row)
+	if err != nil {
+		return nil, err
+	}
+
+	var resourceID sql.NullInt32
+	if err := tx.QueryRow(touchServiceForNoteSql, serviceId).Scan(&resourceID); err != nil {
+		return nil, err
+	}
+	if resourceID.Valid {
+		if _, err := tx.Exec(touchResourceForServiceNoteSql, resourceID.Int32); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return note, nil
 }
 
 func scanNotes(rows *sql.Rows) []*Note {
@@ -75,6 +113,6 @@ func scanNotes(rows *sql.Rows) []*Note {
 
 func scanNote(row *sql.Row) (*Note, error) {
 	var note Note
-	err := row.Scan(&note.Id, &note.Note, &note.CreatedAt, &note.UpdatedAt)
+	err := row.Scan(&note.Id, &note.Note, &note.ResourceId, &note.ServiceId, &note.CreatedAt, &note.UpdatedAt)
 	return &note, err
 }

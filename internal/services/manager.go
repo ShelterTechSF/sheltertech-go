@@ -114,7 +114,7 @@ func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJsonWithStatus(w, notes.FromNoteDBType(dbNote), http.StatusCreated)
+	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
 }
 
 // GetByID Get a service by ID

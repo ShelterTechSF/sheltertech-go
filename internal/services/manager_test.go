@@ -169,7 +169,18 @@ SELECT EXISTS(SELECT 1 FROM public.services WHERE id = $1)
 	const createNoteForServiceQuery = `
 INSERT INTO public.notes (note, service_id, created_at, updated_at)
 VALUES ($1, $2, now(), now())
-RETURNING id, note, created_at, updated_at
+RETURNING id, note, resource_id, service_id, created_at, updated_at
+`
+	const touchServiceForNoteQuery = `
+UPDATE public.services
+SET updated_at = now()
+WHERE id = $1
+RETURNING resource_id
+`
+	const touchResourceForServiceNoteQuery = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1
 `
 
 	tests := []struct {
@@ -185,16 +196,25 @@ RETURNING id, note, created_at, updated_at
 			serviceID: "123",
 			body:      `{"note":{"note":"Legacy compatible note"}}`,
 			setupMock: func(mock sqlmock.Sqlmock) {
+				now := time.Date(2026, time.August, 20, 12, 34, 56, 0, time.UTC)
 				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
 					WithArgs(123).
 					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectBegin()
 				mock.ExpectQuery(regexp.QuoteMeta(createNoteForServiceQuery)).
 					WithArgs("Legacy compatible note", 123).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "note", "created_at", "updated_at"}).
-						AddRow(456, "Legacy compatible note", time.Now(), time.Now()))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "note", "resource_id", "service_id", "created_at", "updated_at"}).
+						AddRow(456, "Legacy compatible note", nil, 123, now, now))
+				mock.ExpectQuery(regexp.QuoteMeta(touchServiceForNoteQuery)).
+					WithArgs(123).
+					WillReturnRows(sqlmock.NewRows([]string{"resource_id"}).AddRow(99))
+				mock.ExpectExec(regexp.QuoteMeta(touchResourceForServiceNoteQuery)).
+					WithArgs(int32(99)).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"id":456,"note":"Legacy compatible note"}`,
+			expectedBody:   `{"id":456,"note":"Legacy compatible note","resource_id":null,"service_id":123,"created_at":"2026-08-20T12:34:56Z","updated_at":"2026-08-20T12:34:56Z"}`,
 		},
 		{
 			name:      "returns bad request for invalid service id",
