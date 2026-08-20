@@ -68,13 +68,52 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
+	resourceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid resource ID format")
+		return
+	}
+
+	var createReq ResourceNoteCreateRequest
+	err = json.NewDecoder(r.Body).Decode(&createReq)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if createReq.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if m.DbClient.GetResourceById(resourceId) == nil {
+		common.WriteErrorJson(w, http.StatusNotFound, "Resource not found")
+		return
+	}
+
+	dbNote, err := m.DbClient.CreateResourceNote(resourceId, createReq.Note.Note)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
+}
+
 func writeJson(w http.ResponseWriter, object interface{}) {
+	writeJsonWithStatus(w, object, http.StatusOK)
+}
+
+func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
 	output, err := json.Marshal(object)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	_, err = w.Write(output)
 	if err != nil {
 		panic(err)

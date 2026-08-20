@@ -17,6 +17,15 @@ import (
 type ResourceResponse struct {
 	Resource *Resource `json:"resource"`
 }
+
+type ResourceNoteCreateRequest struct {
+	Note *ResourceNoteCreateParams `json:"note"`
+}
+
+type ResourceNoteCreateParams struct {
+	Note *string `json:"note"`
+}
+
 type Resource struct {
 	UpdatedAt         string  `json:"updated_at"`
 	AlternateName     *string `json:"alternate_name"`
