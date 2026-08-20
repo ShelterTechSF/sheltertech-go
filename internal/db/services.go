@@ -108,26 +108,46 @@ func (m *Manager) GetApprovedServicesByResourceId(resourceId int) []*Service {
 }
 
 func (m *Manager) DeactivateService(serviceId int) error {
-	res, err := m.DB.Exec(
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var resourceId sql.NullInt32
+	err = tx.QueryRow(
 		`UPDATE public.services
 SET status = $2, updated_at = NOW()
-WHERE id = $1`,
+WHERE id = $1
+RETURNING resource_id`,
 		serviceId,
 		ServiceStatusInactive,
-	)
+	).Scan(&resourceId)
 	if err != nil {
 		return err
 	}
 
-	rowCount, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowCount != 1 {
-		return fmt.Errorf("unexpected rows modified, expected one, saw %v", rowCount)
+	if resourceId.Valid {
+		res, err := tx.Exec(
+			`UPDATE public.resources
+SET updated_at = NOW()
+WHERE id = $1`,
+			resourceId.Int32,
+		)
+		if err != nil {
+			return err
+		}
+
+		rowCount, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowCount != 1 {
+			return fmt.Errorf("unexpected resource rows modified, expected one, saw %v", rowCount)
+		}
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func scanServices(rows *sql.Rows) []*Service {
