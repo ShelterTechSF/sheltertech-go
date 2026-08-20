@@ -20,6 +20,19 @@ FROM public.instructions i
 WHERE i.service_id = $1
 `
 
+const createInstructionSql = `
+INSERT INTO public.instructions (service_id, instruction, created_at, updated_at)
+VALUES ($1, $2, NOW(), NOW())
+RETURNING id, instruction
+`
+
+const updateInstructionSql = `
+UPDATE public.instructions
+SET instruction = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, instruction
+`
+
 func (m *Manager) GetInstructionsByServiceID(serviceId int) []*Instruction {
 	var rows *sql.Rows
 	var err error
@@ -28,6 +41,30 @@ func (m *Manager) GetInstructionsByServiceID(serviceId int) []*Instruction {
 		log.Printf("%v\n", err)
 	}
 	return scanInstructions(rows)
+}
+
+func (m *Manager) CreateInstruction(serviceId *int, instruction *string) (*Instruction, error) {
+	row := m.DB.QueryRow(createInstructionSql, serviceId, instruction)
+
+	var created Instruction
+	err := row.Scan(&created.Id, &created.Instruction)
+	if err != nil {
+		return nil, err
+	}
+
+	return &created, nil
+}
+
+func (m *Manager) UpdateInstruction(instructionId int, instruction *string) (*Instruction, error) {
+	row := m.DB.QueryRow(updateInstructionSql, instructionId, instruction)
+
+	var updated Instruction
+	err := row.Scan(&updated.Id, &updated.Instruction)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updated, nil
 }
 
 func scanInstructions(rows *sql.Rows) []*Instruction {
