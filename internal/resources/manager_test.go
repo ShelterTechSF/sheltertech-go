@@ -17,7 +17,7 @@ import (
 func TestManager_Certify(t *testing.T) {
 	const certifyResourceQuery = `
 UPDATE public.resources
-SET certified = true, certified_at = now()
+SET certified = true, certified_at = now(), updated_at = now()
 WHERE id = $1
 `
 
