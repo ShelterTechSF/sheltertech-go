@@ -44,6 +44,25 @@ WHERE a.resource_id = $1
 ORDER BY a.id
 `
 
+type ServiceAddressDeleteStatus int
+
+const (
+	ServiceAddressDeleteMissing ServiceAddressDeleteStatus = iota
+	ServiceAddressDeleteNotAssociated
+	ServiceAddressDeleteDeleted
+)
+
+const serviceAddressExistenceSql = `
+SELECT
+	EXISTS(SELECT 1 FROM public.services WHERE id = $1),
+	EXISTS(SELECT 1 FROM public.addresses WHERE id = $2)
+`
+
+const deleteServiceAddressSql = `
+DELETE FROM public.addresses_services
+WHERE service_id = $1 AND address_id = $2
+`
+
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	var rows *sql.Rows
 	var err error
@@ -62,6 +81,33 @@ func (m *Manager) GetAddressesByResourceID(resourceId int) []*Address {
 		log.Printf("%v\n", err)
 	}
 	return scanAddresses(rows)
+}
+
+func (m *Manager) DeleteServiceAddress(serviceId, addressId int) (ServiceAddressDeleteStatus, error) {
+	var serviceExists bool
+	var addressExists bool
+	err := m.DB.QueryRow(serviceAddressExistenceSql, serviceId, addressId).Scan(&serviceExists, &addressExists)
+	if err != nil {
+		return ServiceAddressDeleteMissing, err
+	}
+	if !serviceExists || !addressExists {
+		return ServiceAddressDeleteMissing, nil
+	}
+
+	result, err := m.DB.Exec(deleteServiceAddressSql, serviceId, addressId)
+	if err != nil {
+		return ServiceAddressDeleteMissing, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return ServiceAddressDeleteMissing, err
+	}
+	if rowsAffected == 0 {
+		return ServiceAddressDeleteNotAssociated, nil
+	}
+
+	return ServiceAddressDeleteDeleted, nil
 }
 
 func scanAddresses(rows *sql.Rows) []*Address {
