@@ -21,6 +21,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/programs"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"golang.org/x/text/language"
 )
 
@@ -30,9 +31,10 @@ type Manager struct {
 	PDFService       PDFService       // ← NEW: Injectable service
 	GoogleConfig     GoogleConfig     // ← Same
 	PDFCrowdConfig   PDFCrowdConfig   // ← Same
+	SearchIndex      searchindex.Indexer
 }
 
-func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, pdfCrowdApiKey string) *Manager {
+func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, pdfCrowdApiKey string, indexers ...searchindex.Indexer) *Manager {
 	googleConfig := GoogleConfig{
 		TranslateCredential: translateCredentials,
 	}
@@ -49,6 +51,7 @@ func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, p
 		NewPDFCrowdService(pdfCrowdConfig.Enabled, pdfCrowdUsername, pdfCrowdApiKey), // ← NEW: Creates real service
 		googleConfig,
 		pdfCrowdConfig,
+		indexers...,
 	)
 }
 func NewWithDependencies(
@@ -57,6 +60,7 @@ func NewWithDependencies(
 	pdfService PDFService, // ← NEW: Accepts interface
 	googleConfig GoogleConfig,
 	pdfCrowdConfig PDFCrowdConfig,
+	indexers ...searchindex.Indexer,
 ) *Manager {
 	return &Manager{
 		DbClient:         dbManager,        // ← Same as before
@@ -64,7 +68,15 @@ func NewWithDependencies(
 		PDFService:       pdfService,       // ← NEW: Injected service
 		GoogleConfig:     googleConfig,     // ← Same as before
 		PDFCrowdConfig:   pdfCrowdConfig,   // ← Same as before
+		SearchIndex:      resolveSearchIndex(indexers),
 	}
+}
+
+func resolveSearchIndex(indexers []searchindex.Indexer) searchindex.Indexer {
+	if len(indexers) > 0 && indexers[0] != nil {
+		return indexers[0]
+	}
+	return searchindex.NoopIndexer{}
 }
 
 // GetByID Get a service by ID
@@ -149,6 +161,57 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write([]byte(strconv.Itoa(count)))
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
+}
+
+// Delete deactivates an approved service.
+//
+//	@Summary		Delete Service
+//	@Description	deactivate an approved service
+//	@Tags			services
+//	@Param			id	path	integer	true	"Service ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		412
+//	@Failure		500
+//	@Router			/services/{id} [delete]
+func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	serviceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		return
+	}
+
+	status, err := m.DbClient.GetServiceStatusByID(serviceId)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if status == nil {
+		http.Error(w, "404: Service not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
+	if *status != db.ServiceStatusApproved {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		return
+	}
+
+	err = m.DbClient.DeactivateService(serviceId)
+	if err != nil {
+		http.Error(w, "Failed to deactivate service", http.StatusInternalServerError)
+		return
+	}
+
+	m.removeDeactivatedServiceFromSearchIndex(serviceId)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
+	if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
+		log.Printf("failed to remove service %d from search index: %v", serviceId, err)
 	}
 }
 
