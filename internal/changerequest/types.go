@@ -48,3 +48,11 @@ type ResourceFields struct {
 type ResourceChangeRequest struct {
 	ResourceChangeRequest ChangeRequestResponse `json:"resource_change_request"`
 }
+
+type AddressChangeRequestPayload struct {
+	ChangeRequest json.RawMessage `json:"change_request"`
+}
+
+type AddressChangeRequest struct {
+	AddressChangeRequest ChangeRequestResponse `json:"address_change_request"`
+}

@@ -2,6 +2,7 @@ package changerequest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,20 @@ import (
 
 type Manager struct {
 	DbClient *db.Manager
+}
+
+var addressChangeRequestFields = []string{
+	"attention",
+	"name",
+	"address_1",
+	"address_2",
+	"address_3",
+	"address_4",
+	"city",
+	"state_province",
+	"postal_code",
+	"latitude",
+	"longitude",
 }
 
 func New(dbManager *db.Manager) *Manager {
@@ -164,6 +179,67 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	writeStatus(w, http.StatusCreated)
 }
 
+func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	idStr := chi.URLParam(r, "id")
+	addressId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid address ID", http.StatusBadRequest)
+		return
+	}
+
+	payload, ok := decodeAddressChangeRequestPayload(w, r)
+	if !ok {
+		return
+	}
+
+	removeAddress, err := addressChangeRequestRemovesAddress(payload.ChangeRequest)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var changeRequestId *int
+	fieldChangesResponse := []FieldChange{}
+	if removeAddress {
+		changeRequestId, err = m.DbClient.RemoveAddress(addressId)
+	} else {
+		var fieldChangesMap map[string]interface{}
+		var responseChanges []FieldChange
+		fieldChangesMap, responseChanges, err = addressFieldChangesFromPayload(payload.ChangeRequest)
+		if err != nil {
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		fieldChangesResponse = responseChanges
+		changeRequestId, err = m.DbClient.UpdateAddress(addressId, fieldChangesMap)
+	}
+
+	if errors.Is(err, db.ErrAddressNotFound) {
+		common.WriteErrorJson(w, http.StatusNotFound, "404: Address not found for ID: "+idStr)
+		return
+	}
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &AddressChangeRequest{
+		AddressChangeRequest: ChangeRequestResponse{
+			Id:           *changeRequestId,
+			Status:       "pending",
+			Type:         "AddressChangeRequest",
+			ObjectID:     addressId,
+			FieldChanges: fieldChangesResponse,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
+}
+
 func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
 	phoneFields := unmarshalPhoneFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
@@ -233,6 +309,108 @@ func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPaylo
 	}
 
 	return *changeRequestPayload
+}
+
+func decodeAddressChangeRequestPayload(w http.ResponseWriter, r *http.Request) (AddressChangeRequestPayload, bool) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return AddressChangeRequestPayload{}, false
+	}
+
+	payload := AddressChangeRequestPayload{}
+	err = json.Unmarshal(body, &payload)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return AddressChangeRequestPayload{}, false
+	}
+	if len(payload.ChangeRequest) == 0 || string(payload.ChangeRequest) == "null" {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Missing change_request")
+		return AddressChangeRequestPayload{}, false
+	}
+
+	return payload, true
+}
+
+func addressChangeRequestRemovesAddress(changeRequest json.RawMessage) (bool, error) {
+	requestFields := map[string]json.RawMessage{}
+	if err := json.Unmarshal(changeRequest, &requestFields); err != nil {
+		return false, err
+	}
+
+	actionJSON, ok := requestFields["action"]
+	if !ok {
+		return false, nil
+	}
+
+	var action string
+	if err := json.Unmarshal(actionJSON, &action); err != nil {
+		return false, fmt.Errorf("Invalid address change request action")
+	}
+
+	switch action {
+	case "remove":
+		return true, nil
+	case "", "edit":
+		return false, nil
+	default:
+		return false, fmt.Errorf("Unsupported address change request action: %s", action)
+	}
+}
+
+func addressFieldChangesFromPayload(changeRequest json.RawMessage) (map[string]interface{}, []FieldChange, error) {
+	requestFields := map[string]json.RawMessage{}
+	if err := json.Unmarshal(changeRequest, &requestFields); err != nil {
+		return nil, nil, err
+	}
+	if nestedFieldChanges, ok := requestFields["field_changes"]; ok && string(nestedFieldChanges) != "null" {
+		if err := json.Unmarshal(nestedFieldChanges, &requestFields); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	fieldChangesMap := make(map[string]interface{})
+	fieldChangesResponse := []FieldChange{}
+
+	for _, fieldName := range addressChangeRequestFields {
+		fieldJSON, ok := requestFields[fieldName]
+		if !ok {
+			continue
+		}
+
+		dbValue, responseValue, err := addressChangeRequestFieldValue(fieldName, fieldJSON)
+		if err != nil {
+			return nil, nil, err
+		}
+		fieldChangesMap[fieldName] = dbValue
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
+			FieldName:  fieldName,
+			FieldValue: responseValue,
+		})
+	}
+
+	return fieldChangesMap, fieldChangesResponse, nil
+}
+
+func addressChangeRequestFieldValue(fieldName string, rawValue json.RawMessage) (interface{}, string, error) {
+	if string(rawValue) == "null" {
+		return nil, "", nil
+	}
+
+	var stringValue string
+	if err := json.Unmarshal(rawValue, &stringValue); err == nil {
+		return stringValue, stringValue, nil
+	}
+
+	var numberValue json.Number
+	decoder := json.NewDecoder(strings.NewReader(string(rawValue)))
+	decoder.UseNumber()
+	if err := decoder.Decode(&numberValue); err == nil {
+		value := numberValue.String()
+		return value, value, nil
+	}
+
+	return nil, "", fmt.Errorf("Invalid address field value for %s", fieldName)
 }
 
 func formatPhoneNumber(number string) (string, error) {
