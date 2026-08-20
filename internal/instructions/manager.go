@@ -23,12 +23,12 @@ func New(dbManager *db.Manager) *Manager {
 }
 
 type createInstructionRequest struct {
-	Instruction instructionPayload `json:"instruction"`
+	Instruction *instructionPayload `json:"instruction"`
 }
 
 type instructionPayload struct {
-	ServiceID   int    `json:"service_id"`
-	Instruction string `json:"instruction"`
+	ServiceID   *int    `json:"service_id"`
+	Instruction *string `json:"instruction"`
 }
 
 // Create creates an instruction for a service.
@@ -50,8 +50,8 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Instruction.ServiceID == 0 {
-		common.WriteErrorJson(w, http.StatusBadRequest, "Service ID is required")
+	if req.Instruction == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Instruction is required")
 		return
 	}
 
@@ -88,6 +88,11 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Instruction == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Instruction is required")
 		return
 	}
 

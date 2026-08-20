@@ -43,7 +43,7 @@ func (m *Manager) GetInstructionsByServiceID(serviceId int) []*Instruction {
 	return scanInstructions(rows)
 }
 
-func (m *Manager) CreateInstruction(serviceId int, instruction string) (*Instruction, error) {
+func (m *Manager) CreateInstruction(serviceId *int, instruction *string) (*Instruction, error) {
 	row := m.DB.QueryRow(createInstructionSql, serviceId, instruction)
 
 	var created Instruction
@@ -55,7 +55,7 @@ func (m *Manager) CreateInstruction(serviceId int, instruction string) (*Instruc
 	return &created, nil
 }
 
-func (m *Manager) UpdateInstruction(instructionId int, instruction string) (*Instruction, error) {
+func (m *Manager) UpdateInstruction(instructionId int, instruction *string) (*Instruction, error) {
 	row := m.DB.QueryRow(updateInstructionSql, instructionId, instruction)
 
 	var updated Instruction

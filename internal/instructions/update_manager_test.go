@@ -45,6 +45,30 @@ RETURNING id, instruction
 			expectedBody:   `{"instruction":"Bring proof of address","id":456}`,
 		},
 		{
+			name: "preserves missing instruction as null",
+			id:   "456",
+			body: `{"instruction":{}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(updateInstructionQuery)).
+					WithArgs(456, nil).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, nil))
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"instruction":null,"id":456}`,
+		},
+		{
+			name: "preserves null instruction as null",
+			id:   "456",
+			body: `{"instruction":{"instruction":null}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(updateInstructionQuery)).
+					WithArgs(456, nil).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, nil))
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   `{"instruction":null,"id":456}`,
+		},
+		{
 			name:           "returns bad request for invalid id",
 			id:             "abc",
 			body:           `{"instruction":{"instruction":"Bring ID"}}`,

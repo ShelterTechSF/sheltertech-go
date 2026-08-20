@@ -39,6 +39,28 @@ RETURNING id, instruction
 			expectedBody:   `{"instruction":"Bring ID","id":456}`,
 		},
 		{
+			name: "preserves missing instruction as null",
+			body: `{"instruction":{"service_id":123}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(createInstructionQuery)).
+					WithArgs(123, nil).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, nil))
+			},
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"instruction":null,"id":456}`,
+		},
+		{
+			name: "preserves null instruction as null",
+			body: `{"instruction":{"service_id":123,"instruction":null}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(createInstructionQuery)).
+					WithArgs(123, nil).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, nil))
+			},
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"instruction":null,"id":456}`,
+		},
+		{
 			name:           "returns bad request for malformed json",
 			body:           `{"instruction":`,
 			setupMock:      func(mock sqlmock.Sqlmock) {},
@@ -46,11 +68,15 @@ RETURNING id, instruction
 			expectedBody:   `{"error":"Invalid request body","status_code":400}`,
 		},
 		{
-			name:           "returns bad request when service id is missing",
-			body:           `{"instruction":{"instruction":"Bring ID"}}`,
-			setupMock:      func(mock sqlmock.Sqlmock) {},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"error":"Service ID is required","status_code":400}`,
+			name: "passes missing service id through like Rails",
+			body: `{"instruction":{"instruction":"Bring ID"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(createInstructionQuery)).
+					WithArgs(nil, "Bring ID").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, "Bring ID"))
+			},
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"instruction":"Bring ID","id":456}`,
 		},
 		{
 			name: "returns internal server error when create fails",
