@@ -1,5 +1,3 @@
-// middleware/jwt.go
-
 package auth
 
 import (
@@ -84,7 +82,7 @@ func RequireIdentity(jwtKeyfunc keyfunc.Keyfunc) func(next http.Handler) http.Ha
 				writeAuthError(w, err.Error())
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), identityContextKey, identity)))
+			next.ServeHTTP(w, r.WithContext(ContextWithIdentity(r.Context(), identity)))
 		})
 	}
 }
@@ -106,7 +104,7 @@ func WithOptionalUser(jwtKeyfunc keyfunc.Keyfunc, dbManager *db.Manager) func(ne
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), identityContextKey, identity)
+			ctx := ContextWithIdentity(r.Context(), identity)
 			if user := dbManager.GetUserByUserExternalID(identity.Subject); user != nil {
 				ctx = ContextWithUser(ctx, user)
 			}
