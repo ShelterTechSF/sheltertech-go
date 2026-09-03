@@ -2,13 +2,11 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type TokenIdentity struct {
@@ -49,17 +47,4 @@ func GetTokenIdentityFromRequest(r *http.Request, keyfunc keyfunc.Keyfunc) (*Tok
 	}
 
 	return &TokenIdentity{Subject: subject}, nil
-}
-
-// Get the DB User corresponding to the HTTP request's Authorization headers.
-func GetUserFromRequest(r *http.Request, keyfunc keyfunc.Keyfunc, db *db.Manager) (*db.User, error) {
-	identity, err := GetTokenIdentityFromRequest(r, keyfunc)
-	if err != nil {
-		return nil, err
-	}
-	user := db.GetUserByUserExternalID(identity.Subject)
-	if user == nil {
-		return nil, fmt.Errorf("No user with external ID: %s", identity.Subject)
-	}
-	return user, nil
 }
