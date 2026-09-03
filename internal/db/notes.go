@@ -27,6 +27,10 @@ FROM public.notes n
 WHERE n.resource_id = $1
 `
 
+const deleteNoteByIDSql = `
+DELETE FROM public.notes WHERE id = $1
+`
+
 func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
 	var rows *sql.Rows
 	var err error
@@ -45,6 +49,20 @@ func (m *Manager) GetNotesByResourceID(resourceId int) []*Note {
 		log.Printf("%v\n", err)
 	}
 	return scanNotes(rows)
+}
+
+func (m *Manager) DeleteNoteByID(id int) (bool, error) {
+	res, err := m.DB.Exec(deleteNoteByIDSql, id)
+	if err != nil {
+		return false, err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rowCount > 0, nil
 }
 
 func scanNotes(rows *sql.Rows) []*Note {
