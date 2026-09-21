@@ -19,9 +19,6 @@ type Bookmark struct {
 	UpdatedAt  sql.NullTime
 }
 
-const findBookmarksSql = `
-SELECT id, "order", user_id, folder_id, service_id, resource_id, name from public.bookmarks`
-
 const findBookmarksByUserIDSql = `
 SELECT id, "order", user_id, folder_id, service_id, resource_id, name from public.bookmarks WHERE user_id=$1`
 
@@ -39,36 +36,19 @@ const deleteBookmarkByIDSql = `
 DELETE FROM public.bookmarks WHERE id = $1
 `
 
-// const bookmarksByFolderIDSQL = `
-// SELECT b.if, b.order, b.service_id
-// FROM public.bookmarks b
-// WHERE b.folder_id = $1
-// `
-
-func (m *Manager) GetBookmarks() ([]*Bookmark, error) {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(findBookmarksSql)
-	if err != nil {
-		log.Printf("%v\n", err)
-	}
-	return scanBookmarks(rows), err
-}
-
 func (m *Manager) GetBookmarkByID(bookmarkId int) (*Bookmark, error) {
 	row := m.DB.QueryRow(findBookmarksByIDSql, bookmarkId)
 	return scanBookmark(row)
 }
 
 func (m *Manager) GetBookmarksByUserID(userId int) ([]*Bookmark, error) {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(findBookmarksByUserIDSql, userId)
+	rows, err := m.DB.Query(findBookmarksByUserIDSql, userId)
 	if err != nil {
 		log.Printf("%v\n", err)
 		return nil, err
 	}
-	return scanBookmarks(rows), err
+	defer rows.Close()
+	return scanBookmarks(rows)
 }
 
 func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
@@ -76,6 +56,7 @@ func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 	res, err := tx.Exec(submitBookmark, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID, bookmark.Name)
 	if err != nil {
 		return err
@@ -86,7 +67,6 @@ func (m *Manager) SubmitBookmark(bookmark *Bookmark) error {
 		return err
 	}
 	if rowCount != 1 {
-		defer tx.Rollback()
 		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
 	}
 
@@ -98,6 +78,7 @@ func (m *Manager) UpdateBookmark(bookmark *Bookmark) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 	res, err := tx.Exec(updateBookmark, bookmark.Id, bookmark.Order, bookmark.UserID, bookmark.FolderID, bookmark.ResourceID, bookmark.ServiceID, bookmark.Name)
 	if err != nil {
 		return err
@@ -108,7 +89,6 @@ func (m *Manager) UpdateBookmark(bookmark *Bookmark) error {
 		return err
 	}
 	if rowCount != 1 {
-		defer tx.Rollback()
 		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
 	}
 	return tx.Commit()
@@ -119,7 +99,7 @@ func (m *Manager) DeleteBookmarkByID(bookmarkId int) error {
 	if err != nil {
 		return err
 	}
-
+	defer tx.Rollback()
 	res, err := tx.Exec(deleteBookmarkByIDSql, bookmarkId)
 	if err != nil {
 		return err
@@ -129,25 +109,25 @@ func (m *Manager) DeleteBookmarkByID(bookmarkId int) error {
 		return err
 	}
 	if rowCount != 1 {
-		defer tx.Rollback()
 		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
 	}
 	return tx.Commit()
 }
 
-func scanBookmarks(rows *sql.Rows) []*Bookmark {
+func scanBookmarks(rows *sql.Rows) ([]*Bookmark, error) {
 	var bookmarks []*Bookmark
 	for rows.Next() {
 		var bookmark Bookmark
 		err := rows.Scan(&bookmark.Id, &bookmark.Order, &bookmark.UserID, &bookmark.FolderID, &bookmark.ServiceID, &bookmark.ResourceID, &bookmark.Name)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
+		if err != nil {
+			return nil, err
 		}
 		bookmarks = append(bookmarks, &bookmark)
 	}
-	return bookmarks
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return bookmarks, nil
 }
 
 func scanBookmark(row *sql.Row) (*Bookmark, error) {
