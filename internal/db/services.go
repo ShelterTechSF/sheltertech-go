@@ -69,32 +69,48 @@ func (m *Manager) GetServicesCount() (int, error) {
 }
 
 func (m *Manager) GetApprovedServicesByResourceId(resourceId int) []*Service {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(approvedServicesByResourceIDSql, resourceId)
+	rows, err := m.DB.Query(approvedServicesByResourceIDSql, resourceId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
-	return scanServices(rows)
+	defer rows.Close()
+	services, err := scanServices(rows)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil
+	}
+	return services
 }
 
-func scanServices(rows *sql.Rows) []*Service {
+func scanServices(rows *sql.Rows) ([]*Service, error) {
 	var services []*Service
 	for rows.Next() {
 		var service Service
 		err := rows.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
 		services = append(services, &service)
 	}
-	return services
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return services, nil
 }
 
 func scanService(row *sql.Row) (*Service, error) {
 	var service Service
 	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-	return &service, err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("No rows were returned!")
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &service, nil
 }
