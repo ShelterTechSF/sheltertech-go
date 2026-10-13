@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -1055,4 +1056,65 @@ func requestWithServiceNoteID(req *http.Request, serviceID string) *http.Request
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("id", serviceID)
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
+}
+
+func TestManager_CreateValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:           "invalid resource ID",
+			path:           "/api/resources/foo/services",
+			body:           `{"services":[]}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid resource ID format","status_code":400}`,
+		},
+		{
+			name:           "malformed body",
+			path:           "/api/resources/1/services",
+			body:           `{"services":`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid request body","status_code":400}`,
+		},
+		{
+			name:           "missing services",
+			path:           "/api/resources/1/services",
+			body:           `{}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Services are required","status_code":400}`,
+		},
+		{
+			name:           "empty services array",
+			path:           "/api/resources/1/services",
+			body:           `{"services":[]}`,
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"services":[]}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			manager := NewWithDependencies(
+				&db.Manager{},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			router := chi.NewRouter()
+			router.Post("/api/resources/{id}/services", manager.Create)
+
+			req := httptest.NewRequest(http.MethodPost, tt.path, bytes.NewBufferString(tt.body))
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+		})
+	}
 }
