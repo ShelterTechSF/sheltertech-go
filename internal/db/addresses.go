@@ -31,22 +31,6 @@ type Address struct {
 	UpdatedAt      time.Time
 }
 
-var ErrAddressNotFound = errors.New("address not found")
-
-var addressChangeRequestEditableColumns = []string{
-	"attention",
-	"name",
-	"address_1",
-	"address_2",
-	"address_3",
-	"address_4",
-	"city",
-	"state_province",
-	"postal_code",
-	"latitude",
-	"longitude",
-}
-
 const addressesByServiceIDSql = `
 SELECT a.id, a.attention, a.address_1, a.address_2, a.address_3, a.address_4, a.city, a.state_province, a.postal_code, a.resource_id, a.latitude, a.longitude, a.online, a.region, a.name ,a.description , a.transportation
 FROM public.addresses a
@@ -62,15 +46,29 @@ WHERE a.resource_id = $1
 ORDER BY a.id
 `
 
-const addressResourceIDByIDSql = `
-SELECT resource_id
-FROM public.addresses
-WHERE id = $1`
+var ErrServiceAddressMissing = errors.New("service or address missing")
 
-const touchResourceForAddressChangeRequestSql = `
-UPDATE public.resources
-SET updated_at = now()
-WHERE id = $1`
+const addressExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.addresses
+WHERE id = $1
+)
+`
+
+const serviceAddressExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.addresses_services
+WHERE service_id = $1
+AND address_id = $2
+)
+`
+
+const createServiceAddressSql = `
+INSERT INTO public.addresses_services (service_id, address_id)
+VALUES ($1, $2)
+`
 
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	var rows *sql.Rows
@@ -91,6 +89,90 @@ func (m *Manager) GetAddressesByResourceID(resourceId int) []*Address {
 	}
 	return scanAddresses(rows)
 }
+
+func (m *Manager) AddressExists(addressId int) (bool, error) {
+	row := m.DB.QueryRow(addressExistsSql, addressId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+func (m *Manager) AddAddressToService(serviceId, addressId int) (bool, error) {
+	serviceExists, err := m.ServiceExists(serviceId)
+	if err != nil {
+		return false, err
+	}
+	if !serviceExists {
+		return false, ErrServiceAddressMissing
+	}
+
+	addressExists, err := m.AddressExists(addressId)
+	if err != nil {
+		return false, err
+	}
+	if !addressExists {
+		return false, ErrServiceAddressMissing
+	}
+
+	associationExists, err := m.serviceAddressExists(serviceId, addressId)
+	if err != nil {
+		return false, err
+	}
+	if associationExists {
+		return false, nil
+	}
+
+	_, err = m.DB.Exec(createServiceAddressSql, serviceId, addressId)
+	return true, err
+}
+
+func (m *Manager) serviceAddressExists(serviceId, addressId int) (bool, error) {
+	row := m.DB.QueryRow(serviceAddressExistsSql, serviceId, addressId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+func scanAddresses(rows *sql.Rows) []*Address {
+	var addresses []*Address
+	for rows.Next() {
+		var address Address
+		err := rows.Scan(&address.Id, &address.Attention, &address.Address1, &address.Address2, &address.Address3, &address.Address4, &address.City, &address.StateProvince, &address.PostalCode, &address.ResourceId, &address.Latitude, &address.Longitude, &address.Online, &address.Region, &address.Name, &address.Description, &address.Transportation)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		addresses = append(addresses, &address)
+	}
+	return addresses
+}
+
+var ErrAddressNotFound = errors.New("address not found")
+
+var addressChangeRequestEditableColumns = []string{
+	"attention",
+	"name",
+	"address_1",
+	"address_2",
+	"address_3",
+	"address_4",
+	"city",
+	"state_province",
+	"postal_code",
+	"latitude",
+	"longitude",
+}
+
+const addressResourceIDByIDSql = `
+SELECT resource_id
+FROM public.addresses
+WHERE id = $1`
+
+const touchResourceForAddressChangeRequestSql = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1`
 
 func (m *Manager) UpdateAddress(addressId int, fieldChanges map[string]interface{}) (*int, error) {
 	tx, err := m.DB.Begin()
@@ -255,19 +337,4 @@ func buildAddressUpdateQuery(addressId int, fieldChanges map[string]interface{})
 		strings.Join(setParts, ", "),
 		position,
 	), args
-}
-
-func scanAddresses(rows *sql.Rows) []*Address {
-	var addresses []*Address
-	for rows.Next() {
-		var address Address
-		err := rows.Scan(&address.Id, &address.Attention, &address.Address1, &address.Address2, &address.Address3, &address.Address4, &address.City, &address.StateProvince, &address.PostalCode, &address.ResourceId, &address.Latitude, &address.Longitude, &address.Online, &address.Region, &address.Name, &address.Description, &address.Transportation)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		}
-		addresses = append(addresses, &address)
-	}
-	return addresses
 }
