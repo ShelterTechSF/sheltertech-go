@@ -19,6 +19,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
@@ -64,6 +65,9 @@ func main() {
 	googleTranslateCredentials := viper.GetString("TRANSLATE_CREDENTIALS")
 	pdfCrowdUsername := viper.GetString("PDF_CROWD_USERNAME")
 	pdfCrowdApiKey := viper.GetString("PDF_CROWD_API_KEY")
+	algoliaAppID := viper.GetString("ALGOLIA_APPLICATION_ID")
+	algoliaAPIKey := viper.GetString("ALGOLIA_API_KEY")
+	algoliaIndexPrefix := viper.GetString("ALGOLIA_INDEX_PREFIX")
 	var jwtKeyfunc keyfunc.Keyfunc
 	if auth0Domain != "" {
 		jwksUrl := "https://" + auth0Domain + "/.well-known/jwks.json"
@@ -79,7 +83,10 @@ func main() {
 	changeRequestManager := changerequest.New(dbManager)
 	foldersManager := folders.New(dbManager)
 	servicesManager := services.New(dbManager, googleTranslateCredentials, pdfCrowdUsername, pdfCrowdApiKey)
-	resourcesManager := resources.New(dbManager)
+	resourcesManager := resources.NewWithDependencies(
+		dbManager,
+		searchindex.NewAlgoliaIndexer(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix),
+	)
 	usersManager := users.New(dbManager)
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
@@ -186,6 +193,7 @@ func main() {
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
+		r.Delete("/api/resources/{id}", resourcesManager.Delete)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
