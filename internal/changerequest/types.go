@@ -1,6 +1,8 @@
 package changerequest
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type ChangeRequestPayload struct {
 	ChangeRequest    ChangeRequest `json:"change_request"`
@@ -14,6 +16,56 @@ type ChangeRequest struct {
 	FieldChanges json.RawMessage `json:"field_changes"`
 	rawFields    map[string]json.RawMessage
 	Status       *string `json:"status,omitempty"`
+}
+
+type FieldChange struct {
+	FieldName  string `json:"field_name"`
+	FieldValue string `json:"field_value"`
+}
+
+type ChangeRequestResponse struct {
+	Id           int           `json:"id"`
+	Status       string        `json:"status"`
+	Type         string        `json:"type"`
+	ObjectID     int           `json:"object_id"`
+	FieldChanges []FieldChange `json:"field_changes"`
+}
+
+type PhoneChangeRequest struct {
+	PhoneChangeRequest ChangeRequestResponse `json:"phone_change_request"`
+}
+
+type NoteChangeRequestPayload struct {
+	ChangeRequest NoteFields `json:"change_request"`
+}
+
+type NoteChangeRequest struct {
+	NoteChangeRequest ChangeRequestResponse `json:"note_change_request"`
+}
+
+type NoteFields struct {
+	Note *string `json:"note,omitempty"`
+}
+
+type PhoneFields struct {
+	Number      *string `json:"number,omitempty"`
+	ServiceType *string `json:"service_type,omitempty"`
+}
+
+type ResourceFields struct {
+	Name             *string `json:"name,omitempty"`
+	AlternateName    *string `json:"alternate_name,omitempty"`
+	ShortDescription *string `json:"short_description,omitempty"`
+	LongDescription  *string `json:"long_description,omitempty"`
+	Website          *string `json:"website,omitempty"`
+	Email            *string `json:"email,omitempty"`
+	LegalStatus      *string `json:"legal_status,omitempty"`
+	InternalNote     *string `json:"internal_note,omitempty"`
+	Status           *string `json:"status,omitempty"`
+}
+
+type ResourceChangeRequest struct {
+	ResourceChangeRequest ChangeRequestResponse `json:"resource_change_request"`
 }
 
 func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
@@ -40,44 +92,6 @@ func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type FieldChange struct {
-	FieldName  string `json:"field_name"`
-	FieldValue string `json:"field_value"`
-}
-
-type ChangeRequestResponse struct {
-	Id           int           `json:"id"`
-	Status       string        `json:"status"`
-	Type         string        `json:"type"`
-	ObjectID     int           `json:"object_id"`
-	FieldChanges []FieldChange `json:"field_changes"`
-}
-
-type PhoneChangeRequest struct {
-	PhoneChangeRequest ChangeRequestResponse `json:"phone_change_request"`
-}
-
 type ScheduleDayChangeRequest struct {
 	ScheduleDayChangeRequest ChangeRequestResponse `json:"schedule_day_change_request"`
-}
-
-type PhoneFields struct {
-	Number      *string `json:"number,omitempty"`
-	ServiceType *string `json:"service_type,omitempty"`
-}
-
-type ResourceFields struct {
-	Name             *string `json:"name,omitempty"`
-	AlternateName    *string `json:"alternate_name,omitempty"`
-	ShortDescription *string `json:"short_description,omitempty"`
-	LongDescription  *string `json:"long_description,omitempty"`
-	Website          *string `json:"website,omitempty"`
-	Email            *string `json:"email,omitempty"`
-	LegalStatus      *string `json:"legal_status,omitempty"`
-	InternalNote     *string `json:"internal_note,omitempty"`
-	Status           *string `json:"status,omitempty"`
-}
-
-type ResourceChangeRequest struct {
-	ResourceChangeRequest ChangeRequestResponse `json:"resource_change_request"`
 }

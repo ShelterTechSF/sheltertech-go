@@ -1,17 +1,18 @@
 package changerequest
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 type Manager struct {
@@ -199,35 +200,49 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	writeStatus(w, http.StatusCreated)
 }
 
-func (m *Manager) UpdateScheduleDay(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	changeRequestPayload := unmarshalPayload(w, r)
+
 	idStr := chi.URLParam(r, "id")
-	scheduleDayId, err := strconv.Atoi(idStr)
+	noteId, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid schedule day ID", http.StatusBadRequest)
+		http.Error(w, "Invalid note ID", http.StatusBadRequest)
 		return
 	}
 
-	scheduleDayChanges, fieldChangesResponse, err := scheduleDayChangeInputFromPayload(changeRequestPayload)
+	payload, err := unmarshalNoteChangeRequestPayload(r)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if payload.ChangeRequest.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Missing note")
+		return
+	}
 
-	changeRequestId, err := m.DbClient.UpdateScheduleDayChangeRequest(scheduleDayId, scheduleDayChanges)
+	noteText := *payload.ChangeRequest.Note
+	changeRequestId, err := m.DbClient.UpdateNote(noteId, noteText)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			common.WriteErrorJson(w, http.StatusNotFound, "Note not found")
+			return
+		}
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response := &ScheduleDayChangeRequest{
-		ScheduleDayChangeRequest: ChangeRequestResponse{
-			Id:           *changeRequestId,
-			Status:       "pending",
-			Type:         "ScheduleDayChangeRequest",
-			ObjectID:     scheduleDayId,
-			FieldChanges: fieldChangesResponse,
+	response := &NoteChangeRequest{
+		NoteChangeRequest: ChangeRequestResponse{
+			Id:       *changeRequestId,
+			Status:   "pending",
+			Type:     "NoteChangeRequest",
+			ObjectID: noteId,
+			FieldChanges: []FieldChange{
+				{
+					FieldName:  "note",
+					FieldValue: noteText,
+				},
+			},
 		},
 	}
 
@@ -286,6 +301,105 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 	writeStatus(w, http.StatusCreated)
 }
 
+func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
+	phoneFields := &PhoneFields{}
+	err := json.Unmarshal(fieldChanges, phoneFields)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+	}
+
+	return *phoneFields
+}
+
+func unmarshalNoteChangeRequestPayload(r *http.Request) (*NoteChangeRequestPayload, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	noteChangeRequestPayload := &NoteChangeRequestPayload{}
+	err = json.Unmarshal(body, noteChangeRequestPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	return noteChangeRequestPayload, nil
+}
+
+func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {
+	body, _ := io.ReadAll(r.Body)
+	changeRequestPayload := &ChangeRequestPayload{}
+	err := json.Unmarshal(body, changeRequestPayload)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+	}
+
+	return *changeRequestPayload
+}
+
+func formatPhoneNumber(number string) (string, error) {
+	parsed, err := phonenumbers.Parse(strings.TrimSpace(number), "US")
+
+	if err != nil {
+		return "", err
+	}
+
+	return phonenumbers.Format(parsed, phonenumbers.E164), nil
+}
+
+func writeStatus(w http.ResponseWriter, responseStatus int) {
+	w.WriteHeader(responseStatus)
+}
+
+func writeJson(w http.ResponseWriter, object interface{}) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(output)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (m *Manager) UpdateScheduleDay(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	changeRequestPayload := unmarshalPayload(w, r)
+	idStr := chi.URLParam(r, "id")
+	scheduleDayId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid schedule day ID", http.StatusBadRequest)
+		return
+	}
+
+	scheduleDayChanges, fieldChangesResponse, err := scheduleDayChangeInputFromPayload(changeRequestPayload)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	changeRequestId, err := m.DbClient.UpdateScheduleDayChangeRequest(scheduleDayId, scheduleDayChanges)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &ScheduleDayChangeRequest{
+		ScheduleDayChangeRequest: ChangeRequestResponse{
+			Id:           *changeRequestId,
+			Status:       "pending",
+			Type:         "ScheduleDayChangeRequest",
+			ObjectID:     scheduleDayId,
+			FieldChanges: fieldChangesResponse,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
+}
+
 func createScheduleDay(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
 	if payload.ScheduleID == 0 {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Missing Required Fields")
@@ -317,16 +431,6 @@ func createScheduleDay(w http.ResponseWriter, dbClient *db.Manager, payload Chan
 	w.Header().Set("Content-Type", "application/json")
 	writeStatus(w, http.StatusCreated)
 	writeJson(w, response)
-}
-
-func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
-	phoneFields := &PhoneFields{}
-	err := json.Unmarshal(fieldChanges, phoneFields)
-	if err != nil {
-		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-	}
-
-	return *phoneFields
 }
 
 func scheduleDayChangeInputFromPayload(payload ChangeRequestPayload) (db.ScheduleDayChangeInput, []FieldChange, error) {
@@ -451,41 +555,4 @@ func nilableScheduleDayFieldValue(fieldValue string) interface{} {
 		return nil
 	}
 	return fieldValue
-}
-
-func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {
-	body, _ := io.ReadAll(r.Body)
-	changeRequestPayload := &ChangeRequestPayload{}
-	err := json.Unmarshal(body, changeRequestPayload)
-	if err != nil {
-		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-	}
-
-	return *changeRequestPayload
-}
-
-func formatPhoneNumber(number string) (string, error) {
-	parsed, err := phonenumbers.Parse(strings.TrimSpace(number), "US")
-
-	if err != nil {
-		return "", err
-	}
-
-	return phonenumbers.Format(parsed, phonenumbers.E164), nil
-}
-
-func writeStatus(w http.ResponseWriter, responseStatus int) {
-	w.WriteHeader(responseStatus)
-}
-
-func writeJson(w http.ResponseWriter, object interface{}) {
-	output, err := json.Marshal(object)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
-	}
 }
