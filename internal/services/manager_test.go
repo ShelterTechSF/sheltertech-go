@@ -1,22 +1,21 @@
-// manager_test.go
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"regexp"
-	"strings"
-	"testing"
-
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/text/language"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"regexp"
+	"strings"
+	"testing"
 )
 
 func TestManager_ConvertHtmlToPdf(t *testing.T) {
@@ -160,6 +159,136 @@ func TestManager_ConvertHtmlToPdf(t *testing.T) {
 	}
 }
 
+func TestManager_ConvertHtmlToPdf_AcceptsJSONPayload(t *testing.T) {
+	html := "<html><body>Test</body></html>"
+	pdfData := []byte("%PDF-1.4 test")
+
+	mockTranslate := new(MockTranslateService)
+	mockPDF := new(MockPDFService)
+	mockPDF.On("ConvertToPDF", html).Return(pdfData, nil)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/services/html_to_pdf",
+		strings.NewReader(`{"html":"<html><body>Test</body></html>","target_language":""}`),
+	)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, "attachment; filename=translation.pdf", w.Header().Get("Content-Disposition"))
+	assert.Equal(t, pdfData, w.Body.Bytes())
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
+func TestManager_ConvertHtmlToPdf_AcceptsJSONPayloadWithTranslation(t *testing.T) {
+	html := "<html><body>Hello World</body></html>"
+	translatedHTML := "<html><body>Hola Mundo</body></html>"
+	pdfData := []byte("%PDF-1.4 translated")
+
+	mockTranslate := new(MockTranslateService)
+	mockTranslate.On("Translate", mock.Anything, []string{html}, language.Spanish).
+		Return([]string{translatedHTML}, nil)
+	mockPDF := new(MockPDFService)
+	mockPDF.On("ConvertToPDF", translatedHTML).Return(pdfData, nil)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/services/html_to_pdf",
+		strings.NewReader(`{"html":"<html><body>Hello World</body></html>","target_language":"es"}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, pdfData, w.Body.Bytes())
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
+func TestManager_ConvertHtmlToPdf_PreservesFormPayload(t *testing.T) {
+	html := "<html><body>Form Test</body></html>"
+	pdfData := []byte("%PDF-1.4 form")
+
+	mockTranslate := new(MockTranslateService)
+	mockPDF := new(MockPDFService)
+	mockPDF.On("ConvertToPDF", html).Return(pdfData, nil)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	formData := url.Values{}
+	formData.Set("html", html)
+	req := httptest.NewRequest(http.MethodPost, "/api/services/html_to_pdf", strings.NewReader(formData.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, pdfData, w.Body.Bytes())
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
+func TestManager_ConvertHtmlToPdf_ReturnsBadRequestForMalformedJSON(t *testing.T) {
+	mockTranslate := new(MockTranslateService)
+	mockPDF := new(MockPDFService)
+
+	manager := NewWithDependencies(
+		&db.Manager{},
+		mockTranslate,
+		mockPDF,
+		GoogleConfig{TranslateCredential: "fake-credentials"},
+		PDFCrowdConfig{Enabled: true, User: "test", Key: "test"},
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/services/html_to_pdf", strings.NewReader(`{"html":`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	manager.ConvertHtmlToPdf(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+
+	var errorResponse map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &errorResponse)
+	assert.NoError(t, err)
+	assert.Contains(t, errorResponse["error"], "Error parsing JSON data")
+	mockTranslate.AssertExpectations(t)
+	mockPDF.AssertExpectations(t)
+}
+
 func TestManager_GetCount(t *testing.T) {
 	const serviceCountQuery = `SELECT count(1)
 FROM public.services`
@@ -217,75 +346,110 @@ FROM public.services`
 	}
 }
 
-func TestManager_DeleteAddress(t *testing.T) {
-	const serviceAddressExistenceQuery = `SELECT\s+EXISTS\(SELECT 1 FROM public\.services WHERE id = \$1\),\s+EXISTS\(SELECT 1 FROM public\.addresses WHERE id = \$2\)`
-	const deleteServiceAddressQuery = `DELETE FROM public\.addresses_services\s+WHERE service_id = \$1 AND address_id = \$2`
+func TestManager_AddAddress(t *testing.T) {
+	const serviceExistsQuery = `SELECT EXISTS (
+SELECT 1
+FROM public.services
+WHERE id = $1
+)`
+	const addressExistsQuery = `SELECT EXISTS (
+SELECT 1
+FROM public.addresses
+WHERE id = $1
+)`
+	const serviceAddressExistsQuery = `SELECT EXISTS (
+SELECT 1
+FROM public.addresses_services
+WHERE service_id = $1
+AND address_id = $2
+)`
+	const createServiceAddressQuery = `INSERT INTO public.addresses_services (service_id, address_id)
+VALUES ($1, $2)`
 
 	tests := []struct {
 		name           string
-		path           string
+		serviceId      string
+		addressId      string
 		setupMock      func(sqlmock.Sqlmock)
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
-			name: "deletes associated service address and returns no content",
-			path: "/api/services/123/addresses/456",
+			name:      "returns ok when association already exists",
+			serviceId: "1",
+			addressId: "2",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(serviceAddressExistenceQuery).
-					WithArgs(123, 456).
-					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, true))
-				mock.ExpectExec(deleteServiceAddressQuery).
-					WithArgs(123, 456).
-					WillReturnResult(sqlmock.NewResult(0, 1))
-			},
-			expectedStatus: http.StatusNoContent,
-		},
-		{
-			name: "returns ok when service and address exist but are not associated",
-			path: "/api/services/123/addresses/456",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(serviceAddressExistenceQuery).
-					WithArgs(123, 456).
-					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, true))
-				mock.ExpectExec(deleteServiceAddressQuery).
-					WithArgs(123, 456).
-					WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(addressExistsQuery)).
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceAddressExistsQuery)).
+					WithArgs(1, 2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "returns bad request when service is missing",
-			path: "/api/services/123/addresses/456",
+			name:      "creates association and returns created",
+			serviceId: "1",
+			addressId: "2",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(serviceAddressExistenceQuery).
-					WithArgs(123, 456).
-					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(false, true))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(addressExistsQuery)).
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceAddressExistsQuery)).
+					WithArgs(1, 2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+				mock.ExpectExec(regexp.QuoteMeta(createServiceAddressQuery)).
+					WithArgs(1, 2).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:      "returns bad request when service is missing",
+			serviceId: "1",
+			addressId: "2",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
 		},
 		{
-			name: "returns bad request when address is missing",
-			path: "/api/services/123/addresses/456",
+			name:      "returns bad request when address is missing",
+			serviceId: "1",
+			addressId: "2",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(serviceAddressExistenceQuery).
-					WithArgs(123, 456).
-					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, false))
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(regexp.QuoteMeta(addressExistsQuery)).
+					WithArgs(2).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
 		},
 		{
-			name:           "returns bad request when service id is invalid",
-			path:           "/api/services/not-an-id/addresses/456",
+			name:           "returns bad request for invalid service ID",
+			serviceId:      "abc",
+			addressId:      "2",
 			setupMock:      func(mock sqlmock.Sqlmock) {},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"error":"Invalid service ID format","status_code":400}`,
 		},
 		{
-			name:           "returns bad request when address id is invalid",
-			path:           "/api/services/123/addresses/not-an-id",
+			name:           "returns bad request for invalid address ID",
+			serviceId:      "1",
+			addressId:      "abc",
 			setupMock:      func(mock sqlmock.Sqlmock) {},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"error":"Invalid address ID format","status_code":400}`,
@@ -307,19 +471,24 @@ func TestManager_DeleteAddress(t *testing.T) {
 				GoogleConfig{},
 				PDFCrowdConfig{},
 			)
-			router := chi.NewRouter()
-			router.Delete("/api/services/{id}/addresses/{address_id}", manager.DeleteAddress)
-
-			req := httptest.NewRequest(http.MethodDelete, tt.path, nil)
+			req := newAddAddressRequest(tt.serviceId, tt.addressId)
 			w := httptest.NewRecorder()
 
-			router.ServeHTTP(w, req)
+			manager.AddAddress(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedBody, w.Body.String())
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func newAddAddressRequest(serviceId, addressId string) *http.Request {
+	req := httptest.NewRequest(http.MethodPut, "/api/services/"+serviceId+"/addresses/"+addressId, nil)
+	routeContext := chi.NewRouteContext()
+	routeContext.URLParams.Add("id", serviceId)
+	routeContext.URLParams.Add("address_id", addressId)
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
 }
 
 func TestManager_processHTML_ErrorHandling(t *testing.T) {
@@ -476,6 +645,7 @@ func TestManager_processHTML_ErrorHandling(t *testing.T) {
 		})
 	}
 }
+
 func TestManager_translateHTML_ErrorHandling(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -665,6 +835,111 @@ func TestManager_translateHTML_ErrorHandling(t *testing.T) {
 			if mockTranslate != nil {
 				mockTranslate.AssertExpectations(t)
 			}
+		})
+	}
+}
+
+func TestManager_DeleteAddress(t *testing.T) {
+	const serviceAddressExistenceQuery = `SELECT\s+EXISTS\(SELECT 1 FROM public\.services WHERE id = \$1\),\s+EXISTS\(SELECT 1 FROM public\.addresses WHERE id = \$2\)`
+	const deleteServiceAddressQuery = `DELETE FROM public\.addresses_services\s+WHERE service_id = \$1 AND address_id = \$2`
+
+	tests := []struct {
+		name           string
+		path           string
+		setupMock      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "deletes associated service address and returns no content",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, true))
+				mock.ExpectExec(deleteServiceAddressQuery).
+					WithArgs(123, 456).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "returns ok when service and address exist but are not associated",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, true))
+				mock.ExpectExec(deleteServiceAddressQuery).
+					WithArgs(123, 456).
+					WillReturnResult(sqlmock.NewResult(0, 0))
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "returns bad request when service is missing",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(false, true))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
+		},
+		{
+			name: "returns bad request when address is missing",
+			path: "/api/services/123/addresses/456",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(serviceAddressExistenceQuery).
+					WithArgs(123, 456).
+					WillReturnRows(sqlmock.NewRows([]string{"service_exists", "address_exists"}).AddRow(true, false))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Service or address not found","status_code":400}`,
+		},
+		{
+			name:           "returns bad request when service id is invalid",
+			path:           "/api/services/not-an-id/addresses/456",
+			setupMock:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid service ID format","status_code":400}`,
+		},
+		{
+			name:           "returns bad request when address id is invalid",
+			path:           "/api/services/123/addresses/not-an-id",
+			setupMock:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid address ID format","status_code":400}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sqlDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer sqlDB.Close()
+
+			tt.setupMock(mock)
+
+			manager := NewWithDependencies(
+				&db.Manager{DB: sqlDB},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			router := chi.NewRouter()
+			router.Delete("/api/services/{id}/addresses/{address_id}", manager.DeleteAddress)
+
+			req := httptest.NewRequest(http.MethodDelete, tt.path, nil)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedBody, w.Body.String())
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }

@@ -7,30 +7,28 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MicahParks/keyfunc/v3"
 	"github.com/sheltertechsf/sheltertech-go/internal/auth"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
 type Manager struct {
-	DbClient   *db.Manager
-	JwtKeyfunc keyfunc.Keyfunc
+	DbClient *db.Manager
 }
 
-func New(dbManager *db.Manager, jwtKeyfunc keyfunc.Keyfunc) *Manager {
+func New(dbManager *db.Manager) *Manager {
 	manager := &Manager{
-		DbClient:   dbManager,
-		JwtKeyfunc: jwtKeyfunc,
+		DbClient: dbManager,
 	}
 	return manager
 }
 
-// Get the currently authenticated user
+// Get the currently authenticated user. This endpoint is mounted behind auth.WithOptionalUser rather
+// than a rejecting middleware, because the frontend calls it to find out whether anyone is logged in,
+// so an unauthenticated request is an expected outcome to report rather than a request to reject.
 func (m *Manager) GetCurrent(w http.ResponseWriter, r *http.Request) {
-	dbUser, err := auth.GetUserFromRequest(r, m.JwtKeyfunc, m.DbClient)
+	dbUser, err := auth.UserFromContext(r.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		writeJson(w, ApiError{err.Error()})
+		writeError(w, http.StatusBadRequest, "No authenticated user")
 		return
 	}
 	user := FromDBType(dbUser)
@@ -53,7 +51,7 @@ func (m *Manager) SaveUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identity, err := auth.GetTokenIdentityFromRequest(r, m.JwtKeyfunc)
+	identity, err := auth.IdentityFromContext(r.Context())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
