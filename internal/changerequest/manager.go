@@ -1,36 +1,22 @@
 package changerequest
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 type Manager struct {
 	DbClient *db.Manager
-}
-
-var addressChangeRequestFields = []string{
-	"attention",
-	"name",
-	"address_1",
-	"address_2",
-	"address_3",
-	"address_4",
-	"city",
-	"state_province",
-	"postal_code",
-	"latitude",
-	"longitude",
 }
 
 func New(dbManager *db.Manager) *Manager {
@@ -212,59 +198,49 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 	writeStatus(w, http.StatusCreated)
 }
 
-func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	idStr := chi.URLParam(r, "id")
-	addressId, err := strconv.Atoi(idStr)
+	noteId, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid address ID", http.StatusBadRequest)
+		http.Error(w, "Invalid note ID", http.StatusBadRequest)
 		return
 	}
 
-	payload, ok := decodeAddressChangeRequestPayload(w, r)
-	if !ok {
-		return
-	}
-
-	removeAddress, err := addressChangeRequestRemovesAddress(payload.ChangeRequest)
+	payload, err := unmarshalNoteChangeRequestPayload(r)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	var changeRequestId *int
-	fieldChangesResponse := []FieldChange{}
-	if removeAddress {
-		changeRequestId, err = m.DbClient.RemoveAddress(addressId)
-	} else {
-		var fieldChangesMap map[string]interface{}
-		var responseChanges []FieldChange
-		fieldChangesMap, responseChanges, err = addressFieldChangesFromPayload(payload.ChangeRequest)
-		if err != nil {
-			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		fieldChangesResponse = responseChanges
-		changeRequestId, err = m.DbClient.UpdateAddress(addressId, fieldChangesMap)
-	}
-
-	if errors.Is(err, db.ErrAddressNotFound) {
-		common.WriteErrorJson(w, http.StatusNotFound, "404: Address not found for ID: "+idStr)
+	if payload.ChangeRequest.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Missing note")
 		return
 	}
+
+	noteText := *payload.ChangeRequest.Note
+	changeRequestId, err := m.DbClient.UpdateNote(noteId, noteText)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			common.WriteErrorJson(w, http.StatusNotFound, "Note not found")
+			return
+		}
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response := &AddressChangeRequest{
-		AddressChangeRequest: ChangeRequestResponse{
-			Id:           *changeRequestId,
-			Status:       "pending",
-			Type:         "AddressChangeRequest",
-			ObjectID:     addressId,
-			FieldChanges: fieldChangesResponse,
+	response := &NoteChangeRequest{
+		NoteChangeRequest: ChangeRequestResponse{
+			Id:       *changeRequestId,
+			Status:   "pending",
+			Type:     "NoteChangeRequest",
+			ObjectID: noteId,
+			FieldChanges: []FieldChange{
+				{
+					FieldName:  "note",
+					FieldValue: noteText,
+				},
+			},
 		},
 	}
 
@@ -333,6 +309,21 @@ func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) P
 	return *phoneFields
 }
 
+func unmarshalNoteChangeRequestPayload(r *http.Request) (*NoteChangeRequestPayload, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	noteChangeRequestPayload := &NoteChangeRequestPayload{}
+	err = json.Unmarshal(body, noteChangeRequestPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	return noteChangeRequestPayload, nil
+}
+
 func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPayload {
 	body, _ := io.ReadAll(r.Body)
 	changeRequestPayload := &ChangeRequestPayload{}
@@ -342,6 +333,107 @@ func unmarshalPayload(w http.ResponseWriter, r *http.Request) ChangeRequestPaylo
 	}
 
 	return *changeRequestPayload
+}
+
+func formatPhoneNumber(number string) (string, error) {
+	parsed, err := phonenumbers.Parse(strings.TrimSpace(number), "US")
+
+	if err != nil {
+		return "", err
+	}
+
+	return phonenumbers.Format(parsed, phonenumbers.E164), nil
+}
+
+func writeStatus(w http.ResponseWriter, responseStatus int) {
+	w.WriteHeader(responseStatus)
+}
+
+func writeJson(w http.ResponseWriter, object interface{}) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(output)
+	if err != nil {
+		panic(err)
+	}
+}
+
+var addressChangeRequestFields = []string{
+	"attention",
+	"name",
+	"address_1",
+	"address_2",
+	"address_3",
+	"address_4",
+	"city",
+	"state_province",
+	"postal_code",
+	"latitude",
+	"longitude",
+}
+
+func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	idStr := chi.URLParam(r, "id")
+	addressId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid address ID", http.StatusBadRequest)
+		return
+	}
+
+	payload, ok := decodeAddressChangeRequestPayload(w, r)
+	if !ok {
+		return
+	}
+
+	removeAddress, err := addressChangeRequestRemovesAddress(payload.ChangeRequest)
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var changeRequestId *int
+	fieldChangesResponse := []FieldChange{}
+	if removeAddress {
+		changeRequestId, err = m.DbClient.RemoveAddress(addressId)
+	} else {
+		var fieldChangesMap map[string]interface{}
+		var responseChanges []FieldChange
+		fieldChangesMap, responseChanges, err = addressFieldChangesFromPayload(payload.ChangeRequest)
+		if err != nil {
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		fieldChangesResponse = responseChanges
+		changeRequestId, err = m.DbClient.UpdateAddress(addressId, fieldChangesMap)
+	}
+
+	if errors.Is(err, db.ErrAddressNotFound) {
+		common.WriteErrorJson(w, http.StatusNotFound, "404: Address not found for ID: "+idStr)
+		return
+	}
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := &AddressChangeRequest{
+		AddressChangeRequest: ChangeRequestResponse{
+			Id:           *changeRequestId,
+			Status:       "pending",
+			Type:         "AddressChangeRequest",
+			ObjectID:     addressId,
+			FieldChanges: fieldChangesResponse,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
 }
 
 func decodeAddressChangeRequestPayload(w http.ResponseWriter, r *http.Request) (AddressChangeRequestPayload, bool) {
@@ -444,30 +536,4 @@ func addressChangeRequestFieldValue(fieldName string, rawValue json.RawMessage) 
 	}
 
 	return nil, "", fmt.Errorf("Invalid address field value for %s", fieldName)
-}
-
-func formatPhoneNumber(number string) (string, error) {
-	parsed, err := phonenumbers.Parse(strings.TrimSpace(number), "US")
-
-	if err != nil {
-		return "", err
-	}
-
-	return phonenumbers.Format(parsed, phonenumbers.E164), nil
-}
-
-func writeStatus(w http.ResponseWriter, responseStatus int) {
-	w.WriteHeader(responseStatus)
-}
-
-func writeJson(w http.ResponseWriter, object interface{}) {
-	output, err := json.Marshal(object)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
-	}
 }
