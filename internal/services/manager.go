@@ -3,11 +3,8 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
-	"net/http"
-	"strconv"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
@@ -23,6 +20,10 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
 	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"golang.org/x/text/language"
+	"log"
+	"mime"
+	"net/http"
+	"strconv"
 )
 
 type Manager struct {
@@ -54,6 +55,7 @@ func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, p
 		indexers...,
 	)
 }
+
 func NewWithDependencies(
 	dbManager *db.Manager,
 	translateService TranslateService, // ← NEW: Accepts interface
@@ -70,13 +72,6 @@ func NewWithDependencies(
 		PDFCrowdConfig:   pdfCrowdConfig,   // ← Same as before
 		SearchIndex:      resolveSearchIndex(indexers),
 	}
-}
-
-func resolveSearchIndex(indexers []searchindex.Indexer) searchindex.Indexer {
-	if len(indexers) > 0 && indexers[0] != nil {
-		return indexers[0]
-	}
-	return searchindex.NoopIndexer{}
 }
 
 // GetByID Get a service by ID
@@ -164,55 +159,49 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Delete deactivates an approved service.
+// AddAddress associates an existing address with an existing service.
 //
-//	@Summary		Delete Service
-//	@Description	deactivate an approved service
+//	@Summary		Add Service Address
+//	@Description	associates an existing address with an existing service
 //	@Tags			services
-//	@Param			id	path	integer	true	"Service ID"
+//	@Accept			json
+//	@Produce		json
 //	@Success		200
-//	@Failure		400
-//	@Failure		404
-//	@Failure		412
-//	@Failure		500
-//	@Router			/services/{id} [delete]
-func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	serviceId, err := strconv.Atoi(idStr)
+//	@Success		201
+//	@Failure		400	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/services/{id}/addresses/{address_id} [put]
+func (m *Manager) AddAddress(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
 		return
 	}
 
-	status, err := m.DbClient.GetServiceStatusByID(serviceId)
+	addressId, err := strconv.Atoi(chi.URLParam(r, "address_id"))
 	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	if status == nil {
-		http.Error(w, "404: Service not found for ID: "+idStr, http.StatusNotFound)
-		return
-	}
-	if *status != db.ServiceStatusApproved {
-		w.WriteHeader(http.StatusPreconditionFailed)
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid address ID format")
 		return
 	}
 
-	err = m.DbClient.DeactivateService(serviceId)
+	created, err := m.DbClient.AddAddressToService(serviceId, addressId)
 	if err != nil {
-		http.Error(w, "Failed to deactivate service", http.StatusInternalServerError)
+		log.Printf("%v", err)
+		if errors.Is(err, db.ErrServiceAddressMissing) {
+			common.WriteErrorJson(w, http.StatusBadRequest, "Service or address not found")
+			return
+		}
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
 		return
 	}
 
-	m.removeDeactivatedServiceFromSearchIndex(serviceId)
-
+	if created {
+		w.WriteHeader(http.StatusCreated)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-}
-
-func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
-	if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
-		log.Printf("failed to remove service %d from search index: %v", serviceId, err)
-	}
 }
 
 // ConvertHtmlToPdf method to convert HTML to PDF
@@ -227,25 +216,34 @@ func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
 //	@Success		200	{file}	file	"Generated PDF"
 //	@Router			/convert-html-to-pdf [post]
 func (m *Manager) ConvertHtmlToPdf(w http.ResponseWriter, r *http.Request) {
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusBadRequest, "Error parsing form data")
-		return
+	input := HTMLToPDFRequest{}
+	if isJSONContentType(r.Header.Get("Content-Type")) {
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, "Error parsing JSON data")
+			return
+		}
+	} else {
+		// Parse form data
+		if err := r.ParseForm(); err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, "Error parsing form data")
+			return
+		}
+
+		// Extract HTML and target language from form
+		input.HTML = r.FormValue("html")
+		input.TargetLanguage = r.FormValue("target_language")
 	}
 
-	// Extract HTML and target language from form
-	html := r.FormValue("html")
-	targetLanguage := r.FormValue("target_language")
-
 	// Validate input
-	if html == "" {
+	if input.HTML == "" {
 		common.WriteErrorJson(w, http.StatusBadRequest, "HTML content is required")
 		return
 	}
 
 	// Process HTML (potentially translate)
-	processedHTML, err := m.processHTML(html, targetLanguage)
+	processedHTML, err := m.processHTML(input.HTML, input.TargetLanguage)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusInternalServerError, "Failed to process HTML")
@@ -264,6 +262,11 @@ func (m *Manager) ConvertHtmlToPdf(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=translation.pdf")
 	w.Write(pdfData)
+}
+
+func isJSONContentType(contentType string) bool {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	return err == nil && mediaType == "application/json"
 }
 
 // processHTML handles potential translation
@@ -355,5 +358,63 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	_, err = w.Write(output)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func resolveSearchIndex(indexers []searchindex.Indexer) searchindex.Indexer {
+	if len(indexers) > 0 && indexers[0] != nil {
+		return indexers[0]
+	}
+	return searchindex.NoopIndexer{}
+}
+
+// Delete deactivates an approved service.
+//
+//	@Summary		Delete Service
+//	@Description	deactivate an approved service
+//	@Tags			services
+//	@Param			id	path	integer	true	"Service ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		412
+//	@Failure		500
+//	@Router			/services/{id} [delete]
+func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	serviceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		return
+	}
+
+	status, err := m.DbClient.GetServiceStatusByID(serviceId)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if status == nil {
+		http.Error(w, "404: Service not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
+	if *status != db.ServiceStatusApproved {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		return
+	}
+
+	err = m.DbClient.DeactivateService(serviceId)
+	if err != nil {
+		http.Error(w, "Failed to deactivate service", http.StatusInternalServerError)
+		return
+	}
+
+	m.removeDeactivatedServiceFromSearchIndex(serviceId)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
+	if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
+		log.Printf("failed to remove service %d from search index: %v", serviceId, err)
 	}
 }

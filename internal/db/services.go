@@ -36,19 +36,8 @@ type Service struct {
 	ShortDescription       sql.NullString
 }
 
-const (
-	ServiceStatusApproved = 1
-	ServiceStatusInactive = 3
-)
-
 const serviceByIDSql = `
 SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note, short_description
-FROM public.services
-WHERE id = $1
-`
-
-const serviceStatusByIDSql = `
-SELECT status
 FROM public.services
 WHERE id = $1
 `
@@ -64,27 +53,24 @@ SELECT count(1)
 FROM public.services
 `
 
+const serviceExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.services
+WHERE id = $1
+)
+`
+
 func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
 	row := m.DB.QueryRow(serviceByIDSql, serviceId)
 	return scanService(row)
 }
 
-func (m *Manager) GetServiceStatusByID(serviceId int) (*int, error) {
-	var status sql.NullInt32
-	err := m.DB.QueryRow(serviceStatusByIDSql, serviceId).Scan(&status)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	if !status.Valid {
-		unknownStatus := -1
-		return &unknownStatus, nil
-	}
-
-	statusValue := int(status.Int32)
-	return &statusValue, nil
+func (m *Manager) ServiceExists(serviceId int) (bool, error) {
+	row := m.DB.QueryRow(serviceExistsSql, serviceId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 func (m *Manager) GetServicesCount() (int, error) {
@@ -105,6 +91,56 @@ func (m *Manager) GetApprovedServicesByResourceId(resourceId int) []*Service {
 		log.Printf("%v\n", err)
 	}
 	return scanServices(rows)
+}
+
+func scanServices(rows *sql.Rows) []*Service {
+	var services []*Service
+	for rows.Next() {
+		var service Service
+		err := rows.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		services = append(services, &service)
+	}
+	return services
+}
+
+func scanService(row *sql.Row) (*Service, error) {
+	var service Service
+	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
+	return &service, err
+}
+
+const (
+	ServiceStatusApproved = 1
+	ServiceStatusInactive = 3
+)
+
+const serviceStatusByIDSql = `
+SELECT status
+FROM public.services
+WHERE id = $1
+`
+
+func (m *Manager) GetServiceStatusByID(serviceId int) (*int, error) {
+	var status sql.NullInt32
+	err := m.DB.QueryRow(serviceStatusByIDSql, serviceId).Scan(&status)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !status.Valid {
+		unknownStatus := -1
+		return &unknownStatus, nil
+	}
+
+	statusValue := int(status.Int32)
+	return &statusValue, nil
 }
 
 func (m *Manager) DeactivateService(serviceId int) error {
@@ -148,25 +184,4 @@ WHERE id = $1`,
 	}
 
 	return tx.Commit()
-}
-
-func scanServices(rows *sql.Rows) []*Service {
-	var services []*Service
-	for rows.Next() {
-		var service Service
-		err := rows.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		}
-		services = append(services, &service)
-	}
-	return services
-}
-
-func scanService(row *sql.Row) (*Service, error) {
-	var service Service
-	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-	return &service, err
 }
