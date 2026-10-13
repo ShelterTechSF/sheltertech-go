@@ -83,7 +83,13 @@ func main() {
 	categoriesManager := categories.New(dbManager)
 	changeRequestManager := changerequest.New(dbManager)
 	foldersManager := folders.New(dbManager)
-	servicesManager := services.New(dbManager, googleTranslateCredentials, pdfCrowdUsername, pdfCrowdApiKey)
+	servicesManager := services.New(
+		dbManager,
+		googleTranslateCredentials,
+		pdfCrowdUsername,
+		pdfCrowdApiKey,
+		searchindex.NewAlgoliaIndexer(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix),
+	)
 	resourcesManager := resources.NewWithDependencies(
 		dbManager,
 		searchindex.NewAlgoliaIndexer(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix),
@@ -190,6 +196,7 @@ func main() {
 
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Delete("/api/services/{id}", servicesManager.Delete)
 		r.Delete("/api/services/{id}/addresses/{address_id}", servicesManager.DeleteAddress)
 		r.Put("/api/services/{id}/addresses/{address_id}", servicesManager.AddAddress)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
