@@ -355,7 +355,7 @@ func (m *Manager) CreateServicesForResource(resourceId int, services []ServiceCr
 				return nil, err
 			}
 			for _, scheduleDay := range service.Schedule.ScheduleDays {
-				if _, err = tx.Exec(insertServiceScheduleDaySql, scheduleDay.Day, nullableInt(scheduleDay.OpensAt), nullableInt(scheduleDay.ClosesAt), scheduleId); err != nil {
+				if _, err = tx.Exec(insertServiceScheduleDaySql, scheduleDay.Day, nullableServiceInt(scheduleDay.OpensAt), nullableServiceInt(scheduleDay.ClosesAt), scheduleId); err != nil {
 					return nil, err
 				}
 			}
@@ -390,7 +390,7 @@ func nullableString(value *string) interface{} {
 	return *value
 }
 
-func nullableInt(value *int) interface{} {
+func nullableServiceInt(value *int) interface{} {
 	if value == nil {
 		return nil
 	}
