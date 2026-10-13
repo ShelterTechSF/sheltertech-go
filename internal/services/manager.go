@@ -5,11 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"mime"
-	"net/http"
-	"strconv"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/addresses"
 	"github.com/sheltertechsf/sheltertech-go/internal/categories"
@@ -24,6 +19,10 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
 	"golang.org/x/text/language"
+	"log"
+	"mime"
+	"net/http"
+	"strconv"
 )
 
 type Manager struct {
@@ -53,6 +52,7 @@ func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, p
 		pdfCrowdConfig,
 	)
 }
+
 func NewWithDependencies(
 	dbManager *db.Manager,
 	translateService TranslateService, // ← NEW: Accepts interface
@@ -426,5 +426,39 @@ func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) 
 	_, err = w.Write(output)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (m *Manager) DeleteAddress(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
+		return
+	}
+
+	addressId, err := strconv.Atoi(chi.URLParam(r, "address_id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid address ID format")
+		return
+	}
+
+	status, err := m.DbClient.DeleteServiceAddress(serviceId, addressId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	switch status {
+	case db.ServiceAddressDeleteDeleted:
+		w.WriteHeader(http.StatusNoContent)
+	case db.ServiceAddressDeleteNotAssociated:
+		w.WriteHeader(http.StatusOK)
+	case db.ServiceAddressDeleteMissing:
+		common.WriteErrorJson(w, http.StatusBadRequest, "Service or address not found")
+	default:
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
 	}
 }
