@@ -103,3 +103,17 @@ func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
 type ScheduleDayChangeRequest struct {
 	ScheduleDayChangeRequest ChangeRequestResponse `json:"schedule_day_change_request"`
 }
+
+type AddressFields struct {
+	Attention     *string `json:"attention,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	Address1      *string `json:"address_1,omitempty"`
+	Address2      *string `json:"address_2,omitempty"`
+	Address3      *string `json:"address_3,omitempty"`
+	Address4      *string `json:"address_4,omitempty"`
+	City          *string `json:"city,omitempty"`
+	StateProvince *string `json:"state_province,omitempty"`
+	PostalCode    *string `json:"postal_code,omitempty"`
+	Latitude      *string `json:"latitude,omitempty"`
+	Longitude     *string `json:"longitude,omitempty"`
+}

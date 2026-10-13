@@ -384,3 +384,50 @@ func buildAddressUpdateQuery(addressId int, fieldChanges map[string]interface{})
 		position,
 	), args
 }
+
+func (m *Manager) InsertAddress(fieldChanges map[string]interface{}) (*int, *int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
+
+	allowed := []string{"attention", "name", "address_1", "address_2", "address_3", "address_4", "city", "state_province", "postal_code", "latitude", "longitude", "resource_id"}
+	insertAddressSql, args := buildInsertQuery("addresses", fieldChanges, allowed)
+	var addressId int
+
+	err = tx.QueryRow(insertAddressSql, args...).Scan(&addressId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var changeRequestId int
+	err = tx.QueryRow(
+		insertChangeRequestSql,
+		"AddressChangeRequest",
+		addressId,
+		StatusPending,
+		ActionAdd,
+		fieldChanges["resource_id"],
+	).Scan(&changeRequestId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for key, value := range fieldChanges {
+		if key == "resource_id" {
+			continue
+		}
+		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &addressId, &changeRequestId, nil
+}
