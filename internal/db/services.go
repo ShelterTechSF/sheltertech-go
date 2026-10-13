@@ -53,8 +53,12 @@ SELECT count(1)
 FROM public.services
 `
 
-const serviceExistsByIDSql = `
-SELECT EXISTS(SELECT 1 FROM public.services WHERE id = $1)
+const serviceExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.services
+WHERE id = $1
+)
 `
 
 func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
@@ -62,14 +66,11 @@ func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
 	return scanService(row)
 }
 
-func (m *Manager) ServiceExistsById(serviceId int) (bool, error) {
-	row := m.DB.QueryRow(serviceExistsByIDSql, serviceId)
+func (m *Manager) ServiceExists(serviceId int) (bool, error) {
+	row := m.DB.QueryRow(serviceExistsSql, serviceId)
 	var exists bool
 	err := row.Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
+	return exists, err
 }
 
 func (m *Manager) GetServicesCount() (int, error) {
@@ -111,4 +112,18 @@ func scanService(row *sql.Row) (*Service, error) {
 	var service Service
 	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
 	return &service, err
+}
+
+const serviceExistsByIDSql = `
+SELECT EXISTS(SELECT 1 FROM public.services WHERE id = $1)
+`
+
+func (m *Manager) ServiceExistsById(serviceId int) (bool, error) {
+	row := m.DB.QueryRow(serviceExistsByIDSql, serviceId)
+	var exists bool
+	err := row.Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
