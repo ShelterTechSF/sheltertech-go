@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -44,6 +45,30 @@ WHERE a.resource_id = $1
 ORDER BY a.id
 `
 
+var ErrServiceAddressMissing = errors.New("service or address missing")
+
+const addressExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.addresses
+WHERE id = $1
+)
+`
+
+const serviceAddressExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.addresses_services
+WHERE service_id = $1
+AND address_id = $2
+)
+`
+
+const createServiceAddressSql = `
+INSERT INTO public.addresses_services (service_id, address_id)
+VALUES ($1, $2)
+`
+
 func (m *Manager) GetAddressesByServiceID(serviceId int) []*Address {
 	var rows *sql.Rows
 	var err error
@@ -62,6 +87,49 @@ func (m *Manager) GetAddressesByResourceID(resourceId int) []*Address {
 		log.Printf("%v\n", err)
 	}
 	return scanAddresses(rows)
+}
+
+func (m *Manager) AddressExists(addressId int) (bool, error) {
+	row := m.DB.QueryRow(addressExistsSql, addressId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+func (m *Manager) AddAddressToService(serviceId, addressId int) (bool, error) {
+	serviceExists, err := m.ServiceExists(serviceId)
+	if err != nil {
+		return false, err
+	}
+	if !serviceExists {
+		return false, ErrServiceAddressMissing
+	}
+
+	addressExists, err := m.AddressExists(addressId)
+	if err != nil {
+		return false, err
+	}
+	if !addressExists {
+		return false, ErrServiceAddressMissing
+	}
+
+	associationExists, err := m.serviceAddressExists(serviceId, addressId)
+	if err != nil {
+		return false, err
+	}
+	if associationExists {
+		return false, nil
+	}
+
+	_, err = m.DB.Exec(createServiceAddressSql, serviceId, addressId)
+	return true, err
+}
+
+func (m *Manager) serviceAddressExists(serviceId, addressId int) (bool, error) {
+	row := m.DB.QueryRow(serviceAddressExistsSql, serviceId, addressId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 func scanAddresses(rows *sql.Rows) []*Address {

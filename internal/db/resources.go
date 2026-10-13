@@ -88,7 +88,7 @@ func (m *Manager) UpdateResource(
 
 	// Only update the resources row if there are field changes
 	if len(fieldChanges) != 0 {
-		allowed := []string{"name", "alternate_name", "short_description", "long_description", "website", "email", "legal_status", "internal_note"}
+		allowed := []string{"name", "alternate_name", "short_description", "long_description", "website", "email", "legal_status", "internal_note", "status"}
 		updateResourceSql, args := buildUpdateQuery(
 			"resources",
 			"id",
@@ -118,7 +118,11 @@ func (m *Manager) UpdateResource(
 
 	// insert field_changes row for each field change
 	for key, value := range fieldChanges {
-		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
+		fieldChangeValue := value
+		if key == "status" {
+			fieldChangeValue = statusFieldChangeValue(value)
+		}
+		_, err = tx.Exec(insertFieldChangeSql, key, fieldChangeValue, changeRequestId)
 		if err != nil {
 			return nil, err
 		}
@@ -130,6 +134,26 @@ func (m *Manager) UpdateResource(
 	}
 
 	return &changeRequestId, nil
+}
+
+func statusFieldChangeValue(value interface{}) interface{} {
+	statusValue, ok := value.(int)
+	if !ok {
+		return value
+	}
+
+	switch statusValue {
+	case 0:
+		return "pending"
+	case 1:
+		return "approved"
+	case 2:
+		return "rejected"
+	case 3:
+		return "inactive"
+	default:
+		return value
+	}
 }
 
 func scanResource(row *sql.Row) *Resource {

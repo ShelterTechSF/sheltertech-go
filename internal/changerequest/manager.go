@@ -47,8 +47,17 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fieldChangesJSON := payload.ChangeRequest.FieldChanges
+	if len(fieldChangesJSON) == 0 {
+		fieldChangesJSON, err = json.Marshal(payload.ChangeRequest)
+		if err != nil {
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+
 	resourceFields := &ResourceFields{}
-	err = json.Unmarshal(payload.ChangeRequest.FieldChanges, resourceFields)
+	err = json.Unmarshal(fieldChangesJSON, resourceFields)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 		return
@@ -89,6 +98,15 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 		fieldChangesMap["internal_note"] = *resourceFields.InternalNote
 		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "internal_note", FieldValue: *resourceFields.InternalNote})
 	}
+	if resourceFields.Status != nil {
+		statusCode, err := resourceStatusCode(*resourceFields.Status)
+		if err != nil {
+			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		fieldChangesMap["status"] = statusCode
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "status", FieldValue: *resourceFields.Status})
+	}
 
 	changeRequestId, err := m.DbClient.UpdateResource(resourceId, fieldChangesMap)
 	if err != nil {
@@ -109,6 +127,21 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	writeStatus(w, http.StatusCreated)
 	writeJson(w, response)
+}
+
+func resourceStatusCode(status string) (int, error) {
+	switch status {
+	case "pending":
+		return 0, nil
+	case "approved":
+		return 1, nil
+	case "rejected":
+		return 2, nil
+	case "inactive":
+		return 3, nil
+	default:
+		return 0, fmt.Errorf("invalid resource status: %s", status)
+	}
 }
 
 func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
