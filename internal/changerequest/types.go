@@ -7,13 +7,15 @@ import (
 type ChangeRequestPayload struct {
 	ChangeRequest    ChangeRequest `json:"change_request"`
 	ParentResourceID int           `json:"parent_resource_id"`
+	ScheduleID       int           `json:"schedule_id"`
 	Type             string        `json:"type"`
 }
 
 type ChangeRequest struct {
 	Action       string          `json:"action"`
 	FieldChanges json.RawMessage `json:"field_changes"`
-	Status       *string         `json:"status,omitempty"`
+	rawFields    map[string]json.RawMessage
+	Status       *string `json:"status,omitempty"`
 }
 
 type FieldChange struct {
@@ -72,6 +74,34 @@ type AddressChangeRequestPayload struct {
 
 type AddressChangeRequest struct {
 	AddressChangeRequest ChangeRequestResponse `json:"address_change_request"`
+}
+
+func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
+	type changeRequestFields struct {
+		Action       string          `json:"action"`
+		FieldChanges json.RawMessage `json:"field_changes"`
+		Status       *string         `json:"status,omitempty"`
+	}
+
+	var fields changeRequestFields
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+
+	var rawFields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &rawFields); err != nil {
+		return err
+	}
+
+	cr.Action = fields.Action
+	cr.FieldChanges = fields.FieldChanges
+	cr.Status = fields.Status
+	cr.rawFields = rawFields
+	return nil
+}
+
+type ScheduleDayChangeRequest struct {
+	ScheduleDayChangeRequest ChangeRequestResponse `json:"schedule_day_change_request"`
 }
 
 type AddressFields struct {
