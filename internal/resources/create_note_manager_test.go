@@ -90,7 +90,7 @@ func TestManager_CreateNote(t *testing.T) {
 			tt.setupMock(mock)
 
 			manager := New(&db.Manager{DB: sqlDB})
-			req := requestWithResourceID(tt.resourceID, tt.body)
+			req := requestWithResourceNoteID(tt.resourceID, tt.body)
 			w := httptest.NewRecorder()
 
 			manager.CreateNote(w, req)
@@ -103,7 +103,7 @@ func TestManager_CreateNote(t *testing.T) {
 	}
 }
 
-func requestWithResourceID(resourceID string, body string) *http.Request {
+func requestWithResourceNoteID(resourceID string, body string) *http.Request {
 	req := httptest.NewRequest(http.MethodPost, "/api/resources/"+resourceID+"/notes", strings.NewReader(body))
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("id", resourceID)
