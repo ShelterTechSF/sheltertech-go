@@ -22,6 +22,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
+	"github.com/sheltertechsf/sheltertech-go/internal/translation"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -101,6 +102,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	translationManager := translation.New(services.NewGoogleTranslateService(googleTranslateCredentials), googleTranslateCredentials)
 	instructionsManager := instructions.New(dbManager)
 	notesManager := notes.New(dbManager)
 
@@ -226,6 +228,7 @@ func main() {
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Post("/api/translation/translate_text", translationManager.TranslateText)
 		r.Post("/api/instructions", instructionsManager.Create)
 		r.Put("/api/instructions/{id}", instructionsManager.Update)
 		r.Delete("/api/notes/{id}", notesManager.Delete)
