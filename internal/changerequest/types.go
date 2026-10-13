@@ -13,6 +13,7 @@ type ChangeRequest struct {
 	Action       string          `json:"action"`
 	FieldChanges json.RawMessage `json:"field_changes"`
 	rawFields    map[string]json.RawMessage
+	Status       *string `json:"status,omitempty"`
 }
 
 func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
@@ -72,6 +73,7 @@ type ResourceFields struct {
 	Email            *string `json:"email,omitempty"`
 	LegalStatus      *string `json:"legal_status,omitempty"`
 	InternalNote     *string `json:"internal_note,omitempty"`
+	Status           *string `json:"status,omitempty"`
 }
 
 type ResourceChangeRequest struct {
