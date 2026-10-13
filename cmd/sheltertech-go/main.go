@@ -208,6 +208,7 @@ func main() {
 		r.Post("/api/textings", textingsManager.Create)
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
+		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
 		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
