@@ -15,6 +15,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
+	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
@@ -82,7 +83,7 @@ func main() {
 	foldersManager := folders.New(dbManager)
 	servicesManager := services.New(dbManager, googleTranslateCredentials, pdfCrowdUsername, pdfCrowdApiKey)
 	resourcesManager := resources.New(dbManager)
-	usersManager := users.New(dbManager, jwtKeyfunc)
+	usersManager := users.New(dbManager)
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
 	datathonManager := datathon.New(dbManager)
@@ -90,6 +91,7 @@ func main() {
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
 	textingsManager := textings.New(dbManager, textellentURL, textellentAPIKey)
+	notesManager := notes.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           "https://33395501c62bebff33ef58295a800bb3@o191099.ingest.sentry.io/4505843152846848",
@@ -115,6 +117,41 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(sentryHandler.Handle)
 
+	// The frontend calls this endpoint to find out whether there is a logged-in user, including from
+	// pages that render fine without one, so it must not be guarded: WithOptionalUser resolves the
+	// user into the request context when it can and lets the request through either way. The handler
+	// reads it with auth.UserFromContext and reports the unauthenticated case itself.
+	r.Group(func(r chi.Router) {
+		r.Use(auth.WithOptionalUser(jwtKeyfunc, dbManager))
+
+		r.Get("/api/users/current", usersManager.GetCurrent)
+	})
+
+	// Account creation is authenticated but has no DB user yet, so it only requires a validated token
+	// identity, which the handler reads with auth.IdentityFromContext.
+	r.Group(func(r chi.Router) {
+		// This route used to live in the ENABLE_JWT_VERIFICATION group below, and EnsureValidToken is
+		// the only thing that checks the issuer and AUTH0_AUDIENCE: RequireIdentity verifies the JWKS
+		// signature but accepts a token the tenant minted for any audience. Keep both so the route
+		// enforces exactly what it enforced before, until the audience check moves into the
+		// request-context middleware and this can go.
+		if enableJwtVerification {
+			r.Use(auth.EnsureValidToken())
+		}
+		r.Use(auth.RequireIdentity(jwtKeyfunc))
+
+		r.Post("/api/users", usersManager.SaveUser)
+	})
+
+	// TODO: migrate these routes onto the request-context auth above, one domain at a time. Today they
+	// are gated only by ENABLE_JWT_VERIFICATION, which is unset in dev and CI, and their handlers take
+	// the owner from a user_id query param rather than from the authenticated user, so any caller can
+	// read and modify another user's data. Migrating a domain means reading auth.UserFromContext,
+	// failing closed when it returns an error, and scoping every query to that user. That handler
+	// check is the enforcement, so auth.WithOptionalUser may well be the only middleware needed; add a
+	// rejecting variant only if we want these routes to report why a token was refused instead of
+	// treating every bad token as logged out. Migrating also needs locally-signed test tokens so the
+	// integration tests can authenticate (see the skipped tests in bookmarks_integration_test.go).
 	r.Group(func(r chi.Router) {
 		if enableJwtVerification {
 			r.Use(auth.EnsureValidToken())
@@ -136,8 +173,6 @@ func main() {
 		r.Get("/api/saved_searches/{id}", savedSearchesManager.GetByID)
 		// r.Put("/api/saved_searches/{id}", savedSearchesManager.Put)
 		r.Delete("/api/saved_searches/{id}", savedSearchesManager.Delete)
-
-		r.Post("/api/users", usersManager.SaveUser)
 	})
 
 	r.Group(func(r chi.Router) {
@@ -150,11 +185,11 @@ func main() {
 
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Put("/api/services/{id}/addresses/{address_id}", servicesManager.AddAddress)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
-		r.Get("/api/users/current", usersManager.GetCurrent)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
@@ -174,6 +209,7 @@ func main() {
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
 
 	http.ListenAndServe(":3001", r)
