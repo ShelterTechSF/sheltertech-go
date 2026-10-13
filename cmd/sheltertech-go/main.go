@@ -14,6 +14,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
+	"github.com/sheltertechsf/sheltertech-go/internal/instructions"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
@@ -94,6 +95,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	instructionsManager := instructions.New(dbManager)
 	notesManager := notes.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
@@ -213,6 +215,7 @@ func main() {
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Post("/api/instructions", instructionsManager.Create)
 		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
 
