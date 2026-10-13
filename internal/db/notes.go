@@ -27,16 +27,8 @@ FROM public.notes n
 WHERE n.resource_id = $1
 `
 
-const createResourceNoteSql = `
-INSERT INTO public.notes (note, resource_id, created_at, updated_at)
-VALUES ($1, $2, NOW(), NOW())
-RETURNING id, note, resource_id, service_id, created_at, updated_at
-`
-
-const touchResourceForNoteSql = `
-UPDATE public.resources
-SET updated_at = NOW()
-WHERE id = $1
+const deleteNoteByIDSql = `
+DELETE FROM public.notes WHERE id = $1
 `
 
 func (m *Manager) GetNotesByServiceID(serviceId int) []*Note {
@@ -58,6 +50,47 @@ func (m *Manager) GetNotesByResourceID(resourceId int) []*Note {
 	}
 	return scanNotes(rows)
 }
+
+func (m *Manager) DeleteNoteByID(id int) (bool, error) {
+	res, err := m.DB.Exec(deleteNoteByIDSql, id)
+	if err != nil {
+		return false, err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rowCount > 0, nil
+}
+
+func scanNotes(rows *sql.Rows) []*Note {
+	var notes []*Note
+	for rows.Next() {
+		var note Note
+		err := rows.Scan(&note.Id, &note.Note, &note.CreatedAt, &note.UpdatedAt)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		notes = append(notes, &note)
+	}
+	return notes
+}
+
+const createResourceNoteSql = `
+INSERT INTO public.notes (note, resource_id, created_at, updated_at)
+VALUES ($1, $2, NOW(), NOW())
+RETURNING id, note, resource_id, service_id, created_at, updated_at
+`
+
+const touchResourceForNoteSql = `
+UPDATE public.resources
+SET updated_at = NOW()
+WHERE id = $1
+`
 
 func (m *Manager) CreateResourceNote(resourceId int, note *string) (*Note, error) {
 	var noteParam interface{}
@@ -87,19 +120,4 @@ func (m *Manager) CreateResourceNote(resourceId int, note *string) (*Note, error
 	}
 
 	return &dbNote, nil
-}
-
-func scanNotes(rows *sql.Rows) []*Note {
-	var notes []*Note
-	for rows.Next() {
-		var note Note
-		err := rows.Scan(&note.Id, &note.Note, &note.CreatedAt, &note.UpdatedAt)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		}
-		notes = append(notes, &note)
-	}
-	return notes
 }
