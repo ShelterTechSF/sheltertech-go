@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"mime"
 	"net/http"
 	"strconv"
 
@@ -221,6 +223,51 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AddAddress associates an existing address with an existing service.
+//
+//	@Summary		Add Service Address
+//	@Description	associates an existing address with an existing service
+//	@Tags			services
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Success		201
+//	@Failure		400	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/services/{id}/addresses/{address_id} [put]
+func (m *Manager) AddAddress(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
+		return
+	}
+
+	addressId, err := strconv.Atoi(chi.URLParam(r, "address_id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid address ID format")
+		return
+	}
+
+	created, err := m.DbClient.AddAddressToService(serviceId, addressId)
+	if err != nil {
+		log.Printf("%v", err)
+		if errors.Is(err, db.ErrServiceAddressMissing) {
+			common.WriteErrorJson(w, http.StatusBadRequest, "Service or address not found")
+			return
+		}
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	if created {
+		w.WriteHeader(http.StatusCreated)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // ConvertHtmlToPdf method to convert HTML to PDF
 //
 //	@Summary		Convert HTML to PDF
@@ -233,25 +280,34 @@ func (m *Manager) GetCount(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{file}	file	"Generated PDF"
 //	@Router			/convert-html-to-pdf [post]
 func (m *Manager) ConvertHtmlToPdf(w http.ResponseWriter, r *http.Request) {
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusBadRequest, "Error parsing form data")
-		return
+	input := HTMLToPDFRequest{}
+	if isJSONContentType(r.Header.Get("Content-Type")) {
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, "Error parsing JSON data")
+			return
+		}
+	} else {
+		// Parse form data
+		if err := r.ParseForm(); err != nil {
+			log.Printf("%v", err)
+			common.WriteErrorJson(w, http.StatusBadRequest, "Error parsing form data")
+			return
+		}
+
+		// Extract HTML and target language from form
+		input.HTML = r.FormValue("html")
+		input.TargetLanguage = r.FormValue("target_language")
 	}
 
-	// Extract HTML and target language from form
-	html := r.FormValue("html")
-	targetLanguage := r.FormValue("target_language")
-
 	// Validate input
-	if html == "" {
+	if input.HTML == "" {
 		common.WriteErrorJson(w, http.StatusBadRequest, "HTML content is required")
 		return
 	}
 
 	// Process HTML (potentially translate)
-	processedHTML, err := m.processHTML(html, targetLanguage)
+	processedHTML, err := m.processHTML(input.HTML, input.TargetLanguage)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusInternalServerError, "Failed to process HTML")
@@ -270,6 +326,11 @@ func (m *Manager) ConvertHtmlToPdf(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "attachment; filename=translation.pdf")
 	w.Write(pdfData)
+}
+
+func isJSONContentType(contentType string) bool {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	return err == nil && mediaType == "application/json"
 }
 
 // processHTML handles potential translation

@@ -36,6 +36,84 @@ type Service struct {
 	ShortDescription       sql.NullString
 }
 
+const serviceByIDSql = `
+SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note, short_description
+FROM public.services
+WHERE id = $1
+`
+
+const approvedServicesByResourceIDSql = `
+SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note, short_description
+FROM public.services
+WHERE resource_id = $1 and status = 1
+`
+
+const serviceCountSql = `
+SELECT count(1)
+FROM public.services
+`
+
+const serviceExistsSql = `
+SELECT EXISTS (
+SELECT 1
+FROM public.services
+WHERE id = $1
+)
+`
+
+func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
+	row := m.DB.QueryRow(serviceByIDSql, serviceId)
+	return scanService(row)
+}
+
+func (m *Manager) ServiceExists(serviceId int) (bool, error) {
+	row := m.DB.QueryRow(serviceExistsSql, serviceId)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+func (m *Manager) GetServicesCount() (int, error) {
+	row := m.DB.QueryRow(serviceCountSql)
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (m *Manager) GetApprovedServicesByResourceId(resourceId int) []*Service {
+	var rows *sql.Rows
+	var err error
+	rows, err = m.DB.Query(approvedServicesByResourceIDSql, resourceId)
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	return scanServices(rows)
+}
+
+func scanServices(rows *sql.Rows) []*Service {
+	var services []*Service
+	for rows.Next() {
+		var service Service
+		err := rows.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
+		switch err {
+		case sql.ErrNoRows:
+			fmt.Println("No rows were returned!")
+			return nil
+		}
+		services = append(services, &service)
+	}
+	return services
+}
+
+func scanService(row *sql.Row) (*Service, error) {
+	var service Service
+	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
+	return &service, err
+}
+
 type ServiceCreate struct {
 	AlternateName          *string
 	ApplicationProcess     *string
@@ -79,23 +157,6 @@ const (
 	ServiceStatusRejected = 2
 	ServiceStatusInactive = 3
 )
-
-const serviceByIDSql = `
-SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note, short_description
-FROM public.services
-WHERE id = $1
-`
-
-const approvedServicesByResourceIDSql = `
-SELECT id, created_at, updated_at, name, long_description, eligibility, required_documents, fee, application_process, resource_id, verified_at, email, status, certified, program_id, interpretation_services, url, wait_time, contact_id, funding_id, alternate_name, certified_at, featured, source_attribution, internal_note, short_description
-FROM public.services
-WHERE resource_id = $1 and status = 1
-`
-
-const serviceCountSql = `
-SELECT count(1)
-FROM public.services
-`
 
 const insertServiceSql = `
 INSERT INTO public.services (
@@ -147,31 +208,6 @@ const touchResourceSql = `
 UPDATE public.resources
 SET updated_at = now()
 WHERE id = $1`
-
-func (m *Manager) GetServiceById(serviceId int) (*Service, error) {
-	row := m.DB.QueryRow(serviceByIDSql, serviceId)
-	return scanService(row)
-}
-
-func (m *Manager) GetServicesCount() (int, error) {
-	row := m.DB.QueryRow(serviceCountSql)
-	var count int
-	err := row.Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (m *Manager) GetApprovedServicesByResourceId(resourceId int) []*Service {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(approvedServicesByResourceIDSql, resourceId)
-	if err != nil {
-		log.Printf("%v\n", err)
-	}
-	return scanServices(rows)
-}
 
 func (m *Manager) CreateServicesForResource(resourceId int, services []ServiceCreate) ([]*Service, error) {
 	if len(services) == 0 {
@@ -278,25 +314,4 @@ func nullableInt(value *int) interface{} {
 		return nil
 	}
 	return *value
-}
-
-func scanServices(rows *sql.Rows) []*Service {
-	var services []*Service
-	for rows.Next() {
-		var service Service
-		err := rows.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		}
-		services = append(services, &service)
-	}
-	return services
-}
-
-func scanService(row *sql.Row) (*Service, error) {
-	var service Service
-	err := row.Scan(&service.Id, &service.CreatedAt, &service.UpdatedAt, &service.Name, &service.LongDescription, &service.Eligibility, &service.RequiredDocuments, &service.Fee, &service.ApplicationProcess, &service.ResourceId, &service.VerifiedAt, &service.Email, &service.Status, &service.Certified, &service.ProgramId, &service.InterpretationServices, &service.Url, &service.WaitTime, &service.ContactId, &service.FundingId, &service.AlternateName, &service.CertifiedAt, &service.Featured, &service.SourceAttribution, &service.InternalNote, &service.ShortDescription)
-	return &service, err
 }
