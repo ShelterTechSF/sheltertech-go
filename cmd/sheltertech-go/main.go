@@ -198,6 +198,7 @@ func main() {
 
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Post("/api/services/{id}/notes", servicesManager.CreateNote)
 		r.Delete("/api/services/{id}", servicesManager.Delete)
 		r.Delete("/api/services/{id}/addresses/{address_id}", servicesManager.DeleteAddress)
 		r.Put("/api/services/{id}/addresses/{address_id}", servicesManager.AddAddress)

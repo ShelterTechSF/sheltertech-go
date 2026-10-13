@@ -185,3 +185,17 @@ WHERE id = $1`,
 
 	return tx.Commit()
 }
+
+const serviceExistsByIDSql = `
+SELECT EXISTS(SELECT 1 FROM public.services WHERE id = $1)
+`
+
+func (m *Manager) ServiceExistsById(serviceId int) (bool, error) {
+	row := m.DB.QueryRow(serviceExistsByIDSql, serviceId)
+	var exists bool
+	err := row.Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}

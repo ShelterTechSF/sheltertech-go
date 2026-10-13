@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestManager_ConvertHtmlToPdf(t *testing.T) {
@@ -942,4 +943,116 @@ func TestManager_DeleteAddress(t *testing.T) {
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestManager_CreateNote(t *testing.T) {
+	const serviceExistsQuery = `
+SELECT EXISTS(SELECT 1 FROM public.services WHERE id = $1)
+`
+	const createNoteForServiceQuery = `
+INSERT INTO public.notes (note, service_id, created_at, updated_at)
+VALUES ($1, $2, now(), now())
+RETURNING id, note, resource_id, service_id, created_at, updated_at
+`
+	const touchServiceForNoteQuery = `
+UPDATE public.services
+SET updated_at = now()
+WHERE id = $1
+RETURNING resource_id
+`
+	const touchResourceForServiceNoteQuery = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1
+`
+
+	tests := []struct {
+		name           string
+		serviceID      string
+		body           string
+		setupMock      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:      "creates service note",
+			serviceID: "123",
+			body:      `{"note":{"note":"Legacy compatible note"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				now := time.Date(2026, time.August, 20, 12, 34, 56, 0, time.UTC)
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(123).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectBegin()
+				mock.ExpectQuery(regexp.QuoteMeta(createNoteForServiceQuery)).
+					WithArgs("Legacy compatible note", 123).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "note", "resource_id", "service_id", "created_at", "updated_at"}).
+						AddRow(456, "Legacy compatible note", nil, 123, now, now))
+				mock.ExpectQuery(regexp.QuoteMeta(touchServiceForNoteQuery)).
+					WithArgs(123).
+					WillReturnRows(sqlmock.NewRows([]string{"resource_id"}).AddRow(99))
+				mock.ExpectExec(regexp.QuoteMeta(touchResourceForServiceNoteQuery)).
+					WithArgs(int32(99)).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+				mock.ExpectCommit()
+			},
+			expectedStatus: http.StatusCreated,
+			expectedBody:   `{"id":456,"note":"Legacy compatible note","resource_id":null,"service_id":123,"created_at":"2026-08-20T12:34:56Z","updated_at":"2026-08-20T12:34:56Z"}`,
+		},
+		{
+			name:      "returns bad request for invalid service id",
+			serviceID: "not-an-id",
+			body:      `{"note":{"note":"Legacy compatible note"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Invalid service ID format","status_code":400}`,
+		},
+		{
+			name:      "does not create note when service is missing",
+			serviceID: "999",
+			body:      `{"note":{"note":"Legacy compatible note"}}`,
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery(regexp.QuoteMeta(serviceExistsQuery)).
+					WithArgs(999).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"Failed to retrieve service","status_code":400}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sqlDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer sqlDB.Close()
+
+			tt.setupMock(mock)
+
+			manager := NewWithDependencies(
+				&db.Manager{DB: sqlDB},
+				nil,
+				nil,
+				GoogleConfig{},
+				PDFCrowdConfig{},
+			)
+			req := httptest.NewRequest(http.MethodPost, "/api/services/"+tt.serviceID+"/notes", strings.NewReader(tt.body))
+			req = requestWithServiceNoteID(req, tt.serviceID)
+			w := httptest.NewRecorder()
+
+			manager.CreateNote(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func requestWithServiceNoteID(req *http.Request, serviceID string) *http.Request {
+	routeContext := chi.NewRouteContext()
+	routeContext.URLParams.Add("id", serviceID)
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
 }
