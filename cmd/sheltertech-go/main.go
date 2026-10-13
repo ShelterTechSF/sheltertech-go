@@ -226,6 +226,7 @@ func main() {
 		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
 		r.Post("/api/instructions", instructionsManager.Create)
+		r.Put("/api/instructions/{id}", instructionsManager.Update)
 		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
 
