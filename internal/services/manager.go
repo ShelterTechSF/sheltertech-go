@@ -135,75 +135,6 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, serviceResponse)
 }
 
-// Create creates approved services under a resource.
-//
-//	@Summary		Create Resource Services
-//	@Description	creates one or more services under a resource
-//	@Tags			services
-//	@Accept			json
-//	@Produce		json
-//	@Param			id		path	integer							true	"Resource ID"
-//	@Param			body	body	services.ServicesCreateRequest	true	"Services data"
-//	@Success		201		{object}	services.ServicesCreateResponse
-//	@Router			/resources/{id}/services [post]
-func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
-	resourceId, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid resource ID format")
-		return
-	}
-
-	var createReq ServicesCreateRequest
-	err = json.NewDecoder(r.Body).Decode(&createReq)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-	if createReq.Services == nil {
-		common.WriteErrorJson(w, http.StatusBadRequest, "Services are required")
-		return
-	}
-
-	dbServices := make([]db.ServiceCreate, 0, len(*createReq.Services))
-	for _, service := range *createReq.Services {
-		dbServices = append(dbServices, service.ToDBType())
-	}
-
-	createdServices, err := m.DbClient.CreateServicesForResource(resourceId, dbServices)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-		return
-	}
-
-	response := &ServicesCreateResponse{
-		Services: make([]*ServiceResponse, 0, len(createdServices)),
-	}
-	for _, createdService := range createdServices {
-		response.Services = append(response.Services, &ServiceResponse{
-			Service: m.fromCreatedDBService(createdService),
-		})
-	}
-
-	writeJsonWithStatus(w, response, http.StatusCreated)
-}
-
-func (m *Manager) fromCreatedDBService(dbService *db.Service) *Service {
-	response := FromDBType(dbService)
-	response.Categories = categories.FromDBTypeArray(m.DbClient.GetCategoriesByServiceID(dbService.Id))
-	response.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByServiceID(dbService.Id))
-	response.Addresses = addresses.FromAddressesDBTypeArray(m.DbClient.GetAddressesByServiceID(dbService.Id))
-	response.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(m.DbClient.GetEligibilitiesByServiceID(dbService.Id))
-	response.Instructions = instructions.FromInstructionDBTypeArray(m.DbClient.GetInstructionsByServiceID(dbService.Id))
-	response.Documents = documents.FromDocumentDBTypeArray(m.DbClient.GetDocumentsByServiceID(dbService.Id))
-	if schedule := m.DbClient.GetScheduleByServiceId(dbService.Id); schedule != nil {
-		response.Schedule = schedules.FromDBType(schedule)
-	}
-	return response
-}
-
 // GetCount gets the total number of services.
 //
 //	@Summary		Get Service Count
@@ -419,21 +350,6 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	writeJsonWithStatus(w, object, http.StatusOK)
 }
 
-func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
-	output, err := json.Marshal(object)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (m *Manager) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -524,4 +440,138 @@ func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
 	if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
 		log.Printf("failed to remove service %d from search index: %v", serviceId, err)
 	}
+}
+
+type serviceNoteCreateRequest struct {
+	Note serviceNoteCreateParams `json:"note"`
+}
+
+type serviceNoteCreateParams struct {
+	Note *string `json:"note"`
+}
+
+// CreateNote creates a note associated with a service.
+func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
+		return
+	}
+
+	var request serviceNoteCreateRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if request.Note.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Note is required")
+		return
+	}
+
+	serviceExists, err := m.DbClient.ServiceExistsById(serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if !serviceExists {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Failed to retrieve service")
+		return
+	}
+
+	dbNote, err := m.DbClient.CreateNoteForService(*request.Note.Note, serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
+}
+
+func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, err = w.Write(output)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Create creates approved services under a resource.
+//
+//	@Summary		Create Resource Services
+//	@Description	creates one or more services under a resource
+//	@Tags			services
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path	integer							true	"Resource ID"
+//	@Param			body	body	services.ServicesCreateRequest	true	"Services data"
+//	@Success		201		{object}	services.ServicesCreateResponse
+//	@Router			/resources/{id}/services [post]
+func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
+	resourceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid resource ID format")
+		return
+	}
+
+	var createReq ServicesCreateRequest
+	err = json.NewDecoder(r.Body).Decode(&createReq)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if createReq.Services == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Services are required")
+		return
+	}
+
+	dbServices := make([]db.ServiceCreate, 0, len(*createReq.Services))
+	for _, service := range *createReq.Services {
+		dbServices = append(dbServices, service.ToDBType())
+	}
+
+	createdServices, err := m.DbClient.CreateServicesForResource(resourceId, dbServices)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	response := &ServicesCreateResponse{
+		Services: make([]*ServiceResponse, 0, len(createdServices)),
+	}
+	for _, createdService := range createdServices {
+		response.Services = append(response.Services, &ServiceResponse{
+			Service: m.fromCreatedDBService(createdService),
+		})
+	}
+
+	writeJsonWithStatus(w, response, http.StatusCreated)
+}
+
+func (m *Manager) fromCreatedDBService(dbService *db.Service) *Service {
+	response := FromDBType(dbService)
+	response.Categories = categories.FromDBTypeArray(m.DbClient.GetCategoriesByServiceID(dbService.Id))
+	response.Notes = notes.FromNoteDBTypeArray(m.DbClient.GetNotesByServiceID(dbService.Id))
+	response.Addresses = addresses.FromAddressesDBTypeArray(m.DbClient.GetAddressesByServiceID(dbService.Id))
+	response.Eligibilities = eligibilities.FromEligibilitiesDBTypeArray(m.DbClient.GetEligibilitiesByServiceID(dbService.Id))
+	response.Instructions = instructions.FromInstructionDBTypeArray(m.DbClient.GetInstructionsByServiceID(dbService.Id))
+	response.Documents = documents.FromDocumentDBTypeArray(m.DbClient.GetDocumentsByServiceID(dbService.Id))
+	if schedule := m.DbClient.GetScheduleByServiceId(dbService.Id); schedule != nil {
+		response.Schedule = schedules.FromDBType(schedule)
+	}
+	return response
 }

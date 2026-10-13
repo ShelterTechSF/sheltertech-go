@@ -22,6 +22,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/savedsearches"
 	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"github.com/sheltertechsf/sheltertech-go/internal/services"
+	"github.com/sheltertechsf/sheltertech-go/internal/textings"
 	"github.com/sheltertechsf/sheltertech-go/internal/translation"
 	"github.com/sheltertechsf/sheltertech-go/internal/users"
 
@@ -67,6 +68,8 @@ func main() {
 	googleTranslateCredentials := viper.GetString("TRANSLATE_CREDENTIALS")
 	pdfCrowdUsername := viper.GetString("PDF_CROWD_USERNAME")
 	pdfCrowdApiKey := viper.GetString("PDF_CROWD_API_KEY")
+	textellentURL := viper.GetString("TEXTELLENT_URL")
+	textellentAPIKey := viper.GetString("TEXTELLENT_API_KEY")
 	algoliaAppID := viper.GetString("ALGOLIA_APPLICATION_ID")
 	algoliaAPIKey := viper.GetString("ALGOLIA_API_KEY")
 	algoliaIndexPrefix := viper.GetString("ALGOLIA_INDEX_PREFIX")
@@ -102,6 +105,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	textingsManager := textings.New(dbManager, textellentURL, textellentAPIKey)
 	translationManager := translation.New(services.NewGoogleTranslateService(googleTranslateCredentials), googleTranslateCredentials)
 	instructionsManager := instructions.New(dbManager)
 	notesManager := notes.New(dbManager)
@@ -198,6 +202,7 @@ func main() {
 
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Post("/api/services/{id}/notes", servicesManager.CreateNote)
 		r.Delete("/api/services/{id}", servicesManager.Delete)
 		r.Delete("/api/services/{id}/addresses/{address_id}", servicesManager.DeleteAddress)
 		r.Put("/api/services/{id}/addresses/{address_id}", servicesManager.AddAddress)
@@ -224,10 +229,12 @@ func main() {
 		r.Get("/api/eligibilities/subeligibilities", eligibilityManager.GetSubEligibilities)
 
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
+		r.Post("/api/textings", textingsManager.Create)
 		r.Post("/api/addresses/{id}/change_requests", changeRequestManager.UpdateAddress)
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/notes/{id}/change_requests", changeRequestManager.UpdateNote)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
+		r.Post("/api/schedule_days/{id}/change_requests", changeRequestManager.UpdateScheduleDay)
 		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
 		r.Post("/api/translation/translate_text", translationManager.TranslateText)
