@@ -3,13 +3,12 @@ package instructions
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"log"
+	"net/http"
+	"strconv"
 )
 
 type Manager struct {
@@ -65,6 +64,22 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, FromInstructionDBType(created), http.StatusCreated)
 }
 
+func writeJSON(w http.ResponseWriter, object interface{}, status int) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, err = w.Write(output)
+	if err != nil {
+		log.Printf("%v", err)
+	}
+}
+
 // Update updates an instruction.
 //
 //	@Summary		Update Instruction
@@ -108,20 +123,4 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, FromInstructionDBType(updated), http.StatusOK)
-}
-
-func writeJSON(w http.ResponseWriter, object interface{}, status int) {
-	output, err := json.Marshal(object)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_, err = w.Write(output)
-	if err != nil {
-		log.Printf("%v", err)
-	}
 }
