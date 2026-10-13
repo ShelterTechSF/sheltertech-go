@@ -1,12 +1,14 @@
 package instructions
 
 import (
+	"database/sql"
 	"encoding/json"
-	"log"
-	"net/http"
-
+	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"log"
+	"net/http"
+	"strconv"
 )
 
 type Manager struct {
@@ -76,4 +78,49 @@ func writeJSON(w http.ResponseWriter, object interface{}, status int) {
 	if err != nil {
 		log.Printf("%v", err)
 	}
+}
+
+// Update updates an instruction.
+//
+//	@Summary		Update Instruction
+//	@Description	update an instruction
+//	@Tags			instructions
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	instructions.Instruction
+//	@Failure		400	{object}	common.Error
+//	@Failure		404	{object}	common.Error
+//	@Failure		500	{object}	common.Error
+//	@Router			/instructions/{id} [put]
+func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
+	instructionId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid instruction ID format")
+		return
+	}
+
+	var req createInstructionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Instruction == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Instruction is required")
+		return
+	}
+
+	updated, err := m.DbClient.UpdateInstruction(instructionId, req.Instruction.Instruction)
+	if err == sql.ErrNoRows {
+		common.WriteErrorJson(w, http.StatusNotFound, "Instruction not found")
+		return
+	}
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	writeJSON(w, FromInstructionDBType(updated), http.StatusOK)
 }

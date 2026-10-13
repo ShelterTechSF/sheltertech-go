@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -191,6 +192,197 @@ func (m *Manager) DeleteServiceAddress(serviceId, addressId int) (ServiceAddress
 	}
 
 	return ServiceAddressDeleteDeleted, nil
+}
+
+var ErrAddressNotFound = errors.New("address not found")
+
+var addressChangeRequestEditableColumns = []string{
+	"attention",
+	"name",
+	"address_1",
+	"address_2",
+	"address_3",
+	"address_4",
+	"city",
+	"state_province",
+	"postal_code",
+	"latitude",
+	"longitude",
+}
+
+const addressResourceIDByIDSql = `
+SELECT resource_id
+FROM public.addresses
+WHERE id = $1`
+
+const touchResourceForAddressChangeRequestSql = `
+UPDATE public.resources
+SET updated_at = now()
+WHERE id = $1`
+
+func (m *Manager) UpdateAddress(addressId int, fieldChanges map[string]interface{}) (*int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	resourceId, err := addressResourceIDForChangeRequest(tx, addressId)
+	if err != nil {
+		return nil, err
+	}
+
+	changeRequestId, err := insertAddressChangeRequest(tx, addressId, ActionEdit, resourceId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fieldName := range addressChangeRequestEditableColumns {
+		fieldValue, ok := fieldChanges[fieldName]
+		if !ok {
+			continue
+		}
+		_, err = tx.Exec(insertFieldChangeSql, fieldName, fieldValue, changeRequestId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(fieldChanges) != 0 {
+		updateAddressSql, args := buildAddressUpdateQuery(addressId, fieldChanges)
+		_, err = tx.Exec(updateAddressSql, args...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := touchResourceForAddressChangeRequest(tx, resourceId); err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &changeRequestId, nil
+}
+
+func (m *Manager) RemoveAddress(addressId int) (*int, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	resourceId, err := addressResourceIDForChangeRequest(tx, addressId)
+	if err != nil {
+		return nil, err
+	}
+
+	changeRequestId, err := insertAddressChangeRequest(tx, addressId, ActionRemove, resourceId)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tx.Exec("DELETE FROM public.addresses_services WHERE address_id = $1", addressId)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := tx.Exec("DELETE FROM public.addresses WHERE id = $1", addressId)
+	if err != nil {
+		return nil, err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err == nil && rowsAffected == 0 {
+		return nil, ErrAddressNotFound
+	}
+
+	if err := touchResourceForAddressChangeRequest(tx, resourceId); err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &changeRequestId, nil
+}
+
+func addressResourceIDForChangeRequest(tx *sql.Tx, addressId int) (sql.NullInt32, error) {
+	row := tx.QueryRow(addressResourceIDByIDSql, addressId)
+
+	var resourceId sql.NullInt32
+	err := row.Scan(&resourceId)
+	if err == sql.ErrNoRows {
+		return sql.NullInt32{}, ErrAddressNotFound
+	}
+	if err != nil {
+		return sql.NullInt32{}, err
+	}
+
+	return resourceId, nil
+}
+
+func insertAddressChangeRequest(tx *sql.Tx, addressId int, action int, resourceId sql.NullInt32) (int, error) {
+	var changeRequestId int
+	err := tx.QueryRow(
+		insertChangeRequestSql,
+		"AddressChangeRequest",
+		addressId,
+		StatusPending,
+		action,
+		addressResourceIDValue(resourceId),
+	).Scan(&changeRequestId)
+	if err != nil {
+		return 0, err
+	}
+
+	return changeRequestId, nil
+}
+
+func addressResourceIDValue(resourceId sql.NullInt32) interface{} {
+	if !resourceId.Valid {
+		return nil
+	}
+
+	return int(resourceId.Int32)
+}
+
+func touchResourceForAddressChangeRequest(tx *sql.Tx, resourceId sql.NullInt32) error {
+	if !resourceId.Valid {
+		return nil
+	}
+
+	_, err := tx.Exec(touchResourceForAddressChangeRequestSql, resourceId.Int32)
+	return err
+}
+
+func buildAddressUpdateQuery(addressId int, fieldChanges map[string]interface{}) (string, []interface{}) {
+	setParts := []string{}
+	args := []interface{}{}
+	position := 1
+
+	for _, fieldName := range addressChangeRequestEditableColumns {
+		fieldValue, ok := fieldChanges[fieldName]
+		if !ok {
+			continue
+		}
+		setParts = append(setParts, fmt.Sprintf("%s=$%d", fieldName, position))
+		args = append(args, fieldValue)
+		position++
+	}
+
+	setParts = append(setParts, "updated_at=now()")
+	args = append(args, addressId)
+
+	return fmt.Sprintf(
+		"UPDATE public.addresses SET %s WHERE id=$%d",
+		strings.Join(setParts, ", "),
+		position,
+	), args
 }
 
 func (m *Manager) InsertAddress(fieldChanges map[string]interface{}) (*int, *int, error) {

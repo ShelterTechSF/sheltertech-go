@@ -1,6 +1,8 @@
 package changerequest
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type ChangeRequestPayload struct {
 	ChangeRequest    ChangeRequest `json:"change_request"`
@@ -13,6 +15,7 @@ type ChangeRequest struct {
 	FieldChanges json.RawMessage `json:"field_changes"`
 	Status       *string         `json:"status,omitempty"`
 }
+
 type FieldChange struct {
 	FieldName  string `json:"field_name"`
 	FieldValue string `json:"field_value"`
@@ -47,20 +50,6 @@ type PhoneFields struct {
 	ServiceType *string `json:"service_type,omitempty"`
 }
 
-type AddressFields struct {
-	Attention     *string `json:"attention,omitempty"`
-	Name          *string `json:"name,omitempty"`
-	Address1      *string `json:"address_1,omitempty"`
-	Address2      *string `json:"address_2,omitempty"`
-	Address3      *string `json:"address_3,omitempty"`
-	Address4      *string `json:"address_4,omitempty"`
-	City          *string `json:"city,omitempty"`
-	StateProvince *string `json:"state_province,omitempty"`
-	PostalCode    *string `json:"postal_code,omitempty"`
-	Latitude      *string `json:"latitude,omitempty"`
-	Longitude     *string `json:"longitude,omitempty"`
-}
-
 type ResourceFields struct {
 	Name             *string `json:"name,omitempty"`
 	AlternateName    *string `json:"alternate_name,omitempty"`
@@ -77,6 +66,24 @@ type ResourceChangeRequest struct {
 	ResourceChangeRequest ChangeRequestResponse `json:"resource_change_request"`
 }
 
+type AddressChangeRequestPayload struct {
+	ChangeRequest json.RawMessage `json:"change_request"`
+}
+
 type AddressChangeRequest struct {
 	AddressChangeRequest ChangeRequestResponse `json:"address_change_request"`
+}
+
+type AddressFields struct {
+	Attention     *string `json:"attention,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	Address1      *string `json:"address_1,omitempty"`
+	Address2      *string `json:"address_2,omitempty"`
+	Address3      *string `json:"address_3,omitempty"`
+	Address4      *string `json:"address_4,omitempty"`
+	City          *string `json:"city,omitempty"`
+	StateProvince *string `json:"state_province,omitempty"`
+	PostalCode    *string `json:"postal_code,omitempty"`
+	Latitude      *string `json:"latitude,omitempty"`
+	Longitude     *string `json:"longitude,omitempty"`
 }
