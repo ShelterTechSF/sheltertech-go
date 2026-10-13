@@ -28,8 +28,19 @@ type Resource struct {
 	FundingId         sql.NullInt32
 }
 
+const (
+	ResourceStatusApproved = 1
+	ResourceStatusInactive = 3
+)
+
 const resourceByIDSql = `
 SELECT id, name, short_description, long_description, website, verified_at, email, status, certified, alternate_name, legal_status, contact_id, funding_id, certified_at, featured, source_attribution, internal_note, updated_at
+FROM public.resources
+WHERE id = $1
+`
+
+const resourceStatusByIDSql = `
+SELECT status
 FROM public.resources
 WHERE id = $1
 `
@@ -40,15 +51,41 @@ FROM public.resources
 WHERE status = 1
 `
 
-const certifyResourceSql = `
+const deactivateResourceSql = `
 UPDATE public.resources
-SET certified = true, certified_at = now(), updated_at = now()
+SET status = $2, updated_at = NOW()
 WHERE id = $1
+`
+
+const deactivateApprovedResourceServicesSql = `
+UPDATE public.services
+SET status = $2, updated_at = NOW()
+WHERE resource_id = $1
+  AND status = $3
+RETURNING id
 `
 
 func (m *Manager) GetResourceById(resourceId int) *Resource {
 	row := m.DB.QueryRow(resourceByIDSql, resourceId)
 	return scanResource(row)
+}
+
+func (m *Manager) GetResourceStatusByID(resourceId int) (*int, error) {
+	var status sql.NullInt32
+	err := m.DB.QueryRow(resourceStatusByIDSql, resourceId).Scan(&status)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !status.Valid {
+		unknownStatus := -1
+		return &unknownStatus, nil
+	}
+
+	statusValue := int(status.Int32)
+	return &statusValue, nil
 }
 
 func (m *Manager) GetResourcesCount() (int, error) {
@@ -62,18 +99,45 @@ func (m *Manager) GetResourcesCount() (int, error) {
 
 }
 
-func (m *Manager) CertifyResource(resourceId int) (bool, error) {
-	res, err := m.DB.Exec(certifyResourceSql, resourceId)
+func (m *Manager) DeactivateResourceAndApprovedServices(resourceId int) ([]int, error) {
+	tx, err := m.DB.Begin()
 	if err != nil {
-		return false, err
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(deactivateResourceSql, resourceId, ResourceStatusInactive)
+	if err != nil {
+		return nil, err
 	}
 
 	rowCount, err := res.RowsAffected()
 	if err != nil {
-		return false, err
+		return nil, err
+	}
+	if rowCount != 1 {
+		return nil, fmt.Errorf("unexpected rows modified, expected one, saw %v", rowCount)
 	}
 
-	return rowCount > 0, nil
+	rows, err := tx.Query(deactivateApprovedResourceServicesSql, resourceId, ResourceStatusInactive, ResourceStatusApproved)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var serviceIds []int
+	for rows.Next() {
+		var serviceId int
+		if err := rows.Scan(&serviceId); err != nil {
+			return nil, err
+		}
+		serviceIds = append(serviceIds, serviceId)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return serviceIds, tx.Commit()
 }
 
 func (m *Manager) UpdateResource(
@@ -169,4 +233,24 @@ func scanResource(row *sql.Row) *Resource {
 		}
 	}
 	return &resource
+}
+
+const certifyResourceSql = `
+UPDATE public.resources
+SET certified = true, certified_at = now(), updated_at = now()
+WHERE id = $1
+`
+
+func (m *Manager) CertifyResource(resourceId int) (bool, error) {
+	res, err := m.DB.Exec(certifyResourceSql, resourceId)
+	if err != nil {
+		return false, err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rowCount > 0, nil
 }
