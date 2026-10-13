@@ -20,6 +20,7 @@ func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
 	type changeRequestFields struct {
 		Action       string          `json:"action"`
 		FieldChanges json.RawMessage `json:"field_changes"`
+		Status       *string         `json:"status,omitempty"`
 	}
 
 	var fields changeRequestFields
@@ -34,6 +35,7 @@ func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
 
 	cr.Action = fields.Action
 	cr.FieldChanges = fields.FieldChanges
+	cr.Status = fields.Status
 	cr.rawFields = rawFields
 	return nil
 }
