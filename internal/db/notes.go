@@ -170,3 +170,45 @@ func (m *Manager) UpdateNote(noteId int, noteText string) (*int, error) {
 
 	return &changeRequestId, nil
 }
+
+const createResourceNoteSql = `
+INSERT INTO public.notes (note, resource_id, created_at, updated_at)
+VALUES ($1, $2, NOW(), NOW())
+RETURNING id, note, resource_id, service_id, created_at, updated_at
+`
+
+const touchResourceForNoteSql = `
+UPDATE public.resources
+SET updated_at = NOW()
+WHERE id = $1
+`
+
+func (m *Manager) CreateResourceNote(resourceId int, note *string) (*Note, error) {
+	var noteParam interface{}
+	if note != nil {
+		noteParam = *note
+	}
+
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var dbNote Note
+	row := tx.QueryRow(createResourceNoteSql, noteParam, resourceId)
+	err = row.Scan(&dbNote.Id, &dbNote.Note, &dbNote.ResourceId, &dbNote.ServiceId, &dbNote.CreatedAt, &dbNote.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := tx.Exec(touchResourceForNoteSql, resourceId); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &dbNote, nil
+}

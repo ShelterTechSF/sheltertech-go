@@ -234,3 +234,23 @@ func scanResource(row *sql.Row) *Resource {
 	}
 	return &resource
 }
+
+const certifyResourceSql = `
+UPDATE public.resources
+SET certified = true, certified_at = now(), updated_at = now()
+WHERE id = $1
+`
+
+func (m *Manager) CertifyResource(resourceId int) (bool, error) {
+	res, err := m.DB.Exec(certifyResourceSql, resourceId)
+	if err != nil {
+		return false, err
+	}
+
+	rowCount, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return rowCount > 0, nil
+}

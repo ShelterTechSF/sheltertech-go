@@ -114,6 +114,73 @@ func scanService(row *sql.Row) (*Service, error) {
 	return &service, err
 }
 
+const serviceStatusByIDSql = `
+SELECT status
+FROM public.services
+WHERE id = $1
+`
+
+func (m *Manager) GetServiceStatusByID(serviceId int) (*int, error) {
+	var status sql.NullInt32
+	err := m.DB.QueryRow(serviceStatusByIDSql, serviceId).Scan(&status)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !status.Valid {
+		unknownStatus := -1
+		return &unknownStatus, nil
+	}
+
+	statusValue := int(status.Int32)
+	return &statusValue, nil
+}
+
+func (m *Manager) DeactivateService(serviceId int) error {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var resourceId sql.NullInt32
+	err = tx.QueryRow(
+		`UPDATE public.services
+SET status = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING resource_id`,
+		serviceId,
+		ServiceStatusInactive,
+	).Scan(&resourceId)
+	if err != nil {
+		return err
+	}
+
+	if resourceId.Valid {
+		res, err := tx.Exec(
+			`UPDATE public.resources
+SET updated_at = NOW()
+WHERE id = $1`,
+			resourceId.Int32,
+		)
+		if err != nil {
+			return err
+		}
+
+		rowCount, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowCount != 1 {
+			return fmt.Errorf("unexpected resource rows modified, expected one, saw %v", rowCount)
+		}
+	}
+
+	return tx.Commit()
+}
+
 type ServiceCreate struct {
 	AlternateName          *string
 	ApplicationProcess     *string
