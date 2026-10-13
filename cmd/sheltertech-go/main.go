@@ -196,6 +196,7 @@ func main() {
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
+		r.Post("/api/resources/{id}/certify", resourcesManager.Certify)
 		r.Delete("/api/resources/{id}", resourcesManager.Delete)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
