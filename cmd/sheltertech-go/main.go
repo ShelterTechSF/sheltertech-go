@@ -14,6 +14,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 	"github.com/sheltertechsf/sheltertech-go/internal/eligibilities"
 	"github.com/sheltertechsf/sheltertech-go/internal/folders"
+	"github.com/sheltertechsf/sheltertech-go/internal/instructions"
 	newsarticles "github.com/sheltertechsf/sheltertech-go/internal/news_articles"
 	"github.com/sheltertechsf/sheltertech-go/internal/notes"
 	"github.com/sheltertechsf/sheltertech-go/internal/phones"
@@ -89,7 +90,10 @@ func main() {
 		pdfCrowdApiKey,
 		searchindex.NewAlgoliaIndexer(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix),
 	)
-	resourcesManager := resources.New(dbManager)
+	resourcesManager := resources.NewWithDependencies(
+		dbManager,
+		searchindex.NewAlgoliaIndexer(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix),
+	)
 	usersManager := users.New(dbManager)
 	bookmarksManager := bookmarks.New(dbManager)
 	savedSearchesManager := savedsearches.New(dbManager)
@@ -97,6 +101,7 @@ func main() {
 	newsArticlesManager := newsarticles.New(dbManager)
 	eligibilityManager := eligibilities.New(dbManager)
 	phonesManager := phones.New(dbManager)
+	instructionsManager := instructions.New(dbManager)
 	notesManager := notes.New(dbManager)
 
 	if err := sentry.Init(sentry.ClientOptions{
@@ -192,11 +197,13 @@ func main() {
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
 		r.Delete("/api/services/{id}", servicesManager.Delete)
+		r.Delete("/api/services/{id}/addresses/{address_id}", servicesManager.DeleteAddress)
 		r.Put("/api/services/{id}/addresses/{address_id}", servicesManager.AddAddress)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
 		r.Get("/api/resources/count", resourcesManager.GetCount)
+		r.Delete("/api/resources/{id}", resourcesManager.Delete)
 		r.Get("/api/datathon/content_curation_dataset", datathonManager.GetContentCurationDataset)
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
@@ -213,9 +220,11 @@ func main() {
 
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
+		r.Post("/api/notes/{id}/change_requests", changeRequestManager.UpdateNote)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
 		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
+		r.Post("/api/instructions", instructionsManager.Create)
 		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
 

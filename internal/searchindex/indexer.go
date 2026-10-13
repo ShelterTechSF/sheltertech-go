@@ -65,6 +65,10 @@ func (i *AlgoliaIndexer) DeleteObject(objectID string) error {
 	return nil
 }
 
+func ResourceObjectID(id int) string {
+	return fmt.Sprintf("resource_%d", id)
+}
+
 func ServiceObjectID(id int) string {
 	return fmt.Sprintf("service_%d", id)
 }
