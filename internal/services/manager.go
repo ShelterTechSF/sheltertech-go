@@ -18,6 +18,7 @@ import (
 	"github.com/sheltertechsf/sheltertech-go/internal/programs"
 	"github.com/sheltertechsf/sheltertech-go/internal/resources"
 	"github.com/sheltertechsf/sheltertech-go/internal/schedules"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"golang.org/x/text/language"
 	"log"
 	"mime"
@@ -31,17 +32,10 @@ type Manager struct {
 	PDFService       PDFService       // ← NEW: Injectable service
 	GoogleConfig     GoogleConfig     // ← Same
 	PDFCrowdConfig   PDFCrowdConfig   // ← Same
+	SearchIndex      searchindex.Indexer
 }
 
-type serviceNoteCreateRequest struct {
-	Note serviceNoteCreateParams `json:"note"`
-}
-
-type serviceNoteCreateParams struct {
-	Note *string `json:"note"`
-}
-
-func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, pdfCrowdApiKey string) *Manager {
+func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, pdfCrowdApiKey string, indexers ...searchindex.Indexer) *Manager {
 	googleConfig := GoogleConfig{
 		TranslateCredential: translateCredentials,
 	}
@@ -58,6 +52,7 @@ func New(dbManager *db.Manager, translateCredentials string, pdfCrowdUsername, p
 		NewPDFCrowdService(pdfCrowdConfig.Enabled, pdfCrowdUsername, pdfCrowdApiKey), // ← NEW: Creates real service
 		googleConfig,
 		pdfCrowdConfig,
+		indexers...,
 	)
 }
 
@@ -67,6 +62,7 @@ func NewWithDependencies(
 	pdfService PDFService, // ← NEW: Accepts interface
 	googleConfig GoogleConfig,
 	pdfCrowdConfig PDFCrowdConfig,
+	indexers ...searchindex.Indexer,
 ) *Manager {
 	return &Manager{
 		DbClient:         dbManager,        // ← Same as before
@@ -74,49 +70,8 @@ func NewWithDependencies(
 		PDFService:       pdfService,       // ← NEW: Injected service
 		GoogleConfig:     googleConfig,     // ← Same as before
 		PDFCrowdConfig:   pdfCrowdConfig,   // ← Same as before
+		SearchIndex:      resolveSearchIndex(indexers),
 	}
-}
-
-// CreateNote creates a note associated with a service.
-func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
-	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
-		return
-	}
-
-	var request serviceNoteCreateRequest
-	err = json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-	if request.Note.Note == nil {
-		common.WriteErrorJson(w, http.StatusBadRequest, "Note is required")
-		return
-	}
-
-	serviceExists, err := m.DbClient.ServiceExistsById(serviceId)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-		return
-	}
-	if !serviceExists {
-		common.WriteErrorJson(w, http.StatusBadRequest, "Failed to retrieve service")
-		return
-	}
-
-	dbNote, err := m.DbClient.CreateNoteForService(*request.Note.Note, serviceId)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-		return
-	}
-
-	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
 }
 
 // GetByID Get a service by ID
@@ -395,21 +350,6 @@ func writeJson(w http.ResponseWriter, object interface{}) {
 	writeJsonWithStatus(w, object, http.StatusOK)
 }
 
-func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
-	output, err := json.Marshal(object)
-	if err != nil {
-		log.Printf("%v", err)
-		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (m *Manager) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -441,5 +381,128 @@ func (m *Manager) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Service or address not found")
 	default:
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+	}
+}
+
+func resolveSearchIndex(indexers []searchindex.Indexer) searchindex.Indexer {
+	if len(indexers) > 0 && indexers[0] != nil {
+		return indexers[0]
+	}
+	return searchindex.NoopIndexer{}
+}
+
+// Delete deactivates an approved service.
+//
+//	@Summary		Delete Service
+//	@Description	deactivate an approved service
+//	@Tags			services
+//	@Param			id	path	integer	true	"Service ID"
+//	@Success		200
+//	@Failure		400
+//	@Failure		404
+//	@Failure		412
+//	@Failure		500
+//	@Router			/services/{id} [delete]
+func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	serviceId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid service ID", http.StatusBadRequest)
+		return
+	}
+
+	status, err := m.DbClient.GetServiceStatusByID(serviceId)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if status == nil {
+		http.Error(w, "404: Service not found for ID: "+idStr, http.StatusNotFound)
+		return
+	}
+	if *status != db.ServiceStatusApproved {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		return
+	}
+
+	err = m.DbClient.DeactivateService(serviceId)
+	if err != nil {
+		http.Error(w, "Failed to deactivate service", http.StatusInternalServerError)
+		return
+	}
+
+	m.removeDeactivatedServiceFromSearchIndex(serviceId)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
+	if err := m.SearchIndex.DeleteObject(searchindex.ServiceObjectID(serviceId)); err != nil {
+		log.Printf("failed to remove service %d from search index: %v", serviceId, err)
+	}
+}
+
+type serviceNoteCreateRequest struct {
+	Note serviceNoteCreateParams `json:"note"`
+}
+
+type serviceNoteCreateParams struct {
+	Note *string `json:"note"`
+}
+
+// CreateNote creates a note associated with a service.
+func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
+	serviceId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid service ID format")
+		return
+	}
+
+	var request serviceNoteCreateRequest
+	err = json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if request.Note.Note == nil {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Note is required")
+		return
+	}
+
+	serviceExists, err := m.DbClient.ServiceExistsById(serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	if !serviceExists {
+		common.WriteErrorJson(w, http.StatusBadRequest, "Failed to retrieve service")
+		return
+	}
+
+	dbNote, err := m.DbClient.CreateNoteForService(*request.Note.Note, serviceId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
+}
+
+func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
+	output, err := json.Marshal(object)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, err = w.Write(output)
+	if err != nil {
+		panic(err)
 	}
 }
