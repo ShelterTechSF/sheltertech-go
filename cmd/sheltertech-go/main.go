@@ -188,6 +188,7 @@ func main() {
 
 		r.Get("/api/services/count", servicesManager.GetCount)
 		r.Get("/api/services/{id}", servicesManager.GetByID)
+		r.Put("/api/services/{id}/addresses/{address_id}", servicesManager.AddAddress)
 		r.Post("/api/services/html_to_pdf", servicesManager.ConvertHtmlToPdf)
 
 		r.Get("/api/resources/{id}", resourcesManager.GetByID)
@@ -210,6 +211,7 @@ func main() {
 		r.Delete("/api/phones/{id}", phonesManager.Delete)
 		r.Post("/api/phones/{id}/change_requests", changeRequestManager.UpdatePhone)
 		r.Post("/api/resources/{id}/change_requests", changeRequestManager.UpdateResource)
+		r.Post("/api/services/{id}/change_requests", changeRequestManager.UpdateService)
 		r.Post("/api/change_requests", changeRequestManager.Create)
 		r.Delete("/api/notes/{id}", notesManager.Delete)
 	})
