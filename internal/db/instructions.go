@@ -62,3 +62,22 @@ func scanInstructions(rows *sql.Rows) []*Instruction {
 	}
 	return instructions
 }
+
+const updateInstructionSql = `
+UPDATE public.instructions
+SET instruction = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, instruction
+`
+
+func (m *Manager) UpdateInstruction(instructionId int, instruction *string) (*Instruction, error) {
+	row := m.DB.QueryRow(updateInstructionSql, instructionId, instruction)
+
+	var updated Instruction
+	err := row.Scan(&updated.Id, &updated.Instruction)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updated, nil
+}
