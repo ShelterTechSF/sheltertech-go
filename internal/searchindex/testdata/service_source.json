@@ -1,0 +1,157 @@
+{
+  "addresses": [],
+  "associated_sites": [
+    "sffamilies"
+  ],
+  "boosted_category": null,
+  "categories": [
+    "Seniors",
+    "Help Pay for Internet or Phone"
+  ],
+  "documents": [
+    {
+      "description": "Some document",
+      "id": 1700000016,
+      "url": "document_url"
+    }
+  ],
+  "eligibilities": [],
+  "instructions": [
+    "Bring the fixture form",
+    "Instruction text goes here"
+  ],
+  "notes": [
+    "Dolorem ut sit. Blanditiis exercitationem quia. Earum consequatur quae.",
+    "Parity service note"
+  ],
+  "phones": [
+    {
+      "number": "+17755614269",
+      "service_type": "Business"
+    }
+  ],
+  "resource_addresses": [
+    {
+      "address_1": "762 Mark Loaf",
+      "city": "West Palmer",
+      "country": "USA",
+      "latitude": 37.7820802732529,
+      "longitude": -122.395060956365,
+      "postal_code": "18142",
+      "state_province": "Mississippi"
+    }
+  ],
+  "resource_name": "Quigley, Hirthe and Connelly",
+  "resource_schedule": {
+    "days": [
+      {
+        "closes_at": 1715,
+        "day": "Tuesday",
+        "opens_at": 645
+      },
+      {
+        "closes_at": 545,
+        "day": "Wednesday",
+        "opens_at": 100
+      },
+      {
+        "closes_at": 1645,
+        "day": "Wednesday",
+        "opens_at": 1445
+      },
+      {
+        "closes_at": 1045,
+        "day": "Thursday",
+        "opens_at": 715
+      },
+      {
+        "closes_at": 500,
+        "day": "Thursday",
+        "opens_at": 1745
+      },
+      {
+        "closes_at": 330,
+        "day": "Saturday",
+        "opens_at": 2145
+      },
+      {
+        "closes_at": 1600,
+        "day": "Sunday",
+        "opens_at": 730
+      }
+    ]
+  },
+  "schedule": {
+    "days": [
+      {
+        "closes_at": 1500,
+        "day": "Monday",
+        "opens_at": 615
+      },
+      {
+        "closes_at": 545,
+        "day": "Tuesday",
+        "opens_at": 100
+      },
+      {
+        "closes_at": 1130,
+        "day": "Tuesday",
+        "opens_at": 1015
+      },
+      {
+        "closes_at": 330,
+        "day": "Wednesday",
+        "opens_at": 2245
+      },
+      {
+        "closes_at": 645,
+        "day": "Thursday",
+        "opens_at": 330
+      },
+      {
+        "closes_at": 1730,
+        "day": "Thursday",
+        "opens_at": 815
+      },
+      {
+        "closes_at": 2400,
+        "day": "Friday",
+        "opens_at": 615
+      },
+      {
+        "closes_at": 1915,
+        "day": "Sunday",
+        "opens_at": 645
+      }
+    ]
+  },
+  "service": {
+    "alternate_name": null,
+    "application_process": null,
+    "boosted_category_id": null,
+    "certified": false,
+    "certified_at": null,
+    "contact_id": null,
+    "created_at": "2025-12-04T04:23:59.106316",
+    "eligibility": null,
+    "email": null,
+    "featured": null,
+    "fee": null,
+    "funding_id": null,
+    "id": 1700000016,
+    "internal_note": null,
+    "interpretation_services": null,
+    "long_description": "Affiliated with John Muir Elementary School. Services for Families with children only. Black and white printer, scanner, wireless internet, and assistive technology available.\n",
+    "name": "Nienow, Okuneva and Will",
+    "program_id": null,
+    "required_documents": null,
+    "resource_id": 1700000013,
+    "short_description": null,
+    "source_attribution": 0,
+    "status": 1,
+    "updated_at": "2025-12-04T04:23:59.106316",
+    "url": null,
+    "verified_at": null,
+    "wait_time": null
+  }
+}
