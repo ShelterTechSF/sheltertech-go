@@ -1,0 +1,280 @@
+{
+  "_geoloc": {
+    "lat": 37.7820802732529,
+    "lng": -122.395060956365
+  },
+  "addresses": [
+    {
+      "address_1": "762 Mark Loaf",
+      "city": "West Palmer",
+      "country": "USA",
+      "latitude": 37.7820802732529,
+      "longitude": -122.395060956365,
+      "postal_code": "18142",
+      "state_province": "Mississippi"
+    }
+  ],
+  "alternate_name": null,
+  "application_process": null,
+  "associated_sites": [
+    "sffamilies"
+  ],
+  "boosted_category": null,
+  "boosted_category_id": null,
+  "categories": [
+    "Seniors",
+    "Help Pay for Internet or Phone"
+  ],
+  "certified": false,
+  "certified_at": null,
+  "contact_id": null,
+  "created_at": "2025-12-04T04:23:59.106Z",
+  "documents": [
+    {
+      "description": "Some document",
+      "id": 1700000016,
+      "url": "document_url"
+    }
+  ],
+  "eligibilities": [],
+  "eligibility": null,
+  "email": null,
+  "featured": null,
+  "fee": null,
+  "funding_id": null,
+  "id": 1700000016,
+  "instructions": [
+    "Bring the fixture form",
+    "Instruction text goes here"
+  ],
+  "internal_note": null,
+  "interpretation_services": null,
+  "is_mohcd_funded": false,
+  "long_description": "Affiliated with John Muir Elementary School. Services for Families with children only. Black and white printer, scanner, wireless internet, and assistive technology available.\n",
+  "name": "Nienow, Okuneva and Will",
+  "notes": [
+    "Dolorem ut sit. Blanditiis exercitationem quia. Earum consequatur quae.",
+    "Parity service note"
+  ],
+  "objectID": "service_1700000016",
+  "open_times": [
+    "M-6:00",
+    "M-6:30",
+    "M-7:00",
+    "M-7:30",
+    "M-8:00",
+    "M-8:30",
+    "M-9:00",
+    "M-9:30",
+    "M-10:00",
+    "M-10:30",
+    "M-11:00",
+    "M-11:30",
+    "M-12:00",
+    "M-12:30",
+    "M-13:00",
+    "M-13:30",
+    "M-14:00",
+    "M-14:30",
+    "Tu-1:00",
+    "Tu-1:30",
+    "Tu-2:00",
+    "Tu-2:30",
+    "Tu-3:00",
+    "Tu-3:30",
+    "Tu-4:00",
+    "Tu-4:30",
+    "Tu-5:00",
+    "Tu-5:30",
+    "Tu-10:00",
+    "Tu-10:30",
+    "Tu-11:00",
+    "Th-3:30",
+    "Th-4:00",
+    "Th-4:30",
+    "Th-5:00",
+    "Th-5:30",
+    "Th-6:00",
+    "Th-6:30",
+    "Th-8:00",
+    "Th-8:30",
+    "Th-9:00",
+    "Th-9:30",
+    "Th-10:00",
+    "Th-10:30",
+    "Th-11:00",
+    "Th-11:30",
+    "Th-12:00",
+    "Th-12:30",
+    "Th-13:00",
+    "Th-13:30",
+    "Th-14:00",
+    "Th-14:30",
+    "Th-15:00",
+    "Th-15:30",
+    "Th-16:00",
+    "Th-16:30",
+    "Th-17:00",
+    "F-6:00",
+    "F-6:30",
+    "F-7:00",
+    "F-7:30",
+    "F-8:00",
+    "F-8:30",
+    "F-9:00",
+    "F-9:30",
+    "F-10:00",
+    "F-10:30",
+    "F-11:00",
+    "F-11:30",
+    "F-12:00",
+    "F-12:30",
+    "F-13:00",
+    "F-13:30",
+    "F-14:00",
+    "F-14:30",
+    "F-15:00",
+    "F-15:30",
+    "F-16:00",
+    "F-16:30",
+    "F-17:00",
+    "F-17:30",
+    "F-18:00",
+    "F-18:30",
+    "F-19:00",
+    "F-19:30",
+    "F-20:00",
+    "F-20:30",
+    "F-21:00",
+    "F-21:30",
+    "F-22:00",
+    "F-22:30",
+    "F-23:00",
+    "F-23:30",
+    "Su-6:30",
+    "Su-7:00",
+    "Su-7:30",
+    "Su-8:00",
+    "Su-8:30",
+    "Su-9:00",
+    "Su-9:30",
+    "Su-10:00",
+    "Su-10:30",
+    "Su-11:00",
+    "Su-11:30",
+    "Su-12:00",
+    "Su-12:30",
+    "Su-13:00",
+    "Su-13:30",
+    "Su-14:00",
+    "Su-14:30",
+    "Su-15:00",
+    "Su-15:30",
+    "Su-16:00",
+    "Su-16:30",
+    "Su-17:00",
+    "Su-17:30",
+    "Su-18:00",
+    "Su-18:30",
+    "Su-19:00"
+  ],
+  "phones": [
+    {
+      "number": "+17755614269",
+      "service_type": "Business"
+    }
+  ],
+  "program_id": null,
+  "required_documents": null,
+  "resource_id": 1700000013,
+  "resource_schedule": [
+    {
+      "closes_at": 1715,
+      "day": "Tuesday",
+      "opens_at": 645
+    },
+    {
+      "closes_at": 545,
+      "day": "Wednesday",
+      "opens_at": 100
+    },
+    {
+      "closes_at": 1645,
+      "day": "Wednesday",
+      "opens_at": 1445
+    },
+    {
+      "closes_at": 1045,
+      "day": "Thursday",
+      "opens_at": 715
+    },
+    {
+      "closes_at": 500,
+      "day": "Thursday",
+      "opens_at": 1745
+    },
+    {
+      "closes_at": 330,
+      "day": "Saturday",
+      "opens_at": 2145
+    },
+    {
+      "closes_at": 1600,
+      "day": "Sunday",
+      "opens_at": 730
+    }
+  ],
+  "schedule": [
+    {
+      "closes_at": 1500,
+      "day": "Monday",
+      "opens_at": 615
+    },
+    {
+      "closes_at": 545,
+      "day": "Tuesday",
+      "opens_at": 100
+    },
+    {
+      "closes_at": 1130,
+      "day": "Tuesday",
+      "opens_at": 1015
+    },
+    {
+      "closes_at": 330,
+      "day": "Wednesday",
+      "opens_at": 2245
+    },
+    {
+      "closes_at": 645,
+      "day": "Thursday",
+      "opens_at": 330
+    },
+    {
+      "closes_at": 1730,
+      "day": "Thursday",
+      "opens_at": 815
+    },
+    {
+      "closes_at": 2400,
+      "day": "Friday",
+      "opens_at": 615
+    },
+    {
+      "closes_at": 1915,
+      "day": "Sunday",
+      "opens_at": 645
+    }
+  ],
+  "service_id": 1700000016,
+  "service_of": "Quigley, Hirthe and Connelly",
+  "short_description": null,
+  "source_attribution": "ask_darcel",
+  "status": "approved",
+  "type": "service",
+  "updated_at": "2025-12-04T04:23:59.106Z",
+  "url": null,
+  "use_resource_schedule": false,
+  "verified_at": null,
+  "wait_time": null
+}
