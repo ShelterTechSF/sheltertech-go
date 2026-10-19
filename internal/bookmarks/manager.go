@@ -2,7 +2,7 @@ package bookmarks
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -25,33 +25,26 @@ func New(dbManager *db.Manager) *Manager {
 }
 
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-
-	var dbBookmarks []*db.Bookmark
-
 	userId := r.URL.Query().Get("user_id")
-
-	if userId != "" {
-		iUserId, err := strconv.Atoi(userId)
-		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		dbBookmarks, err = m.DbClient.GetBookmarksByUserID(iUserId)
-		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-			return
-		}
-	} else {
-		var err error
-		dbBookmarks, err = m.DbClient.GetBookmarks()
-		if err != nil {
-			log.Printf("%v", err)
-			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
-			return
-		}
+	if userId == "" {
+		common.WriteErrorJson(w, http.StatusBadRequest, "user_id query parameter is required")
+		return
 	}
+
+	iUserId, err := strconv.Atoi(userId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	dbBookmarks, err := m.DbClient.GetBookmarksByUserID(iUserId)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
 	response := Bookmarks{
 		Bookmarks: FromDBTypeArray(dbBookmarks),
 	}
@@ -82,10 +75,15 @@ func (m *Manager) GetByID(w http.ResponseWriter, r *http.Request) {
 func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "failed to read request body")
+		return
+	}
 
 	bookmark := &Bookmark{}
-	err := json.Unmarshal(body, bookmark)
+	err = json.Unmarshal(body, bookmark)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
@@ -108,16 +106,21 @@ func (m *Manager) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeStatus(w, http.StatusCreated)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
-	body, _ := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("%v", err)
+		common.WriteErrorJson(w, http.StatusBadRequest, "failed to read request body")
+		return
+	}
 
 	bookmark := &Bookmark{}
-	err := json.Unmarshal(body, bookmark)
+	err = json.Unmarshal(body, bookmark)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
@@ -141,8 +144,7 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeStatus(w, http.StatusCreated)
-
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
@@ -159,22 +161,18 @@ func (m *Manager) DeleteByID(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
 	}
-
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
 	output, err := json.Marshal(object)
 	if err != nil {
-		log.Println("error:", err)
+		log.Printf("error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(output)
-	if err != nil {
-		panic(err)
+	if _, err = w.Write(output); err != nil {
+		log.Printf("error writing response: %v", err)
 	}
-}
-
-func writeStatus(w http.ResponseWriter, responseStatus int) {
-	w.WriteHeader(responseStatus)
 }
