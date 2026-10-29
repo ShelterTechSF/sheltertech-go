@@ -191,3 +191,5 @@ func requestWithServiceID(method, id string) *http.Request {
 	routeContext.URLParams.Add("id", id)
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
 }
+
+func (f *fakeSearchIndexer) SaveObject(string, interface{}) error { return f.err }

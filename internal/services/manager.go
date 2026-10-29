@@ -443,7 +443,7 @@ func (m *Manager) removeDeactivatedServiceFromSearchIndex(serviceId int) {
 }
 
 type serviceNoteCreateRequest struct {
-	Note serviceNoteCreateParams `json:"note"`
+	Note *serviceNoteCreateParams `json:"note"`
 }
 
 type serviceNoteCreateParams struct {
@@ -466,7 +466,7 @@ func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	if request.Note.Note == nil {
+	if request.Note == nil {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Note is required")
 		return
 	}
@@ -482,14 +482,20 @@ func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbNote, err := m.DbClient.CreateNoteForService(*request.Note.Note, serviceId)
+	dbNote, err := m.DbClient.CreateNoteForService(request.Note.Note, serviceId)
 	if err != nil {
 		log.Printf("%v", err)
 		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
 		return
 	}
 
-	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
+	if err := searchindex.RebuildService(r.Context(), m.DbClient.DB, m.SearchIndex, serviceId); err != nil {
+		log.Printf("reindex service %d after creating note: %v", serviceId, err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+
+	writeJsonWithStatus(w, createdServiceNoteResponse(dbNote), http.StatusCreated)
 }
 
 func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {

@@ -219,20 +219,7 @@ VALUES ($1, $2, now(), now())
 RETURNING id, note, resource_id, service_id, created_at, updated_at
 `
 
-const touchServiceForNoteSql = `
-UPDATE public.services
-SET updated_at = now()
-WHERE id = $1
-RETURNING resource_id
-`
-
-const touchResourceForServiceNoteSql = `
-UPDATE public.resources
-SET updated_at = now()
-WHERE id = $1
-`
-
-func (m *Manager) CreateNoteForService(noteText string, serviceId int) (*Note, error) {
+func (m *Manager) CreateNoteForService(noteText *string, serviceId int) (*Note, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
 		return nil, err
@@ -245,15 +232,8 @@ func (m *Manager) CreateNoteForService(noteText string, serviceId int) (*Note, e
 		return nil, err
 	}
 
-	var resourceID sql.NullInt32
-	if err := tx.QueryRow(touchServiceForNoteSql, serviceId).Scan(&resourceID); err != nil {
-		return nil, err
-	}
-	if resourceID.Valid {
-		if _, err := tx.Exec(touchResourceForServiceNoteSql, resourceID.Int32); err != nil {
-			return nil, err
-		}
-	}
+	// Rails Note belongs_to :service does not touch its parent. Only the new
+	// note changes; service.save! invokes indexing without changing timestamps.
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
