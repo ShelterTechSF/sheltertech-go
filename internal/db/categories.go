@@ -88,7 +88,6 @@ SELECT c.id, c.name, c.top_level, c.featured
 FROM public.categories c
 LEFT JOIN public.categories_services cs on c.id = cs.category_id
 WHERE cs.service_id = $1
-ORDER BY c.id
 `
 
 const categoriesByResourceIDSql = `
@@ -96,7 +95,6 @@ SELECT c.id, c.name, c.top_level, c.featured
 FROM public.categories c
 LEFT JOIN public.categories_resources cs on c.id = cs.category_id
 WHERE cs.resource_id = $1
-ORDER BY c.id
 `
 
 func (m *Manager) GetCategories(topLevel *bool) []*Category {
