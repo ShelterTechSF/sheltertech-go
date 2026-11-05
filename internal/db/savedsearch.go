@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 )
 
 type SavedSearchQuery struct {
@@ -62,18 +61,17 @@ type SavedSearch struct {
 	Search SavedSearchQuery
 }
 
-func (m *Manager) GetSavedSearchById(savedSearchId int) *SavedSearch {
+func (m *Manager) GetSavedSearchById(savedSearchId int) (*SavedSearch, error) {
 	row := m.DB.QueryRow(savedSearchByIDSql, savedSearchId)
 	return scanSavedSearch(row)
 }
 
-func (m *Manager) GetSavedSearches(userId int) []*SavedSearch {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(savedSearchesByUserIDSql, userId)
+func (m *Manager) GetSavedSearches(userId int) ([]*SavedSearch, error) {
+	rows, err := m.DB.Query(savedSearchesByUserIDSql, userId)
 	if err != nil {
-		log.Printf("%v\n", err)
+		return nil, err
 	}
+	defer rows.Close()
 	return scanSavedSearches(rows)
 }
 
@@ -82,6 +80,8 @@ func (m *Manager) CreateSavedSearch(savedSearch *SavedSearch) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	defer tx.Rollback()
+
 	row := tx.QueryRow(createSavedSearchSql, savedSearch.UserId, savedSearch.Name, savedSearch.Search)
 	var id int
 	err = row.Scan(&id)
@@ -96,6 +96,7 @@ func (m *Manager) DeleteSavedSearchById(id int) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	res, err := tx.Exec(deleteSavedSearchSql, id)
 	if err != nil {
@@ -106,38 +107,38 @@ func (m *Manager) DeleteSavedSearchById(id int) error {
 		return err
 	}
 	if rowCount != 1 {
-		defer tx.Rollback()
 		return errors.New(fmt.Sprintf("unexpected rows modified, expected one, saw %v", rowCount))
 	}
 	return tx.Commit()
 }
 
-func scanSavedSearches(rows *sql.Rows) []*SavedSearch {
+func scanSavedSearches(rows *sql.Rows) ([]*SavedSearch, error) {
 	var savedSearches []*SavedSearch
 	for rows.Next() {
 		var savedSearch SavedSearch
 		err := rows.Scan(&savedSearch.Id, &savedSearch.UserId, &savedSearch.Name, &savedSearch.Search)
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
+		if err != nil {
+			return nil, err
 		}
 		savedSearches = append(savedSearches, &savedSearch)
 	}
-	return savedSearches
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return savedSearches, nil
 }
 
-func scanSavedSearch(row *sql.Row) *SavedSearch {
+func scanSavedSearch(row *sql.Row) (*SavedSearch, error) {
 	var savedSearch SavedSearch
 	err := row.Scan(&savedSearch.Id, &savedSearch.UserId, &savedSearch.Name, &savedSearch.Search)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
 			fmt.Println("No rows were returned!")
-			return nil
+			return nil, nil
 		default:
-			panic(err)
+			return nil, err
 		}
 	}
-	return &savedSearch
+	return &savedSearch, nil
 }
