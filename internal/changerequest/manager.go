@@ -567,6 +567,11 @@ func (m *Manager) UpdateScheduleDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, changeRequestPayload.ChangeRequest.rawJSON)
+
 	response := &ScheduleDayChangeRequest{
 		ScheduleDayChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,

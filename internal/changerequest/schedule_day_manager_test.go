@@ -67,12 +67,13 @@ func TestManagerUpdateScheduleDayCreatesChangeRequestAndAppliesHours(t *testing.
 		WithArgs("closes_at", "1700", 44).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 
 	manager := New(&db.Manager{DB: sqlDB})
 	router := chi.NewRouter()
 	router.Post("/api/schedule_days/{id}/change_requests", manager.UpdateScheduleDay)
 
-	requestBody := strings.NewReader(`{"change_request":{"opens_at":900,"closes_at":1700}}`)
+	requestBody := strings.NewReader(`{"change_request":{"closes_at":1700,"opens_at":900}}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/schedule_days/12/change_requests", requestBody)
 	w := httptest.NewRecorder()
 
@@ -89,8 +90,8 @@ func TestManagerUpdateScheduleDayCreatesChangeRequestAndAppliesHours(t *testing.
 		Type:     "ScheduleDayChangeRequest",
 		ObjectID: 12,
 		FieldChanges: []FieldChange{
-			{FieldName: "opens_at", FieldValue: "900"},
 			{FieldName: "closes_at", FieldValue: "1700"},
+			{FieldName: "opens_at", FieldValue: "900"},
 		},
 	}, response.ScheduleDayChangeRequest)
 	assert.NoError(t, mock.ExpectationsWereMet())
