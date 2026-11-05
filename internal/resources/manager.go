@@ -204,5 +204,10 @@ func (m *Manager) Certify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := searchindex.RebuildResource(r.Context(), m.DbClient.DB, m.SearchIndex, resourceId); err != nil {
+		log.Printf("reindex certified resource %d: %v", resourceId, err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
