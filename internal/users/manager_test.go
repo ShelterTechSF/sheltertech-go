@@ -2,6 +2,8 @@ package users
 
 import (
 	"encoding/json"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -98,4 +100,24 @@ func TestGetCurrentWithoutUserInContext(t *testing.T) {
 	if apiError.Error == "" {
 		t.Errorf("response body %q should carry an error message", recorder.Body.String())
 	}
+}
+
+func TestSaveUserCreationReturnsRailsPresenter(t *testing.T) {
+	database, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer database.Close()
+	columns := []string{"id", "name", "organization", "user_external_id", "email"}
+	mock.ExpectQuery("SELECT u.id.*WHERE u.user_external_id").WithArgs("auth0|new").WillReturnRows(sqlmock.NewRows(columns))
+	mock.ExpectQuery("SELECT u.id.*WHERE lower").WithArgs("new@example.org").WillReturnRows(sqlmock.NewRows(columns))
+	mock.ExpectBegin()
+	mock.ExpectQuery("INSERT INTO public.users").WithArgs("New User", "ShelterTech", "auth0|new", "new@example.org").WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(42))
+	mock.ExpectCommit()
+	req := httptest.NewRequest("POST", "/api/users", strings.NewReader(`{"email":"new@example.org","name":"New User","organization":"ShelterTech"}`))
+	req = req.WithContext(auth.ContextWithIdentity(req.Context(), &auth.TokenIdentity{Subject: "auth0|new"}))
+	w := httptest.NewRecorder()
+	New(&db.Manager{DB: database}).SaveUser(w, req)
+	require.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(t, "application/json", w.Header().Get("Content-Type"))
+	require.JSONEq(t, `{"user":{"id":42,"email":"new@example.org","name":"New User","organization":"ShelterTech"}}`, w.Body.String())
+	require.NoError(t, mock.ExpectationsWereMet())
 }

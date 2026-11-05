@@ -98,14 +98,16 @@ func (m *Manager) SaveUser(w http.ResponseWriter, r *http.Request) {
 		Email:          request.Email,
 	}
 
-	_, err = m.DbClient.CreateUser(newUser)
+	newUser.Id, err = m.DbClient.CreateUser(newUser)
 	if err != nil {
 		log.Printf("failed to create user: %v", err)
 		writeError(w, http.StatusInternalServerError, "Unable to save user")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeJsonWithStatus(w, struct {
+		User *User `json:"user"`
+	}{User: FromDBType(newUser)}, http.StatusCreated)
 }
 
 func (m *Manager) reconcileUser(existingUser *db.User, request SaveUserRequest, subject string) error {
@@ -151,12 +153,16 @@ func writeError(w http.ResponseWriter, statusCode int, message string) {
 }
 
 func writeJson(w http.ResponseWriter, object interface{}) {
+	writeJsonWithStatus(w, object, http.StatusOK)
+}
+
+func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
 	output, err := json.Marshal(object)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	_, err = w.Write(output)
 	if err != nil {
 		panic(err)
