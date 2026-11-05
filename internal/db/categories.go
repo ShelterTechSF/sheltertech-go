@@ -3,8 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"github.com/lib/pq"
 	"log"
+
+	"github.com/lib/pq"
 )
 
 type Category struct {
@@ -109,47 +110,49 @@ func (m *Manager) GetCategories(topLevel *bool) []*Category {
 	}
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
 func (m *Manager) GetCategoryServiceCounts() []*CategoryCount {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoryServiceCounts)
+	rows, err := m.DB.Query(categoryServiceCounts)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategoryCounts(rows)
 }
 
 func (m *Manager) GetCategoryResourceCounts() []*CategoryCount {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoryResourceCounts)
+	rows, err := m.DB.Query(categoryResourceCounts)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategoryCounts(rows)
 }
 
 func (m *Manager) GetCategoriesByFeatured() []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoriesByFeaturedSql)
+	rows, err := m.DB.Query(categoriesByFeaturedSql)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
 func (m *Manager) GetSubCategoriesByID(categoryId int) []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(subCategoriesByIDSql, categoryId)
+	rows, err := m.DB.Query(subCategoriesByIDSql, categoryId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
@@ -159,52 +162,54 @@ func (m *Manager) GetCategoryByID(categoryId int) *Category {
 }
 
 func (m *Manager) GetCategoriesByIDs(ids []int) []*Category {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(categoriesByIDsSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(pq.Array(ids))
+	defer stmt.Close()
+	rows, err := stmt.Query(pq.Array(ids))
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
 func (m *Manager) GetCategoriesByNames(names []string) []*Category {
-	var rows *sql.Rows
-	var err error
 	stmt, err := m.DB.Prepare(categoriesByNamesSql)
 	if err != nil {
 		log.Printf("Prepare failed: %v\n", err)
 		return nil
 	}
-	rows, err = stmt.Query(pq.Array(names))
+	defer stmt.Close()
+	rows, err := stmt.Query(pq.Array(names))
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
 func (m *Manager) GetCategoriesByServiceID(serviceId int) []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoriesByServiceIDSql, serviceId)
+	rows, err := m.DB.Query(categoriesByServiceIDSql, serviceId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
 func (m *Manager) GetCategoriesByResourceID(resourceId int) []*Category {
-	var rows *sql.Rows
-	var err error
-	rows, err = m.DB.Query(categoriesByResourceIDSql, resourceId)
+	rows, err := m.DB.Query(categoriesByResourceIDSql, resourceId)
 	if err != nil {
 		log.Printf("%v\n", err)
+		return nil
 	}
+	defer rows.Close()
 	return scanCategories(rows)
 }
 
