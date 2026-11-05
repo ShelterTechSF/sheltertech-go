@@ -407,6 +407,7 @@ func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	fieldChangesResponse := []FieldChange{}
 	if removeAddress {
 		changeRequestId, err = m.DbClient.RemoveAddress(addressId)
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "action", FieldValue: "remove"})
 	} else {
 		var fieldChangesMap map[string]interface{}
 		var responseChanges []FieldChange
@@ -428,6 +429,10 @@ func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest)
 	response := &AddressChangeRequest{
 		AddressChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
