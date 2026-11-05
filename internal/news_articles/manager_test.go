@@ -125,10 +125,10 @@ func TestManager_UpdateAcceptsDateOnlyPayload(t *testing.T) {
 			"expiration_date",
 		}).AddRow(
 			35,
-			sql.NullString{String: "Existing", Valid: true},
-			sql.NullString{String: "Existing body", Valid: true},
-			sql.NullInt32{Int32: 2, Valid: true},
-			sql.NullString{String: "https://example.com/existing", Valid: true},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullInt32{},
+			sql.NullString{},
 			sql.NullTime{Time: effectiveDate, Valid: true},
 			sql.NullTime{Time: expirationDate, Valid: true},
 		))
@@ -146,15 +146,15 @@ func TestManager_UpdateAcceptsDateOnlyPayload(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `{
+	assert.JSONEq(t, `{"news_article":{
 		"id": 35,
-		"headline": "Existing",
-		"body": "Existing body",
-		"priority": 2,
-		"url": "https://example.com/existing",
-		"effective_date": "2026-10-01T00:00:00Z",
-		"expiration_date": "2026-10-31T00:00:00Z"
-	}`, w.Body.String())
+		"headline": null,
+		"body": null,
+		"priority": null,
+		"url": null,
+		"effective_date": "2026-10-01T00:00:00.000Z",
+		"expiration_date": "2026-10-31T00:00:00.000Z"
+	}}`, w.Body.String())
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

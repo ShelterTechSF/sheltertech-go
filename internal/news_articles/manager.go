@@ -152,7 +152,9 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return the updated news article
-	response := FromNewsArticleDBType(updatedNewsArticle)
+	response := struct {
+		NewsArticle railsNewsArticle `json:"news_article"`
+	}{NewsArticle: railsArticle(updatedNewsArticle)}
 	writeJson(w, response, http.StatusOK)
 }
 

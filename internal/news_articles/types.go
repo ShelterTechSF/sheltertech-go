@@ -96,6 +96,13 @@ func (r *NewsArticleCreateRequest) UnmarshalJSON(data []byte) error {
 }
 
 func (r *NewsArticleUpdateRequest) UnmarshalJSON(data []byte) error {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return err
+	}
+	if nested, ok := envelope["news_article"]; ok {
+		data = nested
+	}
 	var req newsArticleRequestJSON
 	if err := json.Unmarshal(data, &req); err != nil {
 		return err
