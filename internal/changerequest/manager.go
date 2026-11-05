@@ -170,11 +170,12 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		formatted, err := formatPhoneNumber(*phoneFields.Number)
 		if err != nil {
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
 		}
 		fieldChangesMap["number"] = formatted
 		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
 			FieldName:  "number",
-			FieldValue: formatted,
+			FieldValue: *phoneFields.Number,
 		})
 	}
 	if phoneFields.ServiceType != nil {
@@ -185,12 +186,16 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	changeRequestId, err := m.DbClient.UpdatePhone(phoneId, fieldChangesMap)
+	changeRequestId, err := m.DbClient.UpdatePhone(phoneId, fieldChangesMap, phoneFields.Number)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, changeRequestPayload.ChangeRequest.FieldChanges)
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
@@ -201,8 +206,9 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	writeJson(w, response)
+	w.Header().Set("Content-Type", "application/json")
 	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
 }
 
 func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
