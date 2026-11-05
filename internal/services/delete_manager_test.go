@@ -18,6 +18,7 @@ import (
 
 type fakeSearchIndexer struct {
 	deletedObjectIDs []string
+	savedObjectIDs   []string
 	err              error
 }
 
@@ -66,6 +67,8 @@ WHERE id = $1`
 					WithArgs(456).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectCommit()
+				mock.ExpectQuery("SELECT resource_id FROM public.services").WithArgs(123).WillReturnRows(sqlmock.NewRows([]string{"resource_id"}).AddRow(456))
+				mock.ExpectQuery("SELECT json_build_object").WithArgs(456).WillReturnRows(sqlmock.NewRows([]string{"json"}).AddRow(`{"resource":{"id":456,"status":1,"updated_at":"2026-11-04T12:00:00"},"services":[{"name":"Deactivated service"}]}`))
 			},
 			expectedStatus:           http.StatusOK,
 			expectedBody:             "",
@@ -86,6 +89,8 @@ WHERE id = $1`
 					WithArgs(456).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectCommit()
+				mock.ExpectQuery("SELECT resource_id FROM public.services").WithArgs(123).WillReturnRows(sqlmock.NewRows([]string{"resource_id"}).AddRow(456))
+				mock.ExpectQuery("SELECT json_build_object").WithArgs(456).WillReturnRows(sqlmock.NewRows([]string{"json"}).AddRow(`{"resource":{"id":456,"status":1,"updated_at":"2026-11-04T12:00:00"},"services":[{"name":"Deactivated service"}]}`))
 			},
 			searchIndexErr:           errors.New("search index unavailable"),
 			expectedStatus:           http.StatusOK,
@@ -175,6 +180,11 @@ WHERE id = $1`
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedBody, w.Body.String())
 			assert.Equal(t, tt.expectedDeletedObjectIDs, indexer.deletedObjectIDs)
+			if tt.expectedStatus == http.StatusOK {
+				assert.Equal(t, []string{"resource_456"}, indexer.savedObjectIDs)
+			} else {
+				assert.Empty(t, indexer.savedObjectIDs)
+			}
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
@@ -192,4 +202,7 @@ func requestWithServiceID(method, id string) *http.Request {
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
 }
 
-func (f *fakeSearchIndexer) SaveObject(string, interface{}) error { return f.err }
+func (f *fakeSearchIndexer) SaveObject(id string, record interface{}) error {
+	f.savedObjectIDs = append(f.savedObjectIDs, id)
+	return nil
+}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -435,6 +436,17 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, disabled := m.SearchIndex.(searchindex.NoopIndexer); !disabled {
+		var resourceID sql.NullInt64
+		err = m.DbClient.DB.QueryRowContext(r.Context(), "SELECT resource_id FROM public.services WHERE id = $1", serviceId).Scan(&resourceID)
+		if err == nil && resourceID.Valid {
+			err = searchindex.RebuildResource(r.Context(), m.DbClient.DB, m.SearchIndex, int(resourceID.Int64))
+		}
+		if err != nil {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
+	}
 	m.removeDeactivatedServiceFromSearchIndex(serviceId)
 
 	w.WriteHeader(http.StatusOK)
