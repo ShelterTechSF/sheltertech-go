@@ -24,8 +24,6 @@ type NewsArticle struct {
 const newsArticlesSql = `
 SELECT na.id, na.headline, na.body, na.priority, na.url, na.effective_date, na.expiration_date
 FROM public.news_articles na
-ORDER BY 
-   na.priority DESC, na.created_at DESC;
 `
 
 const activeNewsArticlesSql = `
@@ -33,8 +31,6 @@ SELECT na.id, na.headline, na.body, na.priority, na.url, na.effective_date, na.e
 FROM public.news_articles na
 WHERE (na.effective_date IS NULL OR na.effective_date <= NOW())
   AND (na.expiration_date IS NULL OR na.expiration_date >= NOW())
-ORDER BY 
-   na.priority DESC, na.created_at DESC;
 `
 
 const newsArticlesByIDsSql = `

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
@@ -75,27 +76,19 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 //	@Success        200 {array} newsarticles.NewsArticle
 //	@Router         /news_articles [get]
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request) {
-	// Check for unexpected query parameters
-	validParams := map[string]bool{"active": true}
-
-	for param := range r.URL.Query() {
-		if !validParams[param] {
-			errMsg := fmt.Sprintf("Unexpected query parameter: %s", param)
-			log.Printf("%v", errMsg)
-			common.WriteErrorJson(w, http.StatusBadRequest, errMsg)
-			return
-		}
-	}
 
 	var newsArticles []*db.NewsArticle
-	if activeParam := r.URL.Query().Get("active"); activeParam != "" {
+	if activeParam := strings.TrimSpace(r.URL.Query().Get("active")); activeParam != "" {
 		newsArticles = m.DbClient.GetActiveNewsArticles()
 	} else {
 		newsArticles = m.DbClient.GetNewsArticles()
 	}
 
-	response := NewsArticles{
-		NewsArticles: FromNewsArticlesDBTypeArray(newsArticles),
+	response := struct {
+		NewsArticles []railsNewsArticle `json:"news_articles"`
+	}{NewsArticles: make([]railsNewsArticle, 0, len(newsArticles))}
+	for _, article := range newsArticles {
+		response.NewsArticles = append(response.NewsArticles, railsArticle(article))
 	}
 	writeJson(w, response, http.StatusOK)
 }
