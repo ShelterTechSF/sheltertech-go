@@ -1,0 +1,98 @@
+{
+  "addresses": [
+    {
+      "address_1": "762 Mark Loaf",
+      "city": "West Palmer",
+      "country": "USA",
+      "latitude": 37.7820802732529,
+      "longitude": -122.395060956365,
+      "postal_code": "18142",
+      "state_province": "Mississippi"
+    }
+  ],
+  "notes": [
+    "Accusantium temporibus expedita. Nihil quia est. Sit porro et."
+  ],
+  "categories": [
+    "Seniors",
+    "Help Pay for Internet or Phone"
+  ],
+  "keywords": [],
+  "services": [
+    {
+      "name": "Nienow, Okuneva and Will"
+    },
+    {
+      "name": "Friesen, Dooley and Collier"
+    }
+  ],
+  "phones": [
+    {
+      "number": "+17755614269",
+      "service_type": "Business"
+    }
+  ],
+  "associated_sites": [
+    "sffamilies"
+  ],
+  "schedule": {
+    "days": [
+      {
+        "closes_at": 1715,
+        "day": "Tuesday",
+        "opens_at": 645
+      },
+      {
+        "closes_at": 545,
+        "day": "Wednesday",
+        "opens_at": 100
+      },
+      {
+        "closes_at": 1645,
+        "day": "Wednesday",
+        "opens_at": 1445
+      },
+      {
+        "closes_at": 1045,
+        "day": "Thursday",
+        "opens_at": 715
+      },
+      {
+        "closes_at": 500,
+        "day": "Thursday",
+        "opens_at": 1745
+      },
+      {
+        "closes_at": 330,
+        "day": "Saturday",
+        "opens_at": 2145
+      },
+      {
+        "closes_at": 1600,
+        "day": "Sunday",
+        "opens_at": 730
+      }
+    ]
+  },
+  "resource": {
+    "alternate_name": null,
+    "certified": false,
+    "certified_at": null,
+    "contact_id": null,
+    "created_at": "2025-12-04T04:23:59.094758",
+    "email": null,
+    "featured": null,
+    "funding_id": null,
+    "id": 1700000013,
+    "internal_note": null,
+    "legal_status": null,
+    "long_description": "Weekly food pantry (Thursday).\n",
+    "name": "Quigley, Hirthe and Connelly",
+    "short_description": "",
+    "source_attribution": 0,
+    "status": 1,
+    "updated_at": "2025-12-04T04:23:59.120196",
+    "verified_at": null,
+    "website": ""
+  }
+}
