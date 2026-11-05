@@ -1,153 +1,102 @@
 package newsarticles
 
 import (
-	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
 )
 
+// NewsArticle is the Rails NewsArticlePresenter output. The field order matches
+// Rails so the response bytes, and therefore the ETag, are the same.
 type NewsArticle struct {
 	Id             int        `json:"id"`
 	Headline       *string    `json:"headline"`
+	EffectiveDate  *RailsTime `json:"effective_date"`
 	Body           *string    `json:"body"`
-	Priority       *int       `json:"priority"`
+	Priority       *int64     `json:"priority"`
+	ExpirationDate *RailsTime `json:"expiration_date"`
 	Url            *string    `json:"url"`
-	EffectiveDate  *time.Time `json:"effective_date"`
-	ExpirationDate *time.Time `json:"expiration_date"`
+}
+
+// NewsArticleResponse wraps a single article, as Rails did.
+type NewsArticleResponse struct {
+	NewsArticle *NewsArticle `json:"news_article"`
 }
 
 type NewsArticles struct {
 	NewsArticles []*NewsArticle `json:"news_articles"`
 }
 
-type NewsArticleCreateRequest struct {
-	Headline       *string    `json:"headline"`
-	Body           *string    `json:"body"`
-	Priority       *int       `json:"priority"`
-	Url            *string    `json:"url"`
-	EffectiveDate  *time.Time `json:"effective_date"`
-	ExpirationDate *time.Time `json:"expiration_date"`
-}
-
-type NewsArticleUpdateRequest struct {
-	Headline       *string    `json:"headline,omitempty"`
-	Body           *string    `json:"body,omitempty"`
-	Priority       *int       `json:"priority,omitempty"`
-	Url            *string    `json:"url,omitempty"`
-	EffectiveDate  *time.Time `json:"effective_date,omitempty"`
-	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
-}
-
-type flexibleRequestTime struct {
+// RailsTime marshals the way ActiveSupport::TimeWithZone#as_json did with
+// Time.zone = UTC: millisecond precision (truncated) and a "Z" suffix.
+type RailsTime struct {
 	time.Time
 }
 
-type newsArticleRequestJSON struct {
-	Headline       *string              `json:"headline,omitempty"`
-	Body           *string              `json:"body,omitempty"`
-	Priority       *int                 `json:"priority,omitempty"`
-	Url            *string              `json:"url,omitempty"`
-	EffectiveDate  *flexibleRequestTime `json:"effective_date,omitempty"`
-	ExpirationDate *flexibleRequestTime `json:"expiration_date,omitempty"`
+const railsTimeLayout = "2006-01-02T15:04:05.000Z"
+
+func (t RailsTime) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + t.UTC().Format(railsTimeLayout) + `"`), nil
 }
 
-func (t *flexibleRequestTime) UnmarshalJSON(data []byte) error {
-	var value string
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-
-	parsed, err := time.Parse(time.RFC3339, value)
-	if err == nil {
-		t.Time = parsed
-		return nil
-	}
-
-	parsed, err = time.ParseInLocation(time.DateOnly, value, time.UTC)
-	if err != nil {
-		return err
-	}
-
+func (t *RailsTime) UnmarshalJSON(data []byte) error {
+	parsed, err := time.Parse(railsTimeLayout, strings.Trim(string(data), `"`))
 	t.Time = parsed
-	return nil
+	return err
 }
 
-func (r *NewsArticleCreateRequest) UnmarshalJSON(data []byte) error {
-	var req newsArticleRequestJSON
-	if err := json.Unmarshal(data, &req); err != nil {
-		return err
-	}
-
-	r.Headline = req.Headline
-	r.Body = req.Body
-	r.Priority = req.Priority
-	r.Url = req.Url
-	r.EffectiveDate = flexibleTimeToTime(req.EffectiveDate)
-	r.ExpirationDate = flexibleTimeToTime(req.ExpirationDate)
-	return nil
-}
-
-func (r *NewsArticleUpdateRequest) UnmarshalJSON(data []byte) error {
-	var req newsArticleRequestJSON
-	if err := json.Unmarshal(data, &req); err != nil {
-		return err
-	}
-
-	r.Headline = req.Headline
-	r.Body = req.Body
-	r.Priority = req.Priority
-	r.Url = req.Url
-	r.EffectiveDate = flexibleTimeToTime(req.EffectiveDate)
-	r.ExpirationDate = flexibleTimeToTime(req.ExpirationDate)
-	return nil
-}
-
-func flexibleTimeToTime(t *flexibleRequestTime) *time.Time {
+func railsTime(t *time.Time) *RailsTime {
 	if t == nil {
 		return nil
 	}
-
-	return &t.Time
+	return &RailsTime{*t}
 }
 
-func FromNewsArticleDBType(dbNewsArticle *db.NewsArticle) *NewsArticle {
-	newsArticle := &NewsArticle{
-		Id: dbNewsArticle.Id,
+func newsArticleFromFields(id int, fields db.NewsArticleFields) *NewsArticle {
+	return &NewsArticle{
+		Id:             id,
+		Headline:       fields.Headline,
+		EffectiveDate:  railsTime(fields.EffectiveDate),
+		Body:           fields.Body,
+		Priority:       fields.Priority,
+		ExpirationDate: railsTime(fields.ExpirationDate),
+		Url:            fields.Url,
 	}
-
-	if dbNewsArticle.Headline.Valid {
-		newsArticle.Headline = &dbNewsArticle.Headline.String
-	}
-
-	if dbNewsArticle.Body.Valid {
-		newsArticle.Body = &dbNewsArticle.Body.String
-	}
-
-	if dbNewsArticle.Priority.Valid {
-		priority := int(dbNewsArticle.Priority.Int32)
-		newsArticle.Priority = &priority
-	}
-
-	if dbNewsArticle.Url.Valid {
-		newsArticle.Url = &dbNewsArticle.Url.String
-	}
-
-	if dbNewsArticle.EffectiveDate.Valid {
-		newsArticle.EffectiveDate = &dbNewsArticle.EffectiveDate.Time
-	}
-
-	if dbNewsArticle.ExpirationDate.Valid {
-		newsArticle.ExpirationDate = &dbNewsArticle.ExpirationDate.Time
-	}
-
-	return newsArticle
 }
 
-func FromNewsArticlesDBTypeArray(dbNewsArticles []*db.NewsArticle) []*NewsArticle {
+// fieldsFromDBType returns the stored values of an article.
+func fieldsFromDBType(article *db.NewsArticle) db.NewsArticleFields {
+	var fields db.NewsArticleFields
+	if article.Headline.Valid {
+		fields.Headline = &article.Headline.String
+	}
+	if article.Body.Valid {
+		fields.Body = &article.Body.String
+	}
+	if article.Priority.Valid {
+		fields.Priority = &article.Priority.Int64
+	}
+	if article.Url.Valid {
+		fields.Url = &article.Url.String
+	}
+	if article.EffectiveDate.Valid {
+		fields.EffectiveDate = &article.EffectiveDate.Time
+	}
+	if article.ExpirationDate.Valid {
+		fields.ExpirationDate = &article.ExpirationDate.Time
+	}
+	return fields
+}
+
+func FromNewsArticleDBType(article *db.NewsArticle) *NewsArticle {
+	return newsArticleFromFields(article.Id, fieldsFromDBType(article))
+}
+
+func FromNewsArticlesDBTypeArray(articles []*db.NewsArticle) []*NewsArticle {
 	newsArticles := []*NewsArticle{}
-	for _, dbNewsArticle := range dbNewsArticles {
-		newsArticles = append(newsArticles, FromNewsArticleDBType(dbNewsArticle))
+	for _, article := range articles {
+		newsArticles = append(newsArticles, FromNewsArticleDBType(article))
 	}
 	return newsArticles
 }

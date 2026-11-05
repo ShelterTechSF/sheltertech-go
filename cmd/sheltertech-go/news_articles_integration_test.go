@@ -51,9 +51,9 @@ func TestGetNewsArticles(t *testing.T) {
 }
 
 func TestPostNewsArticle(t *testing.T) {
-	newsArticle := newsarticles.NewsArticleCreateRequest{
-		Headline: stringPtr("Test News Article"),
-		Body:     stringPtr("Test content for the news article"),
+	newsArticle := map[string]string{
+		"headline": "Test News Article",
+		"body":     "Test content for the news article",
 	}
 
 	body, err := json.Marshal(newsArticle)
@@ -73,9 +73,9 @@ func TestPostNewsArticle(t *testing.T) {
 
 func TestPutNewsArticle(t *testing.T) {
 	// First create a news article to update
-	newsArticle := newsarticles.NewsArticleCreateRequest{
-		Headline: stringPtr("Test Update News Article"),
-		Body:     stringPtr("Test content for the news article to update"),
+	newsArticle := map[string]string{
+		"headline": "Test Update News Article",
+		"body":     "Test content for the news article to update",
 	}
 
 	body, err := json.Marshal(newsArticle)
@@ -96,16 +96,15 @@ func TestPutNewsArticle(t *testing.T) {
 	body, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	var createdNewsArticle newsarticles.NewsArticle
-	err = json.Unmarshal(body, &createdNewsArticle)
+	var created newsarticles.NewsArticleResponse
+	err = json.Unmarshal(body, &created)
 	require.NoError(t, err)
 
 	// Now update the news article
-	url := fmt.Sprintf("%s/%d", newsArticleUrl, createdNewsArticle.Id)
+	url := fmt.Sprintf("%s/%d", newsArticleUrl, created.NewsArticle.Id)
 
-	updatedNewsArticle := newsarticles.NewsArticleUpdateRequest{
-		Headline: stringPtr("Updated Test News Article"),
-		Body:     stringPtr("Updated test content for the news article"),
+	updatedNewsArticle := map[string]string{
+		"headline": "Updated Test News Article",
 	}
 
 	body, err = json.Marshal(updatedNewsArticle)
@@ -122,15 +121,20 @@ func TestPutNewsArticle(t *testing.T) {
 	// Should return 200 OK for successful update
 	assert.Equal(t, http.StatusOK, res.StatusCode, "Should return 200 OK")
 
-	// Note: There's no GET /api/news_articles/{id} endpoint, so we can't verify the update persisted
-	// The PUT request returning 200 OK is sufficient to verify the update worked
+	body, err = ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+	var updated newsarticles.NewsArticleResponse
+	require.NoError(t, json.Unmarshal(body, &updated))
+	assert.Equal(t, stringPtr("Updated Test News Article"), updated.NewsArticle.Headline)
+	// As in Rails, an update overwrites every field, so the omitted body is cleared.
+	assert.Nil(t, updated.NewsArticle.Body)
 }
 
 func TestDeleteNewsArticle(t *testing.T) {
 	// First create a news article to delete
-	newsArticle := newsarticles.NewsArticleCreateRequest{
-		Headline: stringPtr("Test Delete News Article"),
-		Body:     stringPtr("Test content for the news article to delete"),
+	newsArticle := map[string]string{
+		"headline": "Test Delete News Article",
+		"body":     "Test content for the news article to delete",
 	}
 
 	body, err := json.Marshal(newsArticle)
@@ -151,12 +155,12 @@ func TestDeleteNewsArticle(t *testing.T) {
 	body, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	var createdNewsArticle newsarticles.NewsArticle
-	err = json.Unmarshal(body, &createdNewsArticle)
+	var created newsarticles.NewsArticleResponse
+	err = json.Unmarshal(body, &created)
 	require.NoError(t, err)
 
 	// Now delete the news article
-	url := fmt.Sprintf("%s/%d", newsArticleUrl, createdNewsArticle.Id)
+	url := fmt.Sprintf("%s/%d", newsArticleUrl, created.NewsArticle.Id)
 
 	req, err = http.NewRequest("DELETE", url, nil)
 	require.NoError(t, err)
@@ -172,9 +176,9 @@ func TestDeleteNewsArticle(t *testing.T) {
 func TestPutNewsArticleWithInvalidID(t *testing.T) {
 	url := newsArticleUrl + "/invalid"
 
-	newsArticle := newsarticles.NewsArticleCreateRequest{
-		Headline: stringPtr("Test News Article"),
-		Body:     stringPtr("Test content"),
+	newsArticle := map[string]string{
+		"headline": "Test News Article",
+		"body":     "Test content",
 	}
 
 	body, err := json.Marshal(newsArticle)
@@ -188,8 +192,8 @@ func TestPutNewsArticleWithInvalidID(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	// Should return 400 Bad Request for invalid ID
-	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Invalid news article ID should return 400")
+	// As in Rails, a non-numeric ID matches no article
+	assert.Equal(t, http.StatusNotFound, res.StatusCode, "Invalid news article ID should return 404")
 }
 
 func TestDeleteNewsArticleWithInvalidID(t *testing.T) {
@@ -202,6 +206,6 @@ func TestDeleteNewsArticleWithInvalidID(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	// Should return 400 Bad Request for invalid ID
-	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Invalid news article ID should return 400")
+	// As in Rails, a non-numeric ID matches no article
+	assert.Equal(t, http.StatusNotFound, res.StatusCode, "Invalid news article ID should return 404")
 }
