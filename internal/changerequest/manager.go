@@ -236,6 +236,10 @@ func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+
 	response := &NoteChangeRequest{
 		NoteChangeRequest: ChangeRequestResponse{
 			Id:       *changeRequestId,
