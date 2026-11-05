@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -82,6 +83,9 @@ func (m *Manager) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestID) {
+		return
+	}
 	response := &ServiceChangeRequest{
 		ServiceChangeRequest: ServiceChangeRequestResponse{
 			Id:           *changeRequestID,
@@ -123,6 +127,17 @@ func serviceChangeRequestParsePayload(body []byte) (*serviceChangeRequestParsedF
 		return nil, err
 	}
 
+	positions := fieldOrder(payload.ChangeRequest)
+	rank := func(name string) int {
+		if p, ok := positions[name]; ok {
+			return p
+		}
+		return len(positions)
+	}
+	sort.SliceStable(parsed.response, func(i, j int) bool { return rank(parsed.response[i].FieldName) < rank(parsed.response[j].FieldName) })
+	sort.SliceStable(parsed.fieldChanges, func(i, j int) bool {
+		return rank(parsed.fieldChanges[i].FieldName) < rank(parsed.fieldChanges[j].FieldName)
+	})
 	return parsed, nil
 }
 
