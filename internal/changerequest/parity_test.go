@@ -3,6 +3,7 @@ package changerequest
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
@@ -64,4 +65,12 @@ func TestFieldChangesFollowInputOrder(t *testing.T) {
 	fields := []FieldChange{{FieldName: "name"}, {FieldName: "long_description"}}
 	orderFieldChanges(fields, []byte(`{"field_changes":{"long_description":"first","name":"second"}}`))
 	require.Equal(t, "long_description", fields[0].FieldName)
+}
+
+func TestChangeRequestPreservesSubmittedFieldOrder(t *testing.T) {
+	var payload ChangeRequestPayload
+	require.NoError(t, json.Unmarshal([]byte(`{"change_request":{"closes_at":1700,"opens_at":900}}`), &payload))
+	fields := []FieldChange{{FieldName: "opens_at"}, {FieldName: "closes_at"}}
+	orderFieldChanges(fields, payload.ChangeRequest.rawJSON)
+	require.Equal(t, "closes_at", fields[0].FieldName)
 }
