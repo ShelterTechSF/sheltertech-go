@@ -48,6 +48,7 @@ VALUES ($1, $2, $3)`
 					WithArgs("status", "approved", 456).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectCommit()
+				expectParityFinalization(mock)
 			},
 			expectedStatus: http.StatusCreated,
 			expectedBody:   `{"resource_change_request":{"id":456,"status":"pending","type":"ResourceChangeRequest","object_id":123,"field_changes":[{"field_name":"status","field_value":"approved"}]}}`,
@@ -68,6 +69,7 @@ VALUES ($1, $2, $3)`
 					WithArgs("status", "inactive", 457).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 				mock.ExpectCommit()
+				expectParityFinalization(mock)
 			},
 			expectedStatus: http.StatusCreated,
 			expectedBody:   `{"resource_change_request":{"id":457,"status":"pending","type":"ResourceChangeRequest","object_id":123,"field_changes":[{"field_name":"status","field_value":"inactive"}]}}`,

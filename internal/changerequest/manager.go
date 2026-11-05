@@ -122,6 +122,10 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, fieldChangesJSON)
 	response := &ResourceChangeRequest{
 		ResourceChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
