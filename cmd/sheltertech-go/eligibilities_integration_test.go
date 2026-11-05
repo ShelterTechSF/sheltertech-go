@@ -156,25 +156,28 @@ func TestGetEligibilities(t *testing.T) {
 		assert.NotNil(t, filteredResponse.Eligibilities,
 			"Response should contain an eligibilities array (even if empty)")
 
-		// If we have multiple results, verify sorting
-		if len(filteredResponse.Eligibilities) > 1 {
-			for i := range len(filteredResponse.Eligibilities) - 1 {
-				// Handle nil pointers
-				name1 := ""
-				if filteredResponse.Eligibilities[i].Name != nil {
-					name1 = *filteredResponse.Eligibilities[i].Name
-				}
-
-				name2 := ""
-				if filteredResponse.Eligibilities[i+1].Name != nil {
-					name2 = *filteredResponse.Eligibilities[i+1].Name
-				}
-
-				assert.True(t,
-					name1 <= name2,
-					"Filtered eligibilities should be ordered by name")
-			}
+		// Rails applies this relation without ORDER BY. Verify membership rather
+		// than imposing the unfiltered list's alphabetical contract.
+		database := integrationDBManager()
+		defer database.DB.Close()
+		rows, err := database.DB.Query(`SELECT DISTINCT es.eligibility_id
+FROM public.eligibilities_services es JOIN public.categories_services cs ON cs.service_id=es.service_id
+WHERE cs.category_id=$1`, categoryId)
+		require.NoError(t, err)
+		defer rows.Close()
+		expected := []int{}
+		for rows.Next() {
+			var id int
+			require.NoError(t, rows.Scan(&id))
+			expected = append(expected, id)
 		}
+		require.NoError(t, rows.Err())
+		actual := []int{}
+		for _, item := range filteredResponse.Eligibilities {
+			actual = append(actual, item.Id)
+		}
+		assert.ElementsMatch(t, expected, actual)
+
 	})
 }
 
