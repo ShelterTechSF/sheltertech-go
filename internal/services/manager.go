@@ -556,12 +556,19 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(createdServices) > 0 {
+		if err := m.reindexCreatedServices(r.Context(), resourceId, createdServices); err != nil {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
+	}
+
 	response := &ServicesCreateResponse{
-		Services: make([]*ServiceResponse, 0, len(createdServices)),
+		Services: make([]*CreatedServiceResponse, 0, len(createdServices)),
 	}
 	for _, createdService := range createdServices {
-		response.Services = append(response.Services, &ServiceResponse{
-			Service: m.fromCreatedDBService(createdService),
+		response.Services = append(response.Services, &CreatedServiceResponse{
+			Service: &CreatedService{Service: m.fromCreatedDBService(createdService)},
 		})
 	}
 
@@ -580,4 +587,16 @@ func (m *Manager) fromCreatedDBService(dbService *db.Service) *Service {
 		response.Schedule = schedules.FromDBType(schedule)
 	}
 	return response
+}
+
+func (m *Manager) reindexCreatedServices(ctx context.Context, resourceID int, services []*db.Service) error {
+	if err := searchindex.RebuildResource(ctx, m.DbClient.DB, m.SearchIndex, resourceID); err != nil {
+		return err
+	}
+	for _, service := range services {
+		if err := searchindex.RebuildService(ctx, m.DbClient.DB, m.SearchIndex, service.Id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
