@@ -122,5 +122,5 @@ func (m *Manager) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, FromInstructionDBType(updated), http.StatusOK)
+	writeJSON(w, map[string]interface{}{"instruction": FromInstructionDBType(updated)}, http.StatusOK)
 }
