@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -56,7 +57,7 @@ func TestManager_CreateNote(t *testing.T) {
 				mock.ExpectCommit()
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"id":42,"note":"harro","resource_id":7,"service_id":null,"created_at":"2026-08-20T12:34:56Z","updated_at":"2026-08-20T12:34:56Z"}`,
+			expectedBody:   `{"id":42,"note":"harro","resource_id":7,"service_id":null,"created_at":"2026-08-20T12:34:56.000Z","updated_at":"2026-08-20T12:34:56.000Z"}`,
 		},
 		{
 			name:       "returns bad request for invalid resource ID",
@@ -131,4 +132,52 @@ func resourceRows() *sqlmock.Rows {
 		"internal_note",
 		"updated_at",
 	})
+}
+
+type noteIndex struct {
+	saved   string
+	deleted string
+	err     error
+}
+
+func (i *noteIndex) SaveObject(id string, _ interface{}) error { i.saved = id; return i.err }
+func (i *noteIndex) DeleteObject(id string) error              { i.deleted = id; return i.err }
+
+func TestResourceNoteIndexesAfterCommit(t *testing.T) {
+	for _, tc := range []struct {
+		name, body, source string
+		indexErr           error
+		status             int
+	}{
+		{"approved", `{"note":{"note":null}}`, `{"resource":{"status":1}}`, nil, 201},
+		{"inactive", `{"note":{}}`, `{"resource":{"status":3}}`, nil, 201},
+		{"index failure after commit", `{"note":{"note":null}}`, `{"resource":{"status":1}}`, fmt.Errorf("index unavailable"), 500},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			database, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer database.Close()
+			now := time.Date(2026, 11, 4, 12, 34, 56, 123456000, time.UTC)
+			mock.ExpectQuery(regexp.QuoteMeta(resourceByIDQuery)).WithArgs(7).WillReturnRows(resourceRows().AddRow(7, "Resource", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, now))
+			mock.ExpectBegin()
+			mock.ExpectQuery(regexp.QuoteMeta(createResourceNoteQuery)).WithArgs(nil, 7).WillReturnRows(sqlmock.NewRows([]string{"id", "note", "resource_id", "service_id", "created_at", "updated_at"}).AddRow(42, nil, 7, nil, now, now))
+			mock.ExpectExec(regexp.QuoteMeta(touchResourceForNoteQuery)).WithArgs(7).WillReturnResult(sqlmock.NewResult(0, 1))
+			mock.ExpectCommit()
+			mock.ExpectQuery("SELECT json_build_object").WithArgs(7).WillReturnRows(sqlmock.NewRows([]string{"json"}).AddRow(tc.source))
+			index := &noteIndex{err: tc.indexErr}
+			manager := NewWithDependencies(&db.Manager{DB: database}, index)
+			w := httptest.NewRecorder()
+			manager.CreateNote(w, requestWithResourceNoteID("7", tc.body))
+			assert.Equal(t, tc.status, w.Code)
+			if tc.name == "inactive" {
+				assert.Equal(t, "resource_7", index.deleted)
+			} else {
+				assert.Equal(t, "resource_7", index.saved)
+			}
+			if tc.status == 201 {
+				assert.JSONEq(t, `{"id":42,"note":null,"resource_id":7,"service_id":null,"created_at":"2026-11-04T12:34:56.123Z","updated_at":"2026-11-04T12:34:56.123Z"}`, w.Body.String())
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
 }
