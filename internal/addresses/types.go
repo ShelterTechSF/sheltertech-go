@@ -1,9 +1,8 @@
 package addresses
 
 import (
-	"fmt"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
-	"strings"
+	"strconv"
 )
 
 type Address struct {
@@ -42,15 +41,11 @@ func FromAddressDBType(dbAddress *db.Address) *Address {
 		address.Address4 = &dbAddress.Address4.String
 	}
 	if dbAddress.Latitude.Valid {
-		// This probably isn't the cleanest way to remove trailing zeros
-		latitude := fmt.Sprintf("%.7f", dbAddress.Latitude.Float64)
-		latitude = strings.TrimRight(strings.TrimRight(latitude, "0"), ".")
+		latitude := strconv.FormatFloat(dbAddress.Latitude.Float64, 'f', -1, 64)
 		address.Latitude = &latitude
 	}
 	if dbAddress.Longitude.Valid {
-		// This probably isn't the cleanest way to remove trailing zeros
-		longitude := fmt.Sprintf("%.7f", dbAddress.Longitude.Float64)
-		longitude = strings.TrimRight(strings.TrimRight(longitude, "0"), ".")
+		longitude := strconv.FormatFloat(dbAddress.Longitude.Float64, 'f', -1, 64)
 		address.Longitude = &longitude
 	}
 	if dbAddress.Name.Valid {
