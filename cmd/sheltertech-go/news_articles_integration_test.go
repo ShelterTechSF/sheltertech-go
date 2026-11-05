@@ -96,12 +96,14 @@ func TestPutNewsArticle(t *testing.T) {
 	body, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	var createdNewsArticle newsarticles.NewsArticle
+	var createdNewsArticle struct {
+		NewsArticle newsarticles.NewsArticle `json:"news_article"`
+	}
 	err = json.Unmarshal(body, &createdNewsArticle)
 	require.NoError(t, err)
 
 	// Now update the news article
-	url := fmt.Sprintf("%s/%d", newsArticleUrl, createdNewsArticle.Id)
+	url := fmt.Sprintf("%s/%d", newsArticleUrl, createdNewsArticle.NewsArticle.Id)
 
 	updatedNewsArticle := newsarticles.NewsArticleUpdateRequest{
 		Headline: stringPtr("Updated Test News Article"),
@@ -151,12 +153,14 @@ func TestDeleteNewsArticle(t *testing.T) {
 	body, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	var createdNewsArticle newsarticles.NewsArticle
+	var createdNewsArticle struct {
+		NewsArticle newsarticles.NewsArticle `json:"news_article"`
+	}
 	err = json.Unmarshal(body, &createdNewsArticle)
 	require.NoError(t, err)
 
 	// Now delete the news article
-	url := fmt.Sprintf("%s/%d", newsArticleUrl, createdNewsArticle.Id)
+	url := fmt.Sprintf("%s/%d", newsArticleUrl, createdNewsArticle.NewsArticle.Id)
 
 	req, err = http.NewRequest("DELETE", url, nil)
 	require.NoError(t, err)

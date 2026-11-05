@@ -64,15 +64,15 @@ func TestManager_CreateAcceptsDateOnlyPayload(t *testing.T) {
 	manager.Create(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.JSONEq(t, `{
+	assert.JSONEq(t, `{"news_article":{
 		"id": 10,
 		"headline": "Date-only create",
 		"body": "Body",
 		"priority": 1,
 		"url": "https://example.com/news",
-		"effective_date": "2026-08-15T00:00:00Z",
-		"expiration_date": "2026-09-15T00:00:00Z"
-	}`, w.Body.String())
+		"effective_date": "2026-08-15T00:00:00.000Z",
+		"expiration_date": "2026-09-15T00:00:00.000Z"
+	}}`, w.Body.String())
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -156,4 +156,16 @@ func TestManager_UpdateAcceptsDateOnlyPayload(t *testing.T) {
 		"expiration_date": "2026-10-31T00:00:00Z"
 	}`, w.Body.String())
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreateAcceptsRailsNewsArticleEnvelope(t *testing.T) {
+	database, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer database.Close()
+	mock.ExpectQuery("INSERT INTO public.news_articles").WithArgs("Nested", nil, nil, nil, nil, nil).WillReturnRows(sqlmock.NewRows([]string{"id", "headline", "body", "priority", "url", "effective_date", "expiration_date"}).AddRow(9, "Nested", nil, nil, nil, nil, nil))
+	w := httptest.NewRecorder()
+	New(&db.Manager{DB: database}).Create(w, httptest.NewRequest("POST", "/api/news_articles", strings.NewReader(`{"news_article":{"headline":"Nested"}}`)))
+	require.Equal(t, 201, w.Code)
+	require.JSONEq(t, `{"news_article":{"id":9,"headline":"Nested","body":null,"priority":null,"url":null,"effective_date":null,"expiration_date":null}}`, w.Body.String())
+	require.NoError(t, mock.ExpectationsWereMet())
 }

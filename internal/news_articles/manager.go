@@ -61,7 +61,9 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return the created news article
-	response := FromNewsArticleDBType(newsArticle)
+	response := struct {
+		NewsArticle railsNewsArticle `json:"news_article"`
+	}{NewsArticle: railsArticle(newsArticle)}
 	writeJson(w, response, http.StatusCreated)
 }
 
