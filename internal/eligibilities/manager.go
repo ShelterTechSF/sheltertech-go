@@ -183,22 +183,29 @@ func (m *Manager) UpdateEligibilityById(w http.ResponseWriter, r *http.Request) 
 //	@Router         /eligibilities/featured [get]
 
 func (m *Manager) GetFeaturedEligibilities(w http.ResponseWriter, r *http.Request) {
-	// Get featured eligibilities (those with non-null feature_rank)
-	// Already sorted by feature_rank in ascending order from the query
-	eligibilities := m.DbClient.GetFeaturedEligibilities()
-
-	// If no featured eligibilities were found, return an empty array
-	if eligibilities == nil {
-		eligibilities = []*db.Eligibility{}
+	items, err := m.DbClient.GetFeaturedEligibilities()
+	if err != nil {
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
 	}
-
-	// Create response object
-	response := Eligibilities{
-		Eligibilities: FromEligibilitiesDBTypeArray(eligibilities),
+	result := []interface{}{}
+	for _, item := range items {
+		var serviceCount, resourceCount *int64
+		if item.ServiceCount.Valid {
+			count := item.ServiceCount.Int64
+			serviceCount = &count
+		}
+		if item.ResourceCount.Valid {
+			count := item.ResourceCount.Int64
+			resourceCount = &count
+		}
+		result = append(result, struct {
+			*Eligibility
+			ServiceCount  *int64 `json:"service_count"`
+			ResourceCount *int64 `json:"resource_count"`
+		}{FromEligibilityDBType(item), serviceCount, resourceCount})
 	}
-
-	// Write response as JSON
-	writeJson(w, response)
+	writeJson(w, map[string]interface{}{"eligibilities": result})
 }
 
 // Get subeligibilities

@@ -10,11 +10,13 @@ import (
 )
 
 type Eligibility struct {
-	Id          int
-	Name        sql.NullString
-	FeatureRank sql.NullInt32
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ServiceCount  sql.NullInt64
+	ResourceCount sql.NullInt64
+	Id            int
+	Name          sql.NullString
+	FeatureRank   sql.NullInt32
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 const eligibilitiesSql = `
@@ -57,7 +59,12 @@ WHERE es.service_id = $1
 `
 
 const featuredEligibilitiesSql = `
-SELECT e.id, e.name, e.feature_rank
+SELECT e.id, e.name, e.feature_rank,
+ (SELECT count(*) FROM public.eligibilities_services es
+  WHERE es.eligibility_id=e.id GROUP BY es.eligibility_id),
+ (SELECT count(DISTINCT s.resource_id) FROM public.eligibilities_services es
+  INNER JOIN public.services s ON s.id=es.service_id
+  WHERE es.eligibility_id=e.id GROUP BY es.eligibility_id)
 FROM public.eligibilities e
 WHERE e.feature_rank IS NOT NULL
 ORDER BY e.feature_rank ASC
@@ -144,19 +151,21 @@ func (m *Manager) GetEligibilitiesByIDs(ids []int) []*Eligibility {
 	return scanEligibilities(rows)
 }
 
-func (m *Manager) GetFeaturedEligibilities() []*Eligibility {
-	var rows *sql.Rows
-	var err error
-	stmt, err := m.DB.Prepare(featuredEligibilitiesSql)
+func (m *Manager) GetFeaturedEligibilities() ([]*Eligibility, error) {
+	rows, err := m.DB.Query(featuredEligibilitiesSql)
 	if err != nil {
-		log.Printf("Prepare failed: %v\n", err)
-		return nil
+		return nil, err
 	}
-	rows, err = stmt.Query()
-	if err != nil {
-		log.Printf("%v\n", err)
+	defer rows.Close()
+	result := []*Eligibility{}
+	for rows.Next() {
+		var e Eligibility
+		if err := rows.Scan(&e.Id, &e.Name, &e.FeatureRank, &e.ServiceCount, &e.ResourceCount); err != nil {
+			return nil, err
+		}
+		result = append(result, &e)
 	}
-	return scanEligibilities(rows)
+	return result, rows.Err()
 }
 
 func (m *Manager) GetSubEligibilitiesByParentName(parentName string) []*Eligibility {
