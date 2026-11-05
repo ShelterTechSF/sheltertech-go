@@ -35,11 +35,11 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 
 	switch changeRequestPayload.Type {
 	case "phones":
-		createPhone(w, m.DbClient, changeRequestPayload)
+		m.createPhone(w, r, changeRequestPayload)
 	case "addresses":
-		createAddress(w, m.DbClient, changeRequestPayload)
+		m.createAddress(w, r, changeRequestPayload)
 	case "schedule_days":
-		createScheduleDay(w, m.DbClient, changeRequestPayload)
+		m.createScheduleDay(w, r, changeRequestPayload)
 	}
 }
 
@@ -256,7 +256,7 @@ func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
-func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createPhone(w http.ResponseWriter, r *http.Request, payload ChangeRequestPayload) {
 	phoneFields := unmarshalPhoneFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
@@ -274,7 +274,7 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 	fieldChangesMap["number"] = formatted
 	fieldChangesResponse = append(fieldChangesResponse, FieldChange{
 		FieldName:  "number",
-		FieldValue: formatted,
+		FieldValue: *phoneFields.Number,
 	})
 
 	fieldChangesMap["service_type"] = *phoneFields.ServiceType
@@ -285,12 +285,17 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 
 	fieldChangesMap["resource_id"] = payload.ParentResourceID
 
-	changeRequestId, objectId, err := dbClient.InsertPhone(fieldChangesMap)
+	objectId, changeRequestId, err := m.DbClient.InsertPhone(fieldChangesMap, phoneFields.Number)
 
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest.rawJSON)
 
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
@@ -302,8 +307,8 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 		},
 	}
 
-	writeJson(w, response)
 	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
 }
 
 func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
@@ -582,7 +587,7 @@ func (m *Manager) UpdateScheduleDay(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
-func createScheduleDay(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createScheduleDay(w http.ResponseWriter, r *http.Request, payload ChangeRequestPayload) {
 	if payload.ScheduleID == 0 {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Missing Required Fields")
 		return
@@ -594,11 +599,16 @@ func createScheduleDay(w http.ResponseWriter, dbClient *db.Manager, payload Chan
 		return
 	}
 
-	changeRequestId, scheduleDayId, err := dbClient.InsertScheduleDayChangeRequest(payload.ScheduleID, scheduleDayChanges)
+	changeRequestId, scheduleDayId, err := m.DbClient.InsertScheduleDayChangeRequest(payload.ScheduleID, scheduleDayChanges)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest.rawJSON)
 
 	response := &ScheduleDayChangeRequest{
 		ScheduleDayChangeRequest: ChangeRequestResponse{
@@ -739,7 +749,7 @@ func nilableScheduleDayFieldValue(fieldValue string) interface{} {
 	return fieldValue
 }
 
-func createAddress(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createAddress(w http.ResponseWriter, r *http.Request, payload ChangeRequestPayload) {
 	addressFields := unmarshalAddressFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
@@ -774,11 +784,16 @@ func createAddress(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRe
 
 	fieldChangesMap["resource_id"] = payload.ParentResourceID
 
-	objectId, changeRequestId, err := dbClient.InsertAddress(fieldChangesMap)
+	objectId, changeRequestId, err := m.DbClient.InsertAddress(fieldChangesMap)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest.rawJSON)
 
 	response := &AddressChangeRequest{
 		AddressChangeRequest: ChangeRequestResponse{
