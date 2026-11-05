@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestManagerInsertAddressCreatesPendingAddChangeRequest(t *testing.T) {
+func TestManagerInsertAddressCreatesPendingEditChangeRequest(t *testing.T) {
 	sqlDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer sqlDB.Close()
@@ -28,7 +28,7 @@ func TestManagerInsertAddressCreatesPendingAddChangeRequest(t *testing.T) {
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(42))
 	mock.ExpectQuery(regexp.QuoteMeta(insertChangeRequestSql)).
-		WithArgs("AddressChangeRequest", 42, StatusPending, ActionAdd, 1).
+		WithArgs("AddressChangeRequest", 42, StatusPending, ActionEdit, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(77))
 	mock.ExpectExec(regexp.QuoteMeta(insertFieldChangeSql)).
 		WithArgs("address_1", "601 4th Street", 77).

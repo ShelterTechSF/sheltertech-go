@@ -121,6 +121,7 @@ func TestManagerCreateScheduleDayChangeRequestInsertsScheduleDay(t *testing.T) {
 		WithArgs("closes_at", "1430", 99).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 
 	manager := New(&db.Manager{DB: sqlDB})
 	router := chi.NewRouter()

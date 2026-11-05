@@ -410,7 +410,7 @@ func (m *Manager) InsertAddress(fieldChanges map[string]interface{}) (*int, *int
 		"AddressChangeRequest",
 		addressId,
 		StatusPending,
-		ActionAdd,
+		ActionEdit,
 		fieldChanges["resource_id"],
 	).Scan(&changeRequestId)
 	if err != nil {

@@ -267,7 +267,7 @@ func TestManagerCreateRoutesAddressInsertChangeRequest(t *testing.T) {
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(42))
 	mock.ExpectQuery(regexp.QuoteMeta(insertChangeRequestSQLForTest())).
-		WithArgs("AddressChangeRequest", 42, db.StatusPending, db.ActionAdd, 1).
+		WithArgs("AddressChangeRequest", 42, db.StatusPending, db.ActionEdit, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(77))
 	for i := 0; i < 4; i++ {
 		mock.ExpectExec(regexp.QuoteMeta(insertFieldChangeSQLForTest())).
@@ -275,6 +275,7 @@ func TestManagerCreateRoutesAddressInsertChangeRequest(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(1, 1))
 	}
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 
 	manager := New(&db.Manager{DB: sqlDB})
 	req := httptest.NewRequest(http.MethodPost, "/api/change_requests", strings.NewReader(`{

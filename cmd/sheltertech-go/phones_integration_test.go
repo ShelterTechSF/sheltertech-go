@@ -102,7 +102,7 @@ func TestCreatePhoneEndpoint(t *testing.T) {
 	url := "http://localhost:3001/api/change_requests"
 
 	changeRequest := changerequest.ChangeRequestPayload{
-		Type:             "phone",
+		Type:             "phones",
 		ParentResourceID: 1,
 		ChangeRequest: changerequest.ChangeRequest{
 			Action:       "insert",
@@ -119,7 +119,16 @@ func TestCreatePhoneEndpoint(t *testing.T) {
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	defer res.Body.Close()
+	require.Equal(t, http.StatusCreated, res.StatusCode)
+	var response changerequest.PhoneChangeRequest
+	require.NoError(t, json.NewDecoder(res.Body).Decode(&response))
+	defer deleteTestPhone(t, response.PhoneChangeRequest.ObjectID)
+	manager := integrationDBManager()
+	defer manager.DB.Close()
+	var objectID int
+	require.NoError(t, manager.DB.QueryRow("SELECT object_id FROM public.change_requests WHERE id = $1", response.PhoneChangeRequest.Id).Scan(&objectID))
+	assert.Equal(t, response.PhoneChangeRequest.ObjectID, objectID)
 }
 
 func TestUpdatePhoneEndpoint(t *testing.T) {
