@@ -169,7 +169,12 @@ func (m *Manager) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJsonWithStatus(w, notes.CreatedFromNoteDBType(dbNote), http.StatusCreated)
+	if err := searchindex.RebuildResource(r.Context(), m.DbClient.DB, m.SearchIndex, resourceId); err != nil {
+		log.Printf("reindex resource %d after creating note: %v", resourceId, err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
+	writeJsonWithStatus(w, createdResourceNoteResponse(dbNote), http.StatusCreated)
 }
 
 func writeJsonWithStatus(w http.ResponseWriter, object interface{}, status int) {
@@ -204,5 +209,10 @@ func (m *Manager) Certify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := searchindex.RebuildResource(r.Context(), m.DbClient.DB, m.SearchIndex, resourceId); err != nil {
+		log.Printf("reindex certified resource %d: %v", resourceId, err)
+		common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }

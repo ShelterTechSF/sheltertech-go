@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -198,6 +199,10 @@ func (m *Manager) AddAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if created {
+		if err := searchindex.RebuildService(r.Context(), m.DbClient.DB, m.SearchIndex, serviceId); err != nil {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
 		w.WriteHeader(http.StatusCreated)
 		return
 	}
@@ -431,6 +436,17 @@ func (m *Manager) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, disabled := m.SearchIndex.(searchindex.NoopIndexer); !disabled {
+		var resourceID sql.NullInt64
+		err = m.DbClient.DB.QueryRowContext(r.Context(), "SELECT resource_id FROM public.services WHERE id = $1", serviceId).Scan(&resourceID)
+		if err == nil && resourceID.Valid {
+			err = searchindex.RebuildResource(r.Context(), m.DbClient.DB, m.SearchIndex, int(resourceID.Int64))
+		}
+		if err != nil {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
+	}
 	m.removeDeactivatedServiceFromSearchIndex(serviceId)
 
 	w.WriteHeader(http.StatusOK)
@@ -556,12 +572,19 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(createdServices) > 0 {
+		if err := m.reindexCreatedServices(r.Context(), resourceId, createdServices); err != nil {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
+	}
+
 	response := &ServicesCreateResponse{
-		Services: make([]*ServiceResponse, 0, len(createdServices)),
+		Services: make([]*CreatedServiceResponse, 0, len(createdServices)),
 	}
 	for _, createdService := range createdServices {
-		response.Services = append(response.Services, &ServiceResponse{
-			Service: m.fromCreatedDBService(createdService),
+		response.Services = append(response.Services, &CreatedServiceResponse{
+			Service: &CreatedService{Service: m.fromCreatedDBService(createdService)},
 		})
 	}
 
@@ -580,4 +603,16 @@ func (m *Manager) fromCreatedDBService(dbService *db.Service) *Service {
 		response.Schedule = schedules.FromDBType(schedule)
 	}
 	return response
+}
+
+func (m *Manager) reindexCreatedServices(ctx context.Context, resourceID int, services []*db.Service) error {
+	if err := searchindex.RebuildResource(ctx, m.DbClient.DB, m.SearchIndex, resourceID); err != nil {
+		return err
+	}
+	for _, service := range services {
+		if err := searchindex.RebuildService(ctx, m.DbClient.DB, m.SearchIndex, service.Id); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -21,7 +21,17 @@ type ServiceResponse struct {
 }
 
 type ServicesCreateResponse struct {
-	Services []*ServiceResponse `json:"services"`
+	Services []*CreatedServiceResponse `json:"services"`
+}
+
+// Rails ServicesPresenter omits the resource/program included by its show presenter.
+type CreatedServiceResponse struct {
+	Service *CreatedService `json:"service"`
+}
+type CreatedService struct {
+	*Service
+	Resource *resources.Resource `json:"resource,omitempty"`
+	Program  *programs.Program   `json:"program,omitempty"`
 }
 
 type ServicesCreateRequest struct {
@@ -145,11 +155,6 @@ func (service ServiceCreateRequest) ToDBType() db.ServiceCreate {
 		notes = append(notes, db.ServiceNoteCreate{Note: note.Note})
 	}
 
-	instructions := make([]db.ServiceInstructionCreate, 0, len(service.Instructions))
-	for _, instruction := range service.Instructions {
-		instructions = append(instructions, db.ServiceInstructionCreate{Instruction: instruction.Instruction})
-	}
-
 	var schedule *db.ServiceScheduleCreate
 	if service.Schedule != nil {
 		scheduleDays := make([]db.ServiceScheduleDayCreate, 0, len(service.Schedule.ScheduleDays))
@@ -178,7 +183,6 @@ func (service ServiceCreateRequest) ToDBType() db.ServiceCreate {
 		Categories:             categories,
 		Eligibilities:          eligibilities,
 		Notes:                  notes,
-		Instructions:           instructions,
 		Schedule:               schedule,
 	}
 }

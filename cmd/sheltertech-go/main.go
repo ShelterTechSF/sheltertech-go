@@ -85,7 +85,7 @@ func main() {
 
 	dbManager := db.New(dbHost, dbPort, dbName, dbUser, dbPass)
 	categoriesManager := categories.New(dbManager)
-	changeRequestManager := changerequest.New(dbManager)
+	changeRequestManager := changerequest.New(dbManager, searchindex.NewAlgoliaIndexer(algoliaAppID, algoliaAPIKey, algoliaIndexPrefix))
 	foldersManager := folders.New(dbManager)
 	servicesManager := services.New(
 		dbManager,

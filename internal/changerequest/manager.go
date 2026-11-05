@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/phonenumbers"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"io"
 	"net/http"
 	"strconv"
@@ -16,14 +17,16 @@ import (
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient    *db.Manager
+	SearchIndex searchindex.Indexer
 }
 
-func New(dbManager *db.Manager) *Manager {
-	manager := &Manager{
-		DbClient: dbManager,
+func New(dbManager *db.Manager, indexers ...searchindex.Indexer) *Manager {
+	var index searchindex.Indexer = searchindex.NoopIndexer{}
+	if len(indexers) > 0 && indexers[0] != nil {
+		index = indexers[0]
 	}
-	return manager
+	return &Manager{DbClient: dbManager, SearchIndex: index}
 }
 
 func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
@@ -32,11 +35,11 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 
 	switch changeRequestPayload.Type {
 	case "phones":
-		createPhone(w, m.DbClient, changeRequestPayload)
+		m.createPhone(w, r, changeRequestPayload)
 	case "addresses":
-		createAddress(w, m.DbClient, changeRequestPayload)
+		m.createAddress(w, r, changeRequestPayload)
 	case "schedule_days":
-		createScheduleDay(w, m.DbClient, changeRequestPayload)
+		m.createScheduleDay(w, r, changeRequestPayload)
 	}
 }
 
@@ -119,6 +122,10 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, fieldChangesJSON)
 	response := &ResourceChangeRequest{
 		ResourceChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
@@ -167,11 +174,12 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		formatted, err := formatPhoneNumber(*phoneFields.Number)
 		if err != nil {
 			common.WriteErrorJson(w, http.StatusBadRequest, err.Error())
+			return
 		}
 		fieldChangesMap["number"] = formatted
 		fieldChangesResponse = append(fieldChangesResponse, FieldChange{
 			FieldName:  "number",
-			FieldValue: formatted,
+			FieldValue: *phoneFields.Number,
 		})
 	}
 	if phoneFields.ServiceType != nil {
@@ -182,12 +190,16 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	changeRequestId, err := m.DbClient.UpdatePhone(phoneId, fieldChangesMap)
+	changeRequestId, err := m.DbClient.UpdatePhone(phoneId, fieldChangesMap, phoneFields.Number)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, changeRequestPayload.ChangeRequest.FieldChanges)
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
@@ -198,8 +210,9 @@ func (m *Manager) UpdatePhone(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	writeJson(w, response)
+	w.Header().Set("Content-Type", "application/json")
 	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
 }
 
 func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +246,10 @@ func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+
 	response := &NoteChangeRequest{
 		NoteChangeRequest: ChangeRequestResponse{
 			Id:       *changeRequestId,
@@ -253,7 +270,7 @@ func (m *Manager) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
-func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createPhone(w http.ResponseWriter, r *http.Request, payload ChangeRequestPayload) {
 	phoneFields := unmarshalPhoneFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
@@ -271,7 +288,7 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 	fieldChangesMap["number"] = formatted
 	fieldChangesResponse = append(fieldChangesResponse, FieldChange{
 		FieldName:  "number",
-		FieldValue: formatted,
+		FieldValue: *phoneFields.Number,
 	})
 
 	fieldChangesMap["service_type"] = *phoneFields.ServiceType
@@ -282,12 +299,17 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 
 	fieldChangesMap["resource_id"] = payload.ParentResourceID
 
-	changeRequestId, objectId, err := dbClient.InsertPhone(fieldChangesMap)
+	objectId, changeRequestId, err := m.DbClient.InsertPhone(fieldChangesMap, phoneFields.Number)
 
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest.rawJSON)
 
 	response := &PhoneChangeRequest{
 		PhoneChangeRequest: ChangeRequestResponse{
@@ -299,8 +321,8 @@ func createPhone(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequ
 		},
 	}
 
-	writeJson(w, response)
 	writeStatus(w, http.StatusCreated)
+	writeJson(w, response)
 }
 
 func unmarshalPhoneFields(w http.ResponseWriter, fieldChanges json.RawMessage) PhoneFields {
@@ -404,6 +426,7 @@ func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 	fieldChangesResponse := []FieldChange{}
 	if removeAddress {
 		changeRequestId, err = m.DbClient.RemoveAddress(addressId)
+		fieldChangesResponse = append(fieldChangesResponse, FieldChange{FieldName: "action", FieldValue: "remove"})
 	} else {
 		var fieldChangesMap map[string]interface{}
 		var responseChanges []FieldChange
@@ -425,6 +448,10 @@ func (m *Manager) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest)
 	response := &AddressChangeRequest{
 		AddressChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
@@ -564,6 +591,11 @@ func (m *Manager) UpdateScheduleDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, changeRequestPayload.ChangeRequest.rawJSON)
+
 	response := &ScheduleDayChangeRequest{
 		ScheduleDayChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
@@ -579,7 +611,7 @@ func (m *Manager) UpdateScheduleDay(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, response)
 }
 
-func createScheduleDay(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createScheduleDay(w http.ResponseWriter, r *http.Request, payload ChangeRequestPayload) {
 	if payload.ScheduleID == 0 {
 		common.WriteErrorJson(w, http.StatusBadRequest, "Missing Required Fields")
 		return
@@ -591,11 +623,16 @@ func createScheduleDay(w http.ResponseWriter, dbClient *db.Manager, payload Chan
 		return
 	}
 
-	changeRequestId, scheduleDayId, err := dbClient.InsertScheduleDayChangeRequest(payload.ScheduleID, scheduleDayChanges)
+	changeRequestId, scheduleDayId, err := m.DbClient.InsertScheduleDayChangeRequest(payload.ScheduleID, scheduleDayChanges)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest.rawJSON)
 
 	response := &ScheduleDayChangeRequest{
 		ScheduleDayChangeRequest: ChangeRequestResponse{
@@ -736,7 +773,7 @@ func nilableScheduleDayFieldValue(fieldValue string) interface{} {
 	return fieldValue
 }
 
-func createAddress(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRequestPayload) {
+func (m *Manager) createAddress(w http.ResponseWriter, r *http.Request, payload ChangeRequestPayload) {
 	addressFields := unmarshalAddressFields(w, payload.ChangeRequest.FieldChanges)
 	fieldChangesMap := make(map[string]interface{})
 	var fieldChangesResponse []FieldChange
@@ -771,11 +808,16 @@ func createAddress(w http.ResponseWriter, dbClient *db.Manager, payload ChangeRe
 
 	fieldChangesMap["resource_id"] = payload.ParentResourceID
 
-	objectId, changeRequestId, err := dbClient.InsertAddress(fieldChangesMap)
+	objectId, changeRequestId, err := m.DbClient.InsertAddress(fieldChangesMap)
 	if err != nil {
 		common.WriteErrorJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, payload.ChangeRequest.rawJSON)
 
 	response := &AddressChangeRequest{
 		AddressChangeRequest: ChangeRequestResponse{

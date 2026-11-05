@@ -33,7 +33,7 @@ func (m *Manager) DeletePhoneByID(id int) error {
 	return err
 }
 
-func (m *Manager) InsertPhone(fieldChanges map[string]interface{}) (*int, *int, error) {
+func (m *Manager) InsertPhone(fieldChanges map[string]interface{}, submittedNumber ...*string) (*int, *int, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
 		return nil, nil, err
@@ -58,10 +58,16 @@ func (m *Manager) InsertPhone(fieldChanges map[string]interface{}) (*int, *int, 
 		ActionEdit,
 		fieldChanges["resource_id"],
 	).Scan(&changeRequestId)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	for key, value := range fieldChanges {
 		if key == "resource_id" {
 			continue
+		}
+		if key == "number" && len(submittedNumber) > 0 && submittedNumber[0] != nil {
+			value = *submittedNumber[0]
 		}
 		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
 		if err != nil {
@@ -81,6 +87,7 @@ func (m *Manager) InsertPhone(fieldChanges map[string]interface{}) (*int, *int, 
 func (m *Manager) UpdatePhone(
 	phoneId int,
 	fieldChanges map[string]interface{},
+	submittedNumber ...*string,
 ) (*int, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -125,9 +132,15 @@ func (m *Manager) UpdatePhone(
 		ActionEdit,
 		resourceId,
 	).Scan(&changeRequestId)
+	if err != nil {
+		return nil, err
+	}
 
 	// insert field_changes row for each field change
 	for key, value := range fieldChanges {
+		if key == "number" && len(submittedNumber) > 0 && submittedNumber[0] != nil {
+			value = *submittedNumber[0]
+		}
 		_, err = tx.Exec(insertFieldChangeSql, key, value, changeRequestId)
 		if err != nil {
 			return nil, err

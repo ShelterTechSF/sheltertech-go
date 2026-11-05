@@ -285,6 +285,9 @@ func (m *Manager) RemoveAddress(addressId int) (*int, error) {
 		return nil, err
 	}
 
+	if _, err = tx.Exec(insertFieldChangeSql, "action", "remove", changeRequestId); err != nil {
+		return nil, err
+	}
 	_, err = tx.Exec("DELETE FROM public.addresses_services WHERE address_id = $1", addressId)
 	if err != nil {
 		return nil, err
@@ -407,7 +410,7 @@ func (m *Manager) InsertAddress(fieldChanges map[string]interface{}) (*int, *int
 		"AddressChangeRequest",
 		addressId,
 		StatusPending,
-		ActionAdd,
+		ActionEdit,
 		fieldChanges["resource_id"],
 	).Scan(&changeRequestId)
 	if err != nil {

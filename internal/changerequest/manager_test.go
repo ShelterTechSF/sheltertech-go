@@ -71,8 +71,8 @@ func TestUpdateAddressEditsAddressAndCreatesChangeRequest(t *testing.T) {
 			"type": "AddressChangeRequest",
 			"object_id": 12,
 			"field_changes": [
-				{"field_name":"address_1","field_value":"123 New St"},
 				{"field_name":"city","field_value":"Oakland"},
+				{"field_name":"address_1","field_value":"123 New St"},
 				{"field_name":"postal_code","field_value":"94612"}
 			]
 		}
@@ -102,8 +102,8 @@ func TestUpdateAddressAcceptsNestedFieldChanges(t *testing.T) {
 			"type": "AddressChangeRequest",
 			"object_id": 12,
 			"field_changes": [
-				{"field_name":"address_1","field_value":"123 New St"},
 				{"field_name":"city","field_value":"Oakland"},
+				{"field_name":"address_1","field_value":"123 New St"},
 				{"field_name":"postal_code","field_value":"94612"}
 			]
 		}
@@ -132,7 +132,7 @@ func TestUpdateAddressRemovesAddressAndCreatesChangeRequest(t *testing.T) {
 			"status": "pending",
 			"type": "AddressChangeRequest",
 			"object_id": 12,
-			"field_changes": []
+			"field_changes": [{"field_name":"action","field_value":"remove"}]
 		}
 	}`, w.Body.String())
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -213,6 +213,7 @@ func expectAddressEditChangeRequest(mock sqlmock.Sqlmock, addressID int, resourc
 		WithArgs(int32(resourceID)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 }
 
 func expectAddressRemoveChangeRequest(mock sqlmock.Sqlmock, addressID int, resourceID int, changeRequestID int) {
@@ -223,6 +224,7 @@ func expectAddressRemoveChangeRequest(mock sqlmock.Sqlmock, addressID int, resou
 	mock.ExpectQuery(regexp.QuoteMeta(changeRequestInsertSQLForTest)).
 		WithArgs("AddressChangeRequest", addressID, db.StatusPending, db.ActionRemove, resourceID).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(changeRequestID))
+	mock.ExpectExec(regexp.QuoteMeta(fieldChangeInsertSQLForTest)).WithArgs("action", "remove", changeRequestID).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM public.addresses_services WHERE address_id = $1")).
 		WithArgs(addressID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
@@ -233,6 +235,7 @@ func expectAddressRemoveChangeRequest(mock sqlmock.Sqlmock, addressID int, resou
 		WithArgs(int32(resourceID)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 }
 
 const addressResourceIDSelectSQLForTest = `
@@ -264,7 +267,7 @@ func TestManagerCreateRoutesAddressInsertChangeRequest(t *testing.T) {
 		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(42))
 	mock.ExpectQuery(regexp.QuoteMeta(insertChangeRequestSQLForTest())).
-		WithArgs("AddressChangeRequest", 42, db.StatusPending, db.ActionAdd, 1).
+		WithArgs("AddressChangeRequest", 42, db.StatusPending, db.ActionEdit, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(77))
 	for i := 0; i < 4; i++ {
 		mock.ExpectExec(regexp.QuoteMeta(insertFieldChangeSQLForTest())).
@@ -272,6 +275,7 @@ func TestManagerCreateRoutesAddressInsertChangeRequest(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(1, 1))
 	}
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 
 	manager := New(&db.Manager{DB: sqlDB})
 	req := httptest.NewRequest(http.MethodPost, "/api/change_requests", strings.NewReader(`{

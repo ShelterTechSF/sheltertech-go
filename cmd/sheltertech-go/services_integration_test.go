@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -89,4 +90,29 @@ func TestPostServicesChangeRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusCreated, res.StatusCode)
+}
+
+func TestCreateServiceRailsPermittedFields(t *testing.T) {
+	res, err := http.Post("http://localhost:3001/api/resources/1/services", "application/json", strings.NewReader(`{"services":[{"name":"Parity service","instructions":[{"instruction":"Rails ignores this"}]}]}`))
+	require.NoError(t, err)
+	defer res.Body.Close()
+	require.Equal(t, http.StatusCreated, res.StatusCode)
+	var response struct {
+		Services []struct {
+			Service map[string]interface{} `json:"service"`
+		} `json:"services"`
+	}
+	require.NoError(t, json.NewDecoder(res.Body).Decode(&response))
+	require.Len(t, response.Services, 1)
+	service := response.Services[0].Service
+	id := int(service["id"].(float64))
+	manager := integrationDBManager()
+	defer manager.DB.Close()
+	defer manager.DB.Exec("DELETE FROM public.services WHERE id=$1", id)
+	assert.NotContains(t, service, "resource")
+	assert.NotContains(t, service, "program")
+	assert.Empty(t, service["instructions"])
+	var instructions int
+	require.NoError(t, manager.DB.QueryRow("SELECT count(*) FROM public.instructions WHERE service_id=$1", id).Scan(&instructions))
+	assert.Zero(t, instructions)
 }
