@@ -35,8 +35,7 @@ WHERE e.id IN (
 		WHERE cs.category_id = $1
 	)
 )
-ORDER BY 
-   e.name ASC;
+;
 `
 const eligibilitiesByIDsSql = `
 SELECT e.id, e.name, e.feature_rank
