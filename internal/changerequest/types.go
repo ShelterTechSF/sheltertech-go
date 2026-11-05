@@ -15,6 +15,7 @@ type ChangeRequest struct {
 	Action       string          `json:"action"`
 	FieldChanges json.RawMessage `json:"field_changes"`
 	rawFields    map[string]json.RawMessage
+	rawJSON      json.RawMessage
 	Status       *string `json:"status,omitempty"`
 }
 
@@ -97,6 +98,7 @@ func (cr *ChangeRequest) UnmarshalJSON(data []byte) error {
 	cr.FieldChanges = fields.FieldChanges
 	cr.Status = fields.Status
 	cr.rawFields = rawFields
+	cr.rawJSON = append(json.RawMessage(nil), data...)
 	return nil
 }
 
