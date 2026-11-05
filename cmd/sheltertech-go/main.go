@@ -218,10 +218,7 @@ func main() {
 		r.Get("/api/datathon/datathon_dataset", datathonManager.GetDatathonDataset)
 		r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
-		r.Post("/api/news_articles", newsArticlesManager.Create)
-		r.Get("/api/news_articles", newsArticlesManager.Get)
-		r.Put("/api/news_articles/{id}", newsArticlesManager.Update)
-		r.Delete("/api/news_articles/{id}", newsArticlesManager.Delete)
+		newsArticlesManager.RegisterRoutes(r)
 		r.Get("/api/eligibilities", eligibilityManager.Get)
 		r.Get("/api/eligibilities/{id}", eligibilityManager.GetEligibilityById)
 		r.Put("/api/eligibilities/{id}", eligibilityManager.UpdateEligibilityById)

@@ -2,49 +2,54 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
-	"log"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 type NewsArticle struct {
 	Id             int
 	Headline       sql.NullString
 	Body           sql.NullString
-	Priority       sql.NullInt32
+	Priority       sql.NullInt64
 	Url            sql.NullString
 	EffectiveDate  sql.NullTime
 	ExpirationDate sql.NullTime
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
 }
 
-const newsArticlesSql = `
-SELECT na.id, na.headline, na.body, na.priority, na.url, na.effective_date, na.expiration_date
-FROM public.news_articles na
-`
+// NewsArticleFields are the columns a create or update writes. A nil field is
+// stored as NULL.
+type NewsArticleFields struct {
+	Headline       *string
+	Body           *string
+	Priority       *int64
+	Url            *string
+	EffectiveDate  *time.Time
+	ExpirationDate *time.Time
+}
+
+// The news_articles timestamps are `timestamp without time zone` columns that
+// Rails filled with UTC wall-clock times, so these queries compare and write
+// UTC explicitly instead of relying on the session time zone.
+//
+// The list queries have no ORDER BY because the Rails endpoint had none.
+const newsArticleColumns = `id, headline, body, priority, url, effective_date, expiration_date`
+
+const newsArticlesSql = `SELECT ` + newsArticleColumns + ` FROM public.news_articles`
 
 const activeNewsArticlesSql = `
-SELECT na.id, na.headline, na.body, na.priority, na.url, na.effective_date, na.expiration_date
-FROM public.news_articles na
-WHERE (na.effective_date IS NULL OR na.effective_date <= NOW())
-  AND (na.expiration_date IS NULL OR na.expiration_date >= NOW())
+SELECT ` + newsArticleColumns + `
+FROM public.news_articles
+WHERE (effective_date IS NULL OR effective_date <= timezone('UTC', NOW()))
+  AND (expiration_date IS NULL OR expiration_date >= timezone('UTC', NOW()))
 `
 
-const newsArticlesByIDsSql = `
-SELECT na.id, na.headline, na.body, na.priority, na.url, na.effective_date, na.expiration_date
-FROM public.news_articles na
-WHERE na.id = ANY ($1)
-`
+const newsArticleByIDSql = `SELECT ` + newsArticleColumns + ` FROM public.news_articles WHERE id = $1`
 
 const createNewsArticleSql = `
 INSERT INTO public.news_articles (
     headline, body, priority, url, effective_date, expiration_date, created_at, updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-RETURNING id, headline, body, priority, url, effective_date, expiration_date
+VALUES ($1, $2, $3, $4, $5, $6, timezone('UTC', NOW()), timezone('UTC', NOW()))
+RETURNING id
 `
 
 const updateNewsArticleSql = `
@@ -55,207 +60,42 @@ SET headline = $2,
     url = $5,
     effective_date = $6,
     expiration_date = $7,
-    updated_at = NOW()
-WHERE id = $1
-RETURNING id, headline, body, priority, url, effective_date, expiration_date
-`
-
-const deleteNewsArticleSql = `
-DELETE FROM public.news_articles
+    updated_at = timezone('UTC', NOW())
 WHERE id = $1
 `
 
-func (m *Manager) GetNewsArticles() []*NewsArticle {
-	var rows *sql.Rows
-	var err error
-	stmt, err := m.DB.Prepare(newsArticlesSql)
-	if err != nil {
-		log.Printf("Prepare failed: %v\n", err)
-		return nil
-	}
-	rows, err = stmt.Query()
-	if err != nil {
-		log.Printf("%v\n", err)
-	}
-	return scanNewsArticles(rows)
+const deleteNewsArticleSql = `DELETE FROM public.news_articles WHERE id = $1`
+
+func (m *Manager) GetNewsArticles() ([]*NewsArticle, error) {
+	return m.queryNewsArticles(newsArticlesSql)
 }
 
-func (m *Manager) GetActiveNewsArticles() []*NewsArticle {
-	var rows *sql.Rows
-	var err error
-	stmt, err := m.DB.Prepare(activeNewsArticlesSql)
-	if err != nil {
-		log.Printf("Prepare failed: %v\n", err)
-		return nil
-	}
-	rows, err = stmt.Query()
-	if err != nil {
-		log.Printf("%v\n", err)
-	}
-	return scanNewsArticles(rows)
+// GetActiveNewsArticles returns articles that are in effect now: started (or
+// with no start) and not yet expired (or with no expiration).
+func (m *Manager) GetActiveNewsArticles() ([]*NewsArticle, error) {
+	return m.queryNewsArticles(activeNewsArticlesSql)
 }
 
-func (m *Manager) GetNewsArticlesByIDs(ids []int) []*NewsArticle {
-	var rows *sql.Rows
-	var err error
-	stmt, err := m.DB.Prepare(newsArticlesByIDsSql)
-	if err != nil {
-		log.Printf("Prepare failed: %v\n", err)
-		return nil
-	}
-	rows, err = stmt.Query(pq.Array(ids))
-	if err != nil {
-		log.Printf("%v\n", err)
-	}
-	return scanNewsArticles(rows)
-}
-
-func (m *Manager) CreateNewsArticle(
-	headline *string,
-	body *string,
-	priority *int,
-	url *string,
-	effectiveDate *time.Time,
-	expirationDate *time.Time,
-) (*NewsArticle, error) {
-	var newsArticle NewsArticle
-
-	// Set parameters for the query
-	var headlineParam, bodyParam, urlParam interface{}
-	var priorityParam, effectiveDateParam, expirationDateParam interface{}
-
-	headlineParam = nil
-	if headline != nil {
-		headlineParam = *headline
-	}
-
-	bodyParam = nil
-	if body != nil {
-		bodyParam = *body
-	}
-
-	priorityParam = nil
-	if priority != nil {
-		priorityParam = *priority
-	}
-
-	urlParam = nil
-	if url != nil {
-		urlParam = *url
-	}
-
-	effectiveDateParam = nil
-	if effectiveDate != nil {
-		effectiveDateParam = *effectiveDate
-	}
-
-	expirationDateParam = nil
-	if expirationDate != nil {
-		expirationDateParam = *expirationDate
-	}
-
-	// Execute the query
-	row := m.DB.QueryRow(
-		createNewsArticleSql,
-		headlineParam,
-		bodyParam,
-		priorityParam,
-		urlParam,
-		effectiveDateParam,
-		expirationDateParam,
-	)
-
-	err := row.Scan(
-		&newsArticle.Id,
-		&newsArticle.Headline,
-		&newsArticle.Body,
-		&newsArticle.Priority,
-		&newsArticle.Url,
-		&newsArticle.EffectiveDate,
-		&newsArticle.ExpirationDate,
-	)
-
-	if err != nil {
+// GetNewsArticleByID returns nil and no error when there is no such article.
+func (m *Manager) GetNewsArticleByID(id int64) (*NewsArticle, error) {
+	articles, err := m.queryNewsArticles(newsArticleByIDSql, id)
+	if err != nil || len(articles) == 0 {
 		return nil, err
 	}
-
-	return &newsArticle, nil
+	return articles[0], nil
 }
 
-func (m *Manager) UpdateNewsArticle(
-	id int,
-	headline *string,
-	body *string,
-	priority *int,
-	url *string,
-	effectiveDate *time.Time,
-	expirationDate *time.Time,
-) (*NewsArticle, error) {
-	var newsArticle NewsArticle
+// CreateNewsArticle inserts an article and returns its id.
+func (m *Manager) CreateNewsArticle(fields NewsArticleFields) (int, error) {
+	var id int
+	err := m.DB.QueryRow(createNewsArticleSql, newsArticleArgs(fields)...).Scan(&id)
+	return id, err
+}
 
-	// Set parameters for the query
-	var headlineParam, bodyParam, urlParam interface{}
-	var priorityParam, effectiveDateParam, expirationDateParam interface{}
-
-	headlineParam = nil
-	if headline != nil {
-		headlineParam = *headline
-	}
-
-	bodyParam = nil
-	if body != nil {
-		bodyParam = *body
-	}
-
-	priorityParam = nil
-	if priority != nil {
-		priorityParam = *priority
-	}
-
-	urlParam = nil
-	if url != nil {
-		urlParam = *url
-	}
-
-	effectiveDateParam = nil
-	if effectiveDate != nil {
-		effectiveDateParam = *effectiveDate
-	}
-
-	expirationDateParam = nil
-	if expirationDate != nil {
-		expirationDateParam = *expirationDate
-	}
-	// Execute the query
-	row := m.DB.QueryRow(
-		updateNewsArticleSql,
-		id,
-		headlineParam,
-		bodyParam,
-		priorityParam,
-		urlParam,
-		effectiveDateParam,
-		expirationDateParam,
-	)
-
-	err := row.Scan(
-		&newsArticle.Id,
-		&newsArticle.Headline,
-		&newsArticle.Body,
-		&newsArticle.Priority,
-		&newsArticle.Url,
-		&newsArticle.EffectiveDate,
-		&newsArticle.ExpirationDate,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("news article with ID %d not found", id)
-		}
-		return nil, err
-	}
-
-	return &newsArticle, nil
+// UpdateNewsArticle overwrites every field of an article and bumps updated_at.
+func (m *Manager) UpdateNewsArticle(id int, fields NewsArticleFields) error {
+	_, err := m.DB.Exec(updateNewsArticleSql, append([]interface{}{id}, newsArticleArgs(fields)...)...)
+	return err
 }
 
 func (m *Manager) DeleteNewsArticle(id int) error {
@@ -263,11 +103,42 @@ func (m *Manager) DeleteNewsArticle(id int) error {
 	return err
 }
 
-func scanNewsArticles(rows *sql.Rows) []*NewsArticle {
-	var newsArticles []*NewsArticle
+// newsArticleArgs turns fields into query arguments. Times are sent as UTC and
+// truncated to microseconds, the column precision, as Rails did.
+func newsArticleArgs(fields NewsArticleFields) []interface{} {
+	args := make([]interface{}, 6)
+	if fields.Headline != nil {
+		args[0] = *fields.Headline
+	}
+	if fields.Body != nil {
+		args[1] = *fields.Body
+	}
+	if fields.Priority != nil {
+		args[2] = *fields.Priority
+	}
+	if fields.Url != nil {
+		args[3] = *fields.Url
+	}
+	if fields.EffectiveDate != nil {
+		args[4] = fields.EffectiveDate.UTC().Truncate(time.Microsecond)
+	}
+	if fields.ExpirationDate != nil {
+		args[5] = fields.ExpirationDate.UTC().Truncate(time.Microsecond)
+	}
+	return args
+}
+
+func (m *Manager) queryNewsArticles(query string, args ...interface{}) ([]*NewsArticle, error) {
+	rows, err := m.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	newsArticles := []*NewsArticle{}
 	for rows.Next() {
 		var newsArticle NewsArticle
-		err := rows.Scan(
+		if err := rows.Scan(
 			&newsArticle.Id,
 			&newsArticle.Headline,
 			&newsArticle.Body,
@@ -275,24 +146,10 @@ func scanNewsArticles(rows *sql.Rows) []*NewsArticle {
 			&newsArticle.Url,
 			&newsArticle.EffectiveDate,
 			&newsArticle.ExpirationDate,
-		)
-
-		switch err {
-		case sql.ErrNoRows:
-			fmt.Println("No rows were returned!")
-			return nil
-		case nil:
-			newsArticles = append(newsArticles, &newsArticle)
-		default:
-			log.Printf("Scan error: %v\n", err)
-			return nil
+		); err != nil {
+			return nil, err
 		}
+		newsArticles = append(newsArticles, &newsArticle)
 	}
-
-	if err := rows.Err(); err != nil {
-		log.Printf("Rows error: %v\n", err)
-		return nil
-	}
-
-	return newsArticles
+	return newsArticles, rows.Err()
 }

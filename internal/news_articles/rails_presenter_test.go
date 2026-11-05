@@ -11,7 +11,7 @@ import (
 
 func TestRailsArticleDatePrecisionAndNull(t *testing.T) {
 	article := &db.NewsArticle{Id: 42, EffectiveDate: sql.NullTime{Valid: true, Time: time.Date(2026, 1, 1, 1, 0, 0, 123456000, time.FixedZone("offset", 3600))}}
-	raw, err := json.Marshal(railsArticle(article))
+	raw, err := json.Marshal(FromNewsArticleDBType(article))
 	require.NoError(t, err)
 	require.JSONEq(t, `{"id":42,"headline":null,"body":null,"priority":null,"url":null,"effective_date":"2026-01-01T00:00:00.123Z","expiration_date":null}`, string(raw))
 }

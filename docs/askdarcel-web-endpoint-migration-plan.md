@@ -50,11 +50,11 @@ Excluded from this inventory: Cypress/test-only calls, documentation examples, A
 | 30 | `DELETE /api/notes/:id` | Remove note | Rails | Missing in Go | Low/Medium: delete note and confirm status handling expected by edit-page `Promise.all`. |
 | 31 | `POST /api/instructions` | Add instruction to service edit data | Rails | Missing route/manager in Go, although DB/types files exist | Low/Medium: wire create route/manager using existing DB helpers if complete, then verify payload shape. |
 | 32 | `PUT /api/instructions/:id` | Update instruction | Rails | Missing route/manager in Go, although DB/types files exist | Low/Medium: wire update route/manager using existing DB helpers if complete, then verify payload shape. |
-| 33 | `GET /api/v2/news_articles?active=true` | Public breaking-news carousel | Go | Migrated | N/A |
-| 34 | `GET /api/v2/news_articles` | Breaking-news admin page load | Go | Migrated | N/A |
-| 35 | `POST /api/news_articles/` | Create breaking-news article | Rails | Go route exists as `/api/v2/news_articles`, but web still calls Rails | Low/Medium: switch to `/api/v2/news_articles`, normalize the trailing slash, and make Go accept the web's `YYYY-MM-DD` date strings. |
-| 36 | `PUT /api/news_articles/:id` | Update breaking-news article | Rails | Go route exists as `/api/v2/news_articles/:id`, but web still calls Rails | Low/Medium: switch to `/api/v2/news_articles/:id` and make Go accept the web's `YYYY-MM-DD` date strings. |
-| 37 | `DELETE /api/news_articles/:id` | Delete breaking-news article | Rails | Go route exists as `/api/v2/news_articles/:id`, but web still calls Rails | Low: switch to `/api/v2/news_articles/:id` and verify admin-page optimistic state behavior. |
+| 33 | `GET /api/v2/news_articles?active=true` | Public breaking-news carousel | Go | Migrated; matches Rails (see `docs/parity/news-articles.md`) | N/A |
+| 34 | `GET /api/v2/news_articles` | Breaking-news admin page load | Go | Migrated; matches Rails (see `docs/parity/news-articles.md`) | N/A |
+| 35 | `POST /api/news_articles/` | Create breaking-news article | Rails | Go matches Rails, including the trailing slash (see `docs/parity/news-articles.md`); web still calls Rails | Low: switch the web call to `/api/v2/news_articles/`. |
+| 36 | `PUT /api/news_articles/:id` | Update breaking-news article | Rails | Go matches Rails (see `docs/parity/news-articles.md`); web still calls Rails | Low: switch the web call to `/api/v2/news_articles/:id`. |
+| 37 | `DELETE /api/news_articles/:id` | Delete breaking-news article | Rails | Go matches Rails (see `docs/parity/news-articles.md`); web still calls Rails | Low: switch the web call to `/api/v2/news_articles/:id`. |
 | 38 | `POST /api/textings` | Text listing information to a user | Rails | Missing in Go | Large: port Textellent integration, phone normalization, listing aggregation, recipient upsert, and texting record creation. |
 | 39 | `POST /api/translation/translate_text` | Translate search query before Algolia search | Rails | Missing standalone Go route; Go translation code is currently PDF-scoped | Medium: expose a standalone text translation endpoint with Google Translate credentials/config and Rails-compatible `{ result }` response/errors. |
 | 40 | `GET /api/v2/users/current` | Authenticated user lookup | Go | Migrated | N/A |
@@ -72,7 +72,7 @@ Excluded from this inventory: Cypress/test-only calls, documentation examples, A
    `GET /api/resources/count`, `GET /api/categories`, `GET /api/eligibilities`, and `DELETE /api/phones/:id`.
 
 2. Finish nearly migrated Go routes that need compatibility cleanup:
-   `POST /api/services/html_to_pdf` for JSON payload support, and breaking-news create/update for date-only strings plus trailing-slash normalization.
+   `POST /api/services/html_to_pdf` for JSON payload support. (Breaking-news create/update/delete now match Rails in Go; only the web calls remain.)
 
 3. Implement small direct-write endpoints:
    resource certification, service-address add/remove, note deletion, and instructions create/update.

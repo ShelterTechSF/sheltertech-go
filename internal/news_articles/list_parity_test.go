@@ -15,11 +15,11 @@ func TestNewsListRailsDatesAndDatabaseOrder(t *testing.T) {
 			database, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer database.Close()
-			sql := "SELECT na.id.*FROM public.news_articles na"
+			sql := "SELECT id.*FROM public.news_articles"
 			if query == "?active=true" {
 				sql += " WHERE.*NOW"
 			}
-			mock.ExpectPrepare(sql).ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"id", "headline", "body", "priority", "url", "effective_date", "expiration_date"}).AddRow(2, "First", nil, 1, nil, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), nil).AddRow(1, "Second", nil, 99, nil, nil, nil))
+			mock.ExpectQuery(sql).WillReturnRows(sqlmock.NewRows([]string{"id", "headline", "body", "priority", "url", "effective_date", "expiration_date"}).AddRow(2, "First", nil, 1, nil, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), nil).AddRow(1, "Second", nil, 99, nil, nil, nil))
 			w := httptest.NewRecorder()
 			New(&db.Manager{DB: database}).Get(w, httptest.NewRequest("GET", "/api/news_articles"+query, nil))
 			require.Equal(t, 200, w.Code)
