@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/phonenumbers"
 	"github.com/sheltertechsf/sheltertech-go/internal/common"
 	"github.com/sheltertechsf/sheltertech-go/internal/db"
+	"github.com/sheltertechsf/sheltertech-go/internal/searchindex"
 	"io"
 	"net/http"
 	"strconv"
@@ -16,14 +17,16 @@ import (
 )
 
 type Manager struct {
-	DbClient *db.Manager
+	DbClient    *db.Manager
+	SearchIndex searchindex.Indexer
 }
 
-func New(dbManager *db.Manager) *Manager {
-	manager := &Manager{
-		DbClient: dbManager,
+func New(dbManager *db.Manager, indexers ...searchindex.Indexer) *Manager {
+	var index searchindex.Indexer = searchindex.NoopIndexer{}
+	if len(indexers) > 0 && indexers[0] != nil {
+		index = indexers[0]
 	}
-	return manager
+	return &Manager{DbClient: dbManager, SearchIndex: index}
 }
 
 func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +122,10 @@ func (m *Manager) UpdateResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !m.finishChangeRequest(r.Context(), w, *changeRequestId) {
+		return
+	}
+	orderFieldChanges(fieldChangesResponse, fieldChangesJSON)
 	response := &ResourceChangeRequest{
 		ResourceChangeRequest: ChangeRequestResponse{
 			Id:           *changeRequestId,
