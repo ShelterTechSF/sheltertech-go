@@ -53,12 +53,12 @@ RETURNING id, headline, body, priority, url, effective_date, expiration_date
 
 const updateNewsArticleSql = `
 UPDATE public.news_articles
-SET headline = COALESCE($2, headline),
-    body = COALESCE($3, body),
-    priority = COALESCE($4, priority),
-    url = COALESCE($5, url),
-    effective_date = COALESCE($6, effective_date),
-    expiration_date = COALESCE($7, expiration_date),
+SET headline = $2,
+    body = $3,
+    priority = $4,
+    url = $5,
+    effective_date = $6,
+    expiration_date = $7,
     updated_at = NOW()
 WHERE id = $1
 RETURNING id, headline, body, priority, url, effective_date, expiration_date
