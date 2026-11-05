@@ -91,6 +91,7 @@ VALUES ($1, $2)`)).
 		WithArgs("eligibilities", `[{"id":1004},{"id":1058}]`, 99).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
+	expectParityFinalization(mock)
 
 	manager := New(&db.Manager{DB: sqlDB})
 	req := serviceChangeRequestTestRequest("42", `{
