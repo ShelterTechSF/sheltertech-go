@@ -198,6 +198,10 @@ func (m *Manager) AddAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if created {
+		if err := searchindex.RebuildService(r.Context(), m.DbClient.DB, m.SearchIndex, serviceId); err != nil {
+			common.WriteErrorJson(w, http.StatusInternalServerError, common.InternalServerErrorMessage)
+			return
+		}
 		w.WriteHeader(http.StatusCreated)
 		return
 	}
