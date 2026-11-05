@@ -61,7 +61,7 @@ func (m *Manager) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, FromInstructionDBType(created), http.StatusCreated)
+	writeJSON(w, map[string]interface{}{"instruction": FromInstructionDBType(created)}, http.StatusCreated)
 }
 
 func writeJSON(w http.ResponseWriter, object interface{}, status int) {

@@ -36,7 +36,7 @@ RETURNING id, instruction
 					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, "Bring ID"))
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"instruction":"Bring ID","id":456}`,
+			expectedBody:   `{"instruction":{"instruction":"Bring ID","id":456}}`,
 		},
 		{
 			name: "preserves missing instruction as null",
@@ -47,7 +47,7 @@ RETURNING id, instruction
 					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, nil))
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"instruction":null,"id":456}`,
+			expectedBody:   `{"instruction":{"instruction":null,"id":456}}`,
 		},
 		{
 			name: "preserves null instruction as null",
@@ -58,7 +58,7 @@ RETURNING id, instruction
 					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, nil))
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"instruction":null,"id":456}`,
+			expectedBody:   `{"instruction":{"instruction":null,"id":456}}`,
 		},
 		{
 			name:           "returns bad request for malformed json",
@@ -76,7 +76,7 @@ RETURNING id, instruction
 					WillReturnRows(sqlmock.NewRows([]string{"id", "instruction"}).AddRow(456, "Bring ID"))
 			},
 			expectedStatus: http.StatusCreated,
-			expectedBody:   `{"instruction":"Bring ID","id":456}`,
+			expectedBody:   `{"instruction":{"instruction":"Bring ID","id":456}}`,
 		},
 		{
 			name: "returns internal server error when create fails",
