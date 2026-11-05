@@ -1,0 +1,166 @@
+{
+  "_geoloc": {
+    "lat": 37.7820802732529,
+    "lng": -122.395060956365
+  },
+  "addresses": [
+    {
+      "address_1": "762 Mark Loaf",
+      "city": "West Palmer",
+      "country": "USA",
+      "latitude": 37.7820802732529,
+      "longitude": -122.395060956365,
+      "postal_code": "18142",
+      "state_province": "Mississippi"
+    }
+  ],
+  "alternate_name": null,
+  "associated_sites": [
+    "sffamilies"
+  ],
+  "categories": [
+    "Seniors",
+    "Help Pay for Internet or Phone"
+  ],
+  "certified": false,
+  "certified_at": null,
+  "contact_id": null,
+  "created_at": "2025-12-04T04:23:59.094Z",
+  "email": null,
+  "featured": null,
+  "funding_id": null,
+  "id": 1700000013,
+  "internal_note": null,
+  "is_mohcd_funded": false,
+  "keywords": [],
+  "legal_status": null,
+  "long_description": "Weekly food pantry (Thursday).\n",
+  "name": "Quigley, Hirthe and Connelly",
+  "notes": [
+    "Accusantium temporibus expedita. Nihil quia est. Sit porro et."
+  ],
+  "objectID": "resource_1700000013",
+  "open_times": [
+    "Tu-6:30",
+    "Tu-7:00",
+    "Tu-7:30",
+    "Tu-8:00",
+    "Tu-8:30",
+    "Tu-9:00",
+    "Tu-9:30",
+    "Tu-10:00",
+    "Tu-10:30",
+    "Tu-11:00",
+    "Tu-11:30",
+    "Tu-12:00",
+    "Tu-12:30",
+    "Tu-13:00",
+    "Tu-13:30",
+    "Tu-14:00",
+    "Tu-14:30",
+    "Tu-15:00",
+    "Tu-15:30",
+    "Tu-16:00",
+    "Tu-16:30",
+    "Tu-17:00",
+    "W-1:00",
+    "W-1:30",
+    "W-2:00",
+    "W-2:30",
+    "W-3:00",
+    "W-3:30",
+    "W-4:00",
+    "W-4:30",
+    "W-5:00",
+    "W-5:30",
+    "W-14:30",
+    "W-15:00",
+    "W-15:30",
+    "W-16:00",
+    "W-16:30",
+    "Th-7:00",
+    "Th-7:30",
+    "Th-8:00",
+    "Th-8:30",
+    "Th-9:00",
+    "Th-9:30",
+    "Th-10:00",
+    "Th-10:30",
+    "Su-7:30",
+    "Su-8:00",
+    "Su-8:30",
+    "Su-9:00",
+    "Su-9:30",
+    "Su-10:00",
+    "Su-10:30",
+    "Su-11:00",
+    "Su-11:30",
+    "Su-12:00",
+    "Su-12:30",
+    "Su-13:00",
+    "Su-13:30",
+    "Su-14:00",
+    "Su-14:30",
+    "Su-15:00",
+    "Su-15:30"
+  ],
+  "phones": [
+    {
+      "number": "+17755614269",
+      "service_type": "Business"
+    }
+  ],
+  "resource_id": 1700000013,
+  "schedule": [
+    {
+      "closes_at": 1715,
+      "day": "Tuesday",
+      "opens_at": 645
+    },
+    {
+      "closes_at": 545,
+      "day": "Wednesday",
+      "opens_at": 100
+    },
+    {
+      "closes_at": 1645,
+      "day": "Wednesday",
+      "opens_at": 1445
+    },
+    {
+      "closes_at": 1045,
+      "day": "Thursday",
+      "opens_at": 715
+    },
+    {
+      "closes_at": 500,
+      "day": "Thursday",
+      "opens_at": 1745
+    },
+    {
+      "closes_at": 330,
+      "day": "Saturday",
+      "opens_at": 2145
+    },
+    {
+      "closes_at": 1600,
+      "day": "Sunday",
+      "opens_at": 730
+    }
+  ],
+  "services": [
+    {
+      "name": "Nienow, Okuneva and Will"
+    },
+    {
+      "name": "Friesen, Dooley and Collier"
+    }
+  ],
+  "short_description": "",
+  "source_attribution": "ask_darcel",
+  "status": "approved",
+  "type": "resource",
+  "updated_at": "2025-12-04T04:23:59.120Z",
+  "verified_at": null,
+  "website": ""
+}
