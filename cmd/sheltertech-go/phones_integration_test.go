@@ -142,5 +142,5 @@ func TestUpdatePhoneEndpoint(t *testing.T) {
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
 }
